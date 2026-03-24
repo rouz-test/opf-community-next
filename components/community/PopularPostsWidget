@@ -1,0 +1,65 @@
+import { createElement as h } from 'react';
+import { Heart, MessageSquare, TrendingUp } from 'lucide-react';
+
+export function PopularPostsWidget({ popularPosts }) {
+  return h(
+    'section',
+    { className: 'rounded-lg border border-gray-200 bg-white p-4' },
+    h(
+      'div',
+      { className: 'mb-4 flex items-center gap-2' },
+      h(TrendingUp, { className: 'h-4 w-4 text-orange-500' }),
+      h('h3', { className: 'text-sm font-semibold text-gray-900' }, '이번달 인기 게시글 TOP5'),
+    ),
+    h(
+      'div',
+      { className: 'space-y-3' },
+      popularPosts.map((post, index) =>
+        h(
+          'div',
+          { key: post.id, className: 'flex gap-3' },
+          h(
+            'span',
+            {
+              className: `flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-sm font-bold ${
+                index === 0
+                  ? 'bg-orange-500 text-white'
+                  : index === 1
+                    ? 'bg-orange-100 text-orange-600'
+                    : index === 2
+                      ? 'bg-orange-50 text-orange-600'
+                      : 'text-gray-400'
+              }`,
+            },
+            index + 1,
+          ),
+          h(
+            'div',
+            { className: 'min-w-0 flex-1' },
+            h(
+              'p',
+              { className: 'line-clamp-2 text-sm font-medium text-gray-900 transition-colors hover:text-orange-500' },
+              post.title,
+            ),
+            h(
+              'div',
+              { className: 'mt-1.5 flex items-center gap-3 text-xs text-gray-500' },
+              h(
+                'span',
+                { className: 'flex items-center gap-1' },
+                h(Heart, { className: 'h-3 w-3' }),
+                post.likes,
+              ),
+              h(
+                'span',
+                { className: 'flex items-center gap-1' },
+                h(MessageSquare, { className: 'h-3 w-3' }),
+                post.commentCount ?? 0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
