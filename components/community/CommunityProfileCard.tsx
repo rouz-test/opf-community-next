@@ -1,10 +1,9 @@
-
-
 import { BadgeCheck, RefreshCw } from 'lucide-react';
 
 export type CommunityProfileCardProps = {
   profileMode: 'real' | 'nickname';
   onToggleProfileMode: () => void;
+  variant?: 'sidebar' | 'header';
   currentUser: {
     name: string;
     nickname: string;
@@ -19,8 +18,41 @@ export function CommunityProfileCard({
   profileMode,
   onToggleProfileMode,
   currentUser,
+  variant = 'sidebar',
 }: CommunityProfileCardProps) {
-  return (
+  return variant === 'header' ? (
+    <div className="flex min-w-0 items-center gap-2">
+      <img
+        src={currentUser.avatar}
+        alt={profileMode === 'real' ? currentUser.name : currentUser.nickname}
+        className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-gray-200"
+      />
+
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="max-w-[84px] truncate text-sm font-semibold text-gray-900">
+            {profileMode === 'real' ? currentUser.name : currentUser.nickname}
+          </p>
+          {profileMode === 'real' ? (
+            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+          ) : null}
+        </div>
+        <p className="text-[11px] font-medium text-gray-500">
+          {profileMode === 'real' ? '실명 프로필' : '닉네임 프로필'}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onToggleProfileMode}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-100"
+        aria-label="계정 전환"
+        title="계정 전환"
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  ) : (
     <section className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="relative h-24 bg-gradient-to-br from-orange-400 to-orange-500">
         <div className="absolute right-3 top-3 rounded-full border px-2 py-0.5 text-xs font-medium backdrop-blur-sm">
