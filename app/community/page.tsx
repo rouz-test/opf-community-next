@@ -7,7 +7,6 @@ import {
   mockNotices,
   getPopularPosts,
   orangePickArticles,
-  getCommunityCategoryLabel,
   type CommunityPost,
 } from '@/data/mockCommunityPosts';
 import { HighlightCarousel } from '@/components/community/HighlightCarousel';

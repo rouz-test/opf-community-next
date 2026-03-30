@@ -3,6 +3,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heart } from 'lucide-react';
 import type { Comment } from '@/data/mockCommunityPosts';
 
@@ -12,6 +13,9 @@ type LocalComment = Omit<Comment, 'replies'> & {
   authorDisplayMode?: 'real' | 'nickname';
   replies?: LocalComment[];
 };
+
+const getProfileActorId = (authorLike?: { id?: string; profileId?: string }) =>
+  authorLike?.profileId ?? authorLike?.id ?? '';
 
 type CommunityCommentsSectionProps = {
   postId: string;
@@ -55,6 +59,8 @@ export function CommunityCommentsSection({
       parentId: replyTo?.commentId,
       author: {
         id: 'current-user',
+        profileId: 'current-user',
+        mode: localProfileMode,
         name: currentUser.name,
         nickname: localProfileMode === 'real' ? currentUser.name : currentUser.nickname,
         avatar: currentUser.avatar,
@@ -372,6 +378,14 @@ function CommentItem({
   const displayName =
     (comment.authorDisplayMode ?? 'nickname') === 'real' ? comment.author.name : comment.author.nickname;
 
+  const router = useRouter();
+
+  const handleCommentAuthorClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    router.push(`/community/author/${getProfileActorId(comment.author)}`);
+  };
+
   return (
     <div className="space-y-3">
       {comment.isDeleted ? (
@@ -380,11 +394,18 @@ function CommentItem({
         </div>
       ) : (
         <div className="flex gap-3">
-          <img
-            src={comment.author.avatar}
-            alt={displayName}
-            className="h-10 w-10 flex-shrink-0 rounded-full object-cover"
-          />
+          <button
+            type="button"
+            onClick={handleCommentAuthorClick}
+            className="flex-shrink-0 rounded-full"
+            aria-label={`${displayName} 작성자 페이지로 이동`}
+          >
+            <img
+              src={comment.author.avatar}
+              alt={displayName}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          </button>
           <div className="min-w-0 flex-1">
             {isEditing ? (
               <div className="rounded-lg bg-gray-50 p-3">
@@ -422,10 +443,15 @@ function CommentItem({
               <>
                 <div className="rounded-lg bg-gray-50 p-3">
                   <div className="mb-1 flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      type="button"
+                      onClick={handleCommentAuthorClick}
+                      className="flex min-w-0 items-center gap-2 text-left"
+                      aria-label={`${displayName} 작성자 페이지로 이동`}
+                    >
                       <span className="text-sm font-medium text-gray-900">{displayName}</span>
                       <span className="text-xs text-gray-500">{formatCommentDate(comment.createdAt)}</span>
-                    </div>
+                    </button>
                     <div className="flex items-center gap-2">
                       {comment.isEdited && (
                         <span className="shrink-0 text-[11px] text-gray-400">수정됨</span>
@@ -590,13 +616,28 @@ function ReplyItem({
   const displayName =
     (reply.authorDisplayMode ?? 'nickname') === 'real' ? reply.author.name : reply.author.nickname;
 
+  const router = useRouter();
+
+  const handleReplyAuthorClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    router.push(`/community/author/${getProfileActorId(reply.author)}`);
+  };
+
   return (
     <div className="flex gap-2 sm:gap-3">
-      <img
-        src={reply.author.avatar}
-        alt={displayName}
-        className="h-7 w-7 flex-shrink-0 rounded-full object-cover sm:h-8 sm:w-8"
-      />
+      <button
+        type="button"
+        onClick={handleReplyAuthorClick}
+        className="flex-shrink-0 rounded-full"
+        aria-label={`${displayName} 작성자 페이지로 이동`}
+      >
+        <img
+          src={reply.author.avatar}
+          alt={displayName}
+          className="h-7 w-7 rounded-full object-cover sm:h-8 sm:w-8"
+        />
+      </button>
       <div className="min-w-0 flex-1">
         {isEditing ? (
           <div className="rounded-lg bg-gray-50 p-2.5 sm:p-3">
@@ -634,10 +675,15 @@ function ReplyItem({
           <>
             <div className="rounded-lg bg-gray-50 p-2.5 sm:p-3">
               <div className="mb-1 flex items-start justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={handleReplyAuthorClick}
+                  className="flex min-w-0 items-center gap-1.5 text-left sm:gap-2"
+                  aria-label={`${displayName} 작성자 페이지로 이동`}
+                >
                   <span className="text-[13px] font-medium text-gray-900 sm:text-sm">{displayName}</span>
                   <span className="text-[11px] text-gray-500 sm:text-xs">{formatCommentDate(reply.createdAt)}</span>
-                </div>
+                </button>
                 <div className="flex items-center gap-2">
                   {reply.isEdited && (
                     <span className="shrink-0 text-[10px] text-gray-400 sm:text-[11px]">수정됨</span>

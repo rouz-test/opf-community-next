@@ -1,11 +1,10 @@
-
-
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Eye, Heart, MessageSquare } from 'lucide-react';
-import { getCommunityCategoryLabel, type CommunityPost } from '@/data/mockCommunityPosts';
+import { type CommunityPost } from '@/data/mockCommunityPosts';
 
 const chunkPosts = <T,>(items: T[], size: number) => {
   const chunks: T[][] = [];
@@ -16,6 +15,14 @@ const chunkPosts = <T,>(items: T[], size: number) => {
 };
 
 function HighlightPostCard({ post }: { post: CommunityPost }) {
+  const router = useRouter();
+
+  const handleAuthorAvatarClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    router.push(`/community/author/${post.author.id}`);
+  };
+
   return (
     <Link href={`/community/post/${post.id}`} className="block">
       <article className="flex h-[200px] flex-col rounded-lg border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4 transition-all hover:border-orange-300 hover:shadow-md">
@@ -23,11 +30,7 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
           <span className="rounded-full bg-orange-500 px-2.5 py-1 text-xs font-semibold text-white">
             {post.type === 'notice' ? '공지' : '추천'}
           </span>
-          {post.category && (
-            <span className="rounded-full border border-orange-300 px-2.5 py-1 text-xs font-medium text-orange-600">
-              {getCommunityCategoryLabel(post.category)}
-            </span>
-          )}
+         
         </div>
 
         <h3 className="mb-2 line-clamp-2 text-sm font-bold text-gray-900 transition-colors hover:text-orange-600">
@@ -36,14 +39,19 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
         <p className="mb-3 line-clamp-3 flex-1 text-xs leading-6 text-gray-600">{post.content}</p>
 
         <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleAuthorAvatarClick}
+            className="flex items-center gap-2 text-left"
+            aria-label={`${post.author.nickname} 작성자 페이지로 이동`}
+          >
             {post.author.avatar ? (
               <img src={post.author.avatar} alt={post.author.nickname} className="h-6 w-6 rounded-full object-cover" />
             ) : (
               <div className="h-6 w-6 rounded-full bg-gray-200" />
             )}
             <span>{post.author.nickname}</span>
-          </div>
+          </button>
 
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   BadgeCheck,
@@ -10,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
-  getCommunityCategoryLabel,
+ 
   type CommunityPost,
 } from '@/data/mockCommunityPosts';
 
@@ -45,10 +46,17 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 
 export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
   const authorName = post.author.nickname;
+  const router = useRouter();
   const likeCount = post.likes;
   const commentCount = post.commentCount ?? 0;
   const { isLoggedIn } = useAuth();
   const [isPostBookmarked, setIsPostBookmarked] = useState(false);
+
+  const handleAuthorAvatarClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    router.push(`/community/author/${post.author.id}`);
+  };
 
   return (
     <Link href={`/community/post/${post.id}`} className="block">
@@ -77,11 +85,7 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
         <div className="flex gap-4 p-5">
           <div className="min-w-0 flex-1">
             <div className="mb-2.5 flex flex-wrap gap-1.5">
-              {post.category && (
-                <span className="rounded-full border border-pink-200 bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">
-                  {getCommunityCategoryLabel(post.category)}
-                </span>
-              )}
+              
               {(post.tags || []).slice(0, 2).map((tag, index) => (
                 <span
                   key={tag}
@@ -101,7 +105,12 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
           </div>
 
           <div className="hidden min-w-[200px] flex-shrink-0 flex-col items-end justify-between md:flex">
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAuthorAvatarClick}
+              className="flex items-center gap-2 text-left"
+              aria-label={`${authorName} 작성자 페이지로 이동`}
+            >
               {post.author.avatar && (
                 <img
                   src={post.author.avatar}
@@ -116,8 +125,7 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
                   <span className="text-xs text-gray-500">· {post.author.position}</span>
                 )}
               </div>
-            </div>
-
+            </button>
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <span className="text-xs">{formatDate(post.createdAt)}</span>
               <span className="flex items-center gap-1">

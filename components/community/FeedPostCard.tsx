@@ -1,8 +1,7 @@
-
-
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   BadgeCheck,
@@ -12,10 +11,7 @@ import {
   Bookmark,
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import {
-  getCommunityCategoryLabel,
-  type CommunityPost,
-} from '@/data/mockCommunityPosts';
+import { type CommunityPost } from '@/data/mockCommunityPosts';
 
 type FeedPostCardProps = {
   post: CommunityPost;
@@ -48,6 +44,7 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 
 export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProps) {
   const authorName = post.author.nickname;
+  const router = useRouter();
   const commentCount = post.commentCount ?? 0;
   const { isLoggedIn } = useAuth();
   const [isPostLiked, setIsPostLiked] = useState(false);
@@ -56,6 +53,11 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
   const images = post.images ?? [];
   const visibleImages = images.slice(0, 2);
   const remainingImageCount = Math.max(images.length - 2, 0);
+  const handleAuthorAvatarClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    router.push(`/community/author/${post.author.id}`);
+  };
 
   return (
     <article className="rounded-lg border border-gray-200 bg-white transition-all hover:border-gray-300">
@@ -83,7 +85,12 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
 
       <Link href={`/community/post/${post.id}`} className="block p-4 pb-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleAuthorAvatarClick}
+            className="flex items-center gap-3 text-left"
+            aria-label={`${authorName} 작성자 페이지로 이동`}
+          >
             {post.author.avatar ? (
               <img
                 src={post.author.avatar}
@@ -103,7 +110,7 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
               </div>
               <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
             </div>
-          </div>
+          </button>
 
           {post.isPromotion && (
             <span className="rounded-full bg-purple-500 px-2.5 py-1 text-xs font-medium text-white">

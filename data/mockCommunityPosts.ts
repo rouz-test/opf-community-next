@@ -1,31 +1,28 @@
-export const communityCategories = [
-  { id: 'all', name: '전체', icon: '📌' },
-  { id: 'qna', name: 'Q&A', icon: '❓' },
-  { id: 'tips', name: '팁 공유', icon: '💡' },
-  { id: 'free', name: '자유게시판', icon: '💬' },
-  { id: 'review', name: '후기', icon: '✍️' },
-  { id: 'recruitment', name: '팀원 모집', icon: '👥' },
-] as const;
+export type CommunityProfileMode = 'real' | 'nickname';
 
-export type CommunityCategoryId = (typeof communityCategories)[number]['id'];
-
-export interface CommunityAuthor {
+export interface CommunityIdentity {
   id: string;
+  accountId?: string;
+  profileId?: string;
+  mode?: CommunityProfileMode;
+}
+
+export interface CommunityProfile extends CommunityIdentity {
   name: string;
   nickname: string;
   avatar: string;
   position?: string;
 }
 
+export interface CommunityAuthor extends CommunityProfile {}
+
+export interface CommunityInteractionAuthor extends CommunityProfile {
+  isFollowing?: boolean;
+}
+
 export interface HighlightedComment {
   id: string;
-  author: {
-    id: string;
-    name: string;
-    nickname: string;
-    avatar: string;
-    isFollowing: boolean;
-  };
+  author: CommunityInteractionAuthor;
   content: string;
   createdAt: string;
   likes: number;
@@ -35,7 +32,7 @@ export interface HighlightedComment {
 export interface CommunityPost {
   id: string;
   type: 'study' | 'community' | 'notice';
-  category?: Exclude<CommunityCategoryId, 'all'>;
+  
   studyId?: string;
   studyTitle?: string;
   title: string;
@@ -93,14 +90,6 @@ export const orangePickArticles: OrangePickArticle[] = [
   }
 ];
 
-export const communityCategoryMap = Object.fromEntries(
-  communityCategories.map((category) => [category.id, category]),
-) as Record<CommunityCategoryId, (typeof communityCategories)[number]>;
-
-export const getCommunityCategoryLabel = (categoryId?: CommunityPost['category']) => {
-  if (!categoryId) return '커뮤니티';
-  return communityCategoryMap[categoryId]?.name ?? categoryId;
-};
 
 
 // 공지사항 목 데이터
@@ -147,11 +136,14 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-1',
     type: 'community',
-    category: 'qna',
+   
     title: '초기 스타트업 MVP 개발 시 우선순위 정하는 팁 있나요?',
     content: '안녕하세요. 처음 창업을 준비 중인데요, MVP를 만들 때 어떤 기능을 우선적으로 개발해야 할지 고민입니다. 예산과 시간이 제한적이라 선택과 집중이 필요한데, 혹시 경험 있으신 분들의 조언 부탁드립니다!',
     author: {
-      id: 'user-1',
+      id: 'profile-user-1-nickname',
+      accountId: 'account-user-1',
+      profileId: 'profile-user-1-nickname',
+      mode: 'nickname',
       name: '김창업',
       nickname: 'StartupDreamer',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
@@ -168,7 +160,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-1-with-images',
     type: 'community',
-    category: 'tips',
+    
     title: '우리 팀 오피스 구하기 성공! 공유 오피스 vs 독립 오피스 비교',
     content: '드디어 우리 팀만의 오피스를 구했습니다! 🎉 지난 3개월간 공유 오피스와 독립 오피스를 비교 분석하면서 얻은 인사이트를 공유해요. 초기 스타트업이라면 꼭 고려해야 할 포인트들을 정리했습니다. 위치, 비용, 네트워킹 기회, 확장성 등 다양한 측면에서 비교해봤어요!',
     author: {
@@ -196,7 +188,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-2-with-images',
     type: 'community',
-    category: 'review',
+    
     title: '제품 디자인 스프린트 5일간의 기록 (feat. 실제 결과물)',
     content: '구글 벤처스의 디자인 스프린트 방법론을 우리 팀에 적용해봤습니다. 월요일부터 금요일까지 5일간 진행한 전 과정을 사진과 함께 공유합니다. 프로토타입 제작부터 사용자 테스트까지, 정말 밀도 높은 일주일이었어요. 결과적으로 우리 제품의 핵심 기능을 3개에서 1개로 축소하는 중요한 결정을 내릴 수 있었습니다.',
     author: {
@@ -220,7 +212,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-with-following-comment',
     type: 'community',
-    category: 'tips',
+ 
     title: '초기 스타트업 투자 유치 경험 공유합니다',
     content: '작년에 시드 투자 3곳을 유치한 경험을 바탕으로 IR 자료 작성법, 투자자 미팅 준비, 밸류에이션 협상 등 실전에서 정말 중요했던 부분들을 정리해봤습니다. 특히 우리가 받았던 질문들과 그에 대한 답변 전략을 공유하면 도움이 될 것 같아서요.',
     author: {
@@ -240,7 +232,10 @@ export const mockCommunityPosts: CommunityPost[] = [
     highlightedComment: {
       id: 'highlighted-comment-1',
       author: {
-        id: 'user-13',
+        id: 'profile-user-13-nickname',
+        accountId: 'account-user-13',
+        profileId: 'profile-user-13-nickname',
+        mode: 'nickname',
         name: '김개발',
         nickname: 'DevExpert',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
@@ -255,7 +250,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-3-with-images',
     type: 'community',
-    category: 'free',
+    
     title: '스타트업 박람회 다녀왔어요! 부스 세팅 꿀팁 공유',
     content: '어제 코엑스에서 열린 스타트업 박람회에 참가했습니다. 처음 부스를 운영해봤는데, 준비 과정에서 배운 점이 많아서 공유해요. 부스 디자인, 홍보물 제작, 방문객 응대 노하우까지! 특히 QR코드를 활용한 명함 교환이 정말 효과적이었어요.',
     author: {
@@ -279,7 +274,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-2',
     type: 'community',
-    category: 'tips',
+   
     title: '린 캔버스 작성할 때 자주 하는 실수 5가지',
     content: `많은 분들이 린 캔버스를 작성하실 때 이런 실수를 하시더라고요:\n\n1. 고객 세그먼트를 너무 넓게 잡는다\n2. 문제보다 솔루션에 집착한다\n3. 핵심 지표를 정량화하지 않는다\n4. 비용 구조를 과소평가한다\n5. 경쟁사 분석을 건너뛴다\n\n저도 처음에 많이 헤맸는데, 이 부분들만 주의하셔도 훨씬 나은 비즈니스 모델을 만들 수 있습니다!`,
     author: {
@@ -331,7 +326,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-4',
     type: 'community',
-    category: 'free',
+    
     title: '오늘 첫 투자 미팅 다녀왔습니다 (후기)',
     content: `떨리는 마음으로 첫 VC 미팅을 다녀왔어요. 
 
@@ -360,7 +355,7 @@ export const mockCommunityPosts: CommunityPost[] = [
   {
     id: 'post-5',
     type: 'community',
-    category: 'recruitment',
+  
     title: '[모집] B2B SaaS 스타트업 공동창업자를 찾습니다',
     content: `안녕하세요. 중소기업 HR 솔루션을 개발 중입니다.
 
@@ -421,7 +416,7 @@ Referral (추천): 거의 없음 😭
   {
     id: 'post-7',
     type: 'community',
-    category: 'review',
+    
     title: 'Orange Park 스터디 3개월 참여 후기',
     content: `작년 10월부터 3개월간 린 스타트업 스터디에 참여했어요.
 
@@ -454,7 +449,7 @@ Referral (추천): 거의 없음 😭
   {
     id: 'post-8',
     type: 'community',
-    category: 'qna',
+   
     title: '법인 설립 시기, 언제가 적절할까요?',
     content: `사업자등록은 했는데 법인 전환을 언제 해야 할지 고민입니다.
 
@@ -481,7 +476,7 @@ Referral (추천): 거의 없음 😭
   {
     id: 'post-9',
     type: 'community',
-    category: 'tips',
+   
     title: '시드 투자 유치 성공! 우리가 준비한 3가지',
     content: `6개월간의 긴 여정 끝에 드디어 시드 투자를 유치했습니다! 🎉
 
@@ -518,7 +513,7 @@ Referral (추천): 거의 없음 😭
   {
     id: 'post-10',
     type: 'community',
-    category: 'tips',
+    
     title: '피칭 덱 10장으로 줄이기: 투자자가 원하는 핵심만',
     content: `많은 창업가분들이 피칭 덱을 너무 길게 만드는 경향이 있어요.
 
@@ -567,12 +562,7 @@ export const getPopularPosts = (
   return [...posts].sort((a, b) => b.likes - a.likes).slice(0, limit);
 };
 
-export interface CommentAuthor {
-  id: string;
-  name: string;
-  nickname: string;
-  avatar: string;
-}
+export interface CommentAuthor extends CommunityInteractionAuthor {}
 
 export interface Comment {
   id: string;
@@ -591,7 +581,10 @@ export const mockComments: Comment[] = [
     id: 'comment-1',
     postId: 'post-1',
     author: {
-      id: 'user-9',
+      id: 'profile-user-9-nickname',
+      accountId: 'account-user-9',
+      profileId: 'profile-user-9-nickname',
+      mode: 'nickname',
       name: '황선배',
       nickname: 'MVPExpert',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
@@ -606,7 +599,10 @@ export const mockComments: Comment[] = [
         postId: 'post-1',
         parentId: 'comment-1',
         author: {
-          id: 'user-1',
+          id: 'profile-user-1-nickname',
+          accountId: 'account-user-1',
+          profileId: 'profile-user-1-nickname',
+          mode: 'nickname',
           name: '김창업',
           nickname: 'StartupDreamer',
           avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
@@ -618,18 +614,88 @@ export const mockComments: Comment[] = [
       },
     ],
   },
+  {
+    id: 'comment-post-1-devexpert',
+    postId: 'post-1',
+    author: {
+      id: 'profile-user-13-nickname',
+      accountId: 'account-user-13',
+      profileId: 'profile-user-13-nickname',
+      mode: 'nickname',
+      name: '김개발',
+      nickname: 'DevExpert',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      isFollowing: true,
+    },
+    content: 'MVP는 반드시 결제나 신청처럼 핵심 전환 액션부터 검증하는 게 좋습니다. 부가 기능은 최대한 뒤로 미루세요.',
+    createdAt: '2026-03-19T11:10:00',
+    likes: 5,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-1-bizmodel',
+    postId: 'post-1',
+    author: {
+      id: 'user-2',
+      name: '박멘토',
+      nickname: 'BizModelPro',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      isFollowing: false,
+    },
+    content: '고객 인터뷰 결과를 기준으로 우선순위를 자르는 방식이 가장 안전합니다.',
+    createdAt: '2026-03-19T12:00:00',
+    likes: 3,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-2-devexpert',
+    postId: 'post-2',
+    author: {
+      id: 'profile-user-13-nickname',
+      accountId: 'account-user-13',
+      profileId: 'profile-user-13-nickname',
+      mode: 'nickname',
+      name: '김개발',
+      nickname: 'DevExpert',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      isFollowing: true,
+    },
+    content: '특히 고객 세그먼트를 넓게 잡는 실수 정말 공감합니다. 저희도 그 부분 때문에 초반에 메시지가 많이 흐려졌어요.',
+    createdAt: '2026-03-15T18:40:00',
+    likes: 7,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-9-devexpert',
+    postId: 'post-9',
+    author: {
+      id: 'profile-user-13-nickname',
+      accountId: 'account-user-13',
+      profileId: 'profile-user-13-nickname',
+      mode: 'nickname',
+      name: '김개발',
+      nickname: 'DevExpert',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+      isFollowing: true,
+    },
+    content: '실제 매출을 만든 상태에서 투자자를 만난 점이 인상적이네요. 초기 트랙션 설계에 정말 도움이 됩니다.',
+    createdAt: '2026-03-18T19:15:00',
+    likes: 4,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-9-growth',
+    postId: 'post-9',
+    author: {
+      id: 'user-6',
+      name: '강성장',
+      nickname: 'GrowthHacker',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+      isFollowing: false,
+    },
+    content: '고객 인터뷰 100명 이상 진행한 부분이 특히 인상 깊습니다.',
+    createdAt: '2026-03-18T20:05:00',
+    likes: 2,
+    isLikedByMe: false,
+  },
 ];
-
-
-// 현재 목데이터에서 실제로 사용 중인 카테고리만 추려낸 목록
-export const usedCommunityCategoryIds = Array.from(
-  new Set(
-    mockCommunityPosts
-      .map((post) => post.category)
-      .filter((category): category is Exclude<CommunityCategoryId, 'all'> => Boolean(category)),
-  ),
-);
-
-export const activeCommunityCategories = communityCategories.filter(
-  (category) => category.id === 'all' || usedCommunityCategoryIds.includes(category.id),
-);

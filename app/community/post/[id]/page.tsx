@@ -19,7 +19,6 @@ import {
 import {
   mockCommunityPosts,
   mockNotices,
-  getCommunityCategoryLabel,
 } from '@/data/mockCommunityPosts';
 import { CommunityCommentsSection } from '@/components/community/CommunityCommentsSection';
 import { CommunityProfileCard } from '@/components/community/CommunityProfileCard';
@@ -60,6 +59,9 @@ const getPreviewImages = (images?: string[]) => {
 };
 
 const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
+
+const getProfileActorId = (authorLike?: { id?: string; profileId?: string }) =>
+  authorLike?.profileId ?? authorLike?.id ?? '';
 
 
 export default function CommunityPostDetailPage() {
@@ -106,7 +108,10 @@ export default function CommunityPostDetailPage() {
   }
 
   const authorOtherPosts = mockCommunityPosts
-    .filter((item) => item.author.id === post.author.id && item.id !== post.id)
+    .filter(
+      (item) =>
+        getProfileActorId(item.author) === getProfileActorId(post.author) && item.id !== post.id,
+    )
     .slice(0, 5);
 
   const currentUser = {
@@ -355,11 +360,7 @@ export default function CommunityPostDetailPage() {
                         홍보
                       </span>
                     )}
-                    {post.category && (
-                      <span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-700 sm:px-2.5 sm:py-1 sm:text-xs">
-                        {getCommunityCategoryLabel(post.category)}
-                      </span>
-                    )}
+                  
                     {(post.tags || []).slice(0, 3).map((tag) => (
                       <span
                         key={tag}

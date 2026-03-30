@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Search, LayoutGrid, List, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { mockCommunityPosts } from '@/data/mockCommunityPosts';
+import {
+  mockCommunityPosts,
+  mockComments,
+  type CommunityPost,
+  type HighlightedComment,
+} from '@/data/mockCommunityPosts';
 import { AuthorProfileCard } from '@/components/community/AuthorProfileCard';
 import { CommunityProfileCard } from '@/components/community/CommunityProfileCard';
+import { CommunityToolbar } from '@/components/community/CommunityToolbar';
+import { CommunityTagFilter } from '@/components/community/CommunityTagFilter';
 import { FeedPostCard } from '@/components/community/FeedPostCard';
 import { BoardPostRow } from '@/components/community/BoardPostRow';
 
@@ -44,6 +51,17 @@ const COMMUNITY_CURRENT_USER = {
   commentsCount: 45,
 };
 
+const getProfileActorId = (authorLike?: { id?: string; profileId?: string }) =>
+  authorLike?.profileId ?? authorLike?.id ?? '';
+
+type AuthorCommentPreview = HighlightedComment;
+
+type AuthorCommentEntry = {
+  post: CommunityPost;
+  comment: AuthorCommentPreview;
+  activityDate?: string;
+};
+
 const highlightMatchedText = (text: string, searchQuery: string) => {
   const keyword = searchQuery.trim();
 
@@ -69,17 +87,121 @@ export default function CommunityAuthorPage() {
   const params = useParams<{ id: string }>();
   const authorId = typeof params?.id === 'string' ? params.id : '';
 
+  const [activityTab, setActivityTab] = useState<'posts' | 'comments'>('posts');
   const [viewMode, setViewMode] = useState<'feed' | 'board'>('feed');
   const [sortBy, setSortBy] = useState<'recommended' | 'latest'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
   const [profileMode, setProfileMode] = useState<'real' | 'nickname'>('nickname');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
 
   const authorPosts = useMemo(
-    () => mockCommunityPosts.filter((post) => post.author.id === authorId),
+    () => mockCommunityPosts.filter((post) => getProfileActorId(post.author) === authorId),
     [authorId],
   );
 
-  const author = authorPosts[0]?.author;
+  const authorCommentEntries = useMemo<AuthorCommentEntry[]>(() => {
+    const entries = new Map<string | number, AuthorCommentEntry>();
+    const postMap = new Map(mockCommunityPosts.map((post) => [post.id, post]));
+  
+    mockComments.forEach((comment) => {
+      if (getProfileActorId(comment.author) !== authorId) return;
+  
+      const post = postMap.get(comment.postId);
+      if (!post) return;
+  
+      const latestComment: AuthorCommentPreview = {
+        id: comment.id,
+        author: {
+          id: comment.author.id,
+          name: comment.author.name,
+          nickname: comment.author.nickname,
+          avatar: comment.author.avatar,
+          isFollowing: comment.author.isFollowing ?? false,
+        },
+        content: comment.content,
+        createdAt: comment.createdAt,
+        likes: comment.likes,
+        replyCount: comment.replies?.length ?? 0,
+      };
+  
+      const entry: AuthorCommentEntry = {
+        post: {
+          ...post,
+          highlightedComment: latestComment,
+        },
+        comment: latestComment,
+        activityDate: latestComment.createdAt ?? post.createdAt,
+      };
+  
+      const existingEntry = entries.get(post.id);
+      if (!existingEntry) {
+        entries.set(post.id, entry);
+        return;
+      }
+  
+      const existingTime = new Date(existingEntry.activityDate || 0).getTime();
+      const nextTime = new Date(entry.activityDate || 0).getTime();
+  
+      if (nextTime > existingTime) {
+        entries.set(post.id, entry);
+      }
+    });
+  
+    return Array.from(entries.values());
+  }, [authorId]);
+
+  const author =
+    authorPosts[0]?.author ??
+    (authorCommentEntries[0]
+      ? {
+          id: authorCommentEntries[0].comment.author.id,
+          accountId: authorCommentEntries[0].comment.author.accountId,
+          profileId: authorCommentEntries[0].comment.author.profileId,
+          mode: authorCommentEntries[0].comment.author.mode,
+          name: authorCommentEntries[0].comment.author.name,
+          nickname: authorCommentEntries[0].comment.author.nickname,
+          avatar: authorCommentEntries[0].comment.author.avatar,
+        }
+      : undefined);
+
+  const activeSourcePosts = useMemo(
+    () => (activityTab === 'posts' ? authorPosts : authorCommentEntries.map((entry) => entry.post)),
+    [activityTab, authorPosts, authorCommentEntries],
+  );
+
+  const commentEntryMap = useMemo(
+    () => new Map(authorCommentEntries.map((entry) => [entry.post.id, entry])),
+    [authorCommentEntries],
+  );
+
+  const allTags = useMemo(
+    () => Array.from(new Set(activeSourcePosts.flatMap((post) => post.tags || []))),
+    [activeSourcePosts],
+  );
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
+    );
+  };
+
+  const clearSelectedTags = () => {
+    setSelectedTags([]);
+  };
+
+  const toggleFilterOpen = () => {
+    setIsFilterOpen((prev) => !prev);
+  };
+
+  const closeFilterOpen = () => {
+    setIsFilterOpen(false);
+  };
+
+  const toggleTagFilterOpen = () => {
+    setIsTagFilterOpen((prev) => !prev);
+  };
 
   const syncProfileMode = (nextMode: 'real' | 'nickname') => {
     setProfileMode(nextMode);
@@ -125,21 +247,45 @@ export default function CommunityAuthorPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setSelectedTags([]);
+    setIsFilterOpen(false);
+    setIsTagFilterOpen(false);
+  }, [activityTab]);
+
   const visiblePosts = useMemo(() => {
-    let posts = [...authorPosts];
+    let posts = [...activeSourcePosts];
+
+    if (selectedTags.length > 0) {
+      posts = posts.filter((post) =>
+        selectedTags.every((tag) => (post.tags || []).includes(tag)),
+      );
+    }
 
     if (searchQuery.trim()) {
       const keyword = searchQuery.trim().toLowerCase();
-      posts = posts.filter(
-        (post) =>
+      posts = posts.filter((post) => {
+        const matchesPost =
           post.title.toLowerCase().includes(keyword) ||
           post.content.toLowerCase().includes(keyword) ||
-          (post.tags || []).some((tag) => tag.toLowerCase().includes(keyword)),
-      );
+          (post.tags || []).some((tag) => tag.toLowerCase().includes(keyword));
+
+        if (matchesPost) return true;
+        if (activityTab !== 'comments') return false;
+
+        const entry = commentEntryMap.get(post.id);
+        return entry?.comment.content.toLowerCase().includes(keyword) ?? false;
+      });
     }
 
     if (sortBy === 'recommended') {
       posts.sort((a, b) => b.likes - a.likes);
+    } else if (activityTab === 'comments') {
+      posts.sort((a, b) => {
+        const aTime = new Date(commentEntryMap.get(a.id)?.activityDate || 0).getTime();
+        const bTime = new Date(commentEntryMap.get(b.id)?.activityDate || 0).getTime();
+        return bTime - aTime;
+      });
     } else {
       posts.sort(
         (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
@@ -147,7 +293,7 @@ export default function CommunityAuthorPage() {
     }
 
     return posts;
-  }, [authorPosts, searchQuery, sortBy]);
+  }, [activeSourcePosts, selectedTags, searchQuery, sortBy, activityTab, commentEntryMap]);
 
   if (!author) {
     return (
@@ -186,108 +332,123 @@ export default function CommunityAuthorPage() {
                 onToggleProfileMode={toggleProfileMode}
                 currentUser={COMMUNITY_CURRENT_USER}
               />
+
+              <CommunityTagFilter
+                allTags={allTags}
+                selectedTags={selectedTags}
+                onToggleTag={toggleTag}
+                onClearTags={clearSelectedTags}
+              />
             </div>
           </aside>
 
-          <section className="min-w-0 space-y-6 overflow-hidden">
-            <div className="text-sm font-medium text-gray-500">
-              {displayMode === 'real' ? author.name : author.nickname}님의 글
-            </div>
+          <section className="min-w-0 space-y-5 overflow-hidden">
+            <CommunityToolbar
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              searchPlaceholder={`${displayMode === 'real' ? author.name : author.nickname}님의 ${activityTab === 'posts' ? '글' : '댓글'} 검색하기`}
+              showFollowingOnly={false}
+              onToggleFollowingOnly={() => {}}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              isFilterOpen={isFilterOpen}
+              onToggleFilterOpen={toggleFilterOpen}
+              onCloseFilterOpen={closeFilterOpen}
+              isTagFilterOpen={isTagFilterOpen}
+              onToggleTagFilterOpen={toggleTagFilterOpen}
+              allTags={allTags}
+              selectedTags={selectedTags}
+              onToggleTag={toggleTag}
+              onClearTags={clearSelectedTags}
+              showWriteButton={false}
+              showFollowingFilter={false}
+            />
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`${displayMode === 'real' ? author.name : author.nickname}님의 게시글 검색...`}
-                    className="w-full rounded-lg border border-gray-200 py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 self-end lg:self-auto">
-                  <div className="inline-flex rounded-lg bg-gray-100 p-1">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('feed')}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        viewMode === 'feed'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      <LayoutGrid className="h-4 w-4" />
-                      피드뷰
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('board')}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        viewMode === 'board'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      <List className="h-4 w-4" />
-                      게시판뷰
-                    </button>
-                  </div>
-
-                  <div className="inline-flex rounded-lg bg-gray-100 p-1">
-                    <button
-                      type="button"
-                      onClick={() => setSortBy('latest')}
-                      className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        sortBy === 'latest'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      최신순
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSortBy('recommended')}
-                      className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                        sortBy === 'recommended'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      추천순
-                    </button>
-                  </div>
+            <div className="space-y-2">
+              {/* Mobile: segmented control */}
+              <div className="sm:hidden">
+                <div className="inline-flex rounded-lg bg-gray-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setActivityTab('posts')}
+                    className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                      activityTab === 'posts'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    게시글
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActivityTab('comments')}
+                    className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                      activityTab === 'comments'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    댓글
+                  </button>
                 </div>
               </div>
-            </section>
 
-            <section className="space-y-4">
-              {visiblePosts.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-                  작성한 게시글이 없거나 검색 결과가 없습니다.
-                </div>
-              ) : viewMode === 'feed' ? (
-                visiblePosts.map((post) => (
-                  <FeedPostCard
-                    key={post.id}
-                    post={post}
-                    formatDate={formatRelativeDate}
-                    searchQuery={searchQuery}
-                  />
-                ))
-              ) : (
-                visiblePosts.map((post) => (
-                  <BoardPostRow
-                    key={post.id}
-                    post={post}
-                    formatDate={formatRelativeDate}
-                    searchQuery={searchQuery}
-                  />
-                ))
-              )}
-            </section>
+              {/* Desktop: tab */}
+              <div className="hidden sm:flex items-center gap-6 border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setActivityTab('posts')}
+                  className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                    activityTab === 'posts'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  게시글
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityTab('comments')}
+                  className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                    activityTab === 'comments'
+                      ? 'border-orange-500 text-orange-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  댓글
+                </button>
+              </div>
+
+              <section className="space-y-4">
+                {visiblePosts.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+                    {activityTab === 'posts'
+                      ? '작성한 게시글이 없거나 검색 결과가 없습니다.'
+                      : '작성한 댓글이 없거나 검색 결과가 없습니다.'}
+                  </div>
+                ) : viewMode === 'feed' ? (
+                  visiblePosts.map((post) => (
+                    <FeedPostCard
+                      key={post.id}
+                      post={post}
+                      formatDate={formatRelativeDate}
+                      searchQuery={searchQuery}
+                    />
+                  ))
+                ) : (
+                  visiblePosts.map((post) => (
+                    <BoardPostRow
+                      key={post.id}
+                      post={post}
+                      formatDate={formatRelativeDate}
+                      searchQuery={searchQuery}
+                    />
+                  ))
+                )}
+              </section>
+            </div>
           </section>
 
           <aside className="hidden lg:block">

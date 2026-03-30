@@ -30,7 +30,10 @@ export type CommunityToolbarProps = {
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onClearTags: () => void;
-  onWriteClick: () => void;
+  onWriteClick?: () => void;
+  showWriteButton?: boolean;
+  searchPlaceholder?: string;
+  showFollowingFilter?: boolean;
 };
 
 export function CommunityToolbar({
@@ -52,6 +55,9 @@ export function CommunityToolbar({
   onToggleTag,
   onClearTags,
   onWriteClick,
+  showWriteButton = true,
+  searchPlaceholder = '게시글 검색...',
+  showFollowingFilter = true,
 }: CommunityToolbarProps) {
   return (
     <section className="relative">
@@ -61,7 +67,7 @@ export function CommunityToolbar({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="게시글 검색..."
+              placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               className="w-full rounded-lg border border-gray-200 py-2.5 pl-10 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -81,14 +87,16 @@ export function CommunityToolbar({
             <span>필터</span>
           </button>
 
-          <button
-            type="button"
-            onClick={onWriteClick}
-            className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-          >
-            <SquarePen className="h-4 w-4" />
-            글쓰기
-          </button>
+          {showWriteButton && onWriteClick ? (
+            <button
+              type="button"
+              onClick={onWriteClick}
+              className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+            >
+              <SquarePen className="h-4 w-4" />
+              글쓰기
+            </button>
+          ) : null}
         </div>
 
         <div className="space-y-3 lg:hidden">
@@ -96,14 +104,14 @@ export function CommunityToolbar({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="게시글 검색..."
+              placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               className="w-full rounded-lg border border-gray-200 py-2.5 pl-10 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className={`grid gap-3 ${showWriteButton ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <button
               type="button"
               onClick={onToggleTagFilterOpen}
@@ -130,14 +138,16 @@ export function CommunityToolbar({
               <span>필터</span>
             </button>
 
-            <button
-              type="button"
-              onClick={onWriteClick}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-            >
-              <SquarePen className="h-4 w-4" />
-              <span>글쓰기</span>
-            </button>
+            {showWriteButton && onWriteClick ? (
+              <button
+                type="button"
+                onClick={onWriteClick}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+              >
+                <SquarePen className="h-4 w-4" />
+                <span>글쓰기</span>
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -157,27 +167,31 @@ export function CommunityToolbar({
           </div>
 
           <div className="space-y-5">
-            <div>
-              <p className="mb-3 text-sm font-medium text-gray-700">표시 옵션</p>
-              <button
-                type="button"
-                onClick={onToggleFollowingOnly}
-                className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-                  showFollowingOnly
-                    ? 'border-orange-200 bg-orange-50 text-orange-700'
-                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <UserCheck className="h-4 w-4" />
-                  팔로잉 글만 보기
-                </span>
-                {showFollowingOnly && <span className="text-base">✓</span>}
-              </button>
-            </div>
+            {showFollowingFilter ? (
+              <div>
+                <p className="mb-3 text-sm font-medium text-gray-700">표시 옵션</p>
+                <button
+                  type="button"
+                  onClick={onToggleFollowingOnly}
+                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+                    showFollowingOnly
+                      ? 'border-orange-200 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <UserCheck className="h-4 w-4" />
+                    팔로잉 글만 보기
+                  </span>
+                  {showFollowingOnly && <span className="text-base">✓</span>}
+                </button>
+              </div>
+            ) : null}
 
-            <div className="border-t border-gray-100 pt-5">
-              <p className="mb-3 text-sm font-medium text-gray-700">정렬 순서</p>
+            <div className={`${showFollowingFilter ? 'border-t border-gray-100 pt-5' : ''}`}>
+              <p className={`mb-3 text-sm font-medium text-gray-700 ${showFollowingFilter ? '' : 'pt-0'}`}>
+                정렬 순서
+              </p>
               <div className="space-y-2">
                 <button
                   type="button"
@@ -331,27 +345,31 @@ export function CommunityToolbar({
             </div>
 
             <div className="space-y-5">
-              <div>
-                <p className="mb-3 text-sm font-medium text-gray-700">표시 옵션</p>
-                <button
-                  type="button"
-                  onClick={onToggleFollowingOnly}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-                    showFollowingOnly
-                      ? 'border-orange-200 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <UserCheck className="h-4 w-4" />
-                    팔로잉 글만 보기
-                  </span>
-                  {showFollowingOnly && <span className="text-base">✓</span>}
-                </button>
-              </div>
+              {showFollowingFilter ? (
+                <div>
+                  <p className="mb-3 text-sm font-medium text-gray-700">표시 옵션</p>
+                  <button
+                    type="button"
+                    onClick={onToggleFollowingOnly}
+                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+                      showFollowingOnly
+                        ? 'border-orange-200 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <UserCheck className="h-4 w-4" />
+                      팔로잉 글만 보기
+                    </span>
+                    {showFollowingOnly && <span className="text-base">✓</span>}
+                  </button>
+                </div>
+              ) : null}
 
-              <div className="border-t border-gray-100 pt-5">
-                <p className="mb-3 text-sm font-medium text-gray-700">정렬 순서</p>
+              <div className={`${showFollowingFilter ? 'border-t border-gray-100 pt-5' : ''}`}>
+                <p className={`mb-3 text-sm font-medium text-gray-700 ${showFollowingFilter ? '' : 'pt-0'}`}>
+                  정렬 순서
+                </p>
                 <div className="space-y-2">
                   <button
                     type="button"
