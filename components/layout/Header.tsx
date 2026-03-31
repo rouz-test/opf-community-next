@@ -4,15 +4,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { CommunityProfileCard } from '@/components/community/CommunityProfileCard';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useMobileNav } from '@/components/providers/MobileNavProvider';
+import { useProfileMenu } from '@/components/providers/ProfileMenuProvider';
 
 export default function Header() {
-  const [showMobileTabs, setShowMobileTabs] = useState(true);
   const [communityProfileMode, setCommunityProfileMode] = useState<'real' | 'nickname'>('nickname');
   const pathname = usePathname();
   const { isLoggedIn, setIsLoggedIn } = useAuth();
+  const { openNav } = useMobileNav();
+  const { openProfileMenu } = useProfileMenu();
   const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
 
 
@@ -30,6 +33,7 @@ export default function Header() {
       );
     }
   };
+
 
   const mobileCommunityHeaderProfileUser = {
     name: '박민수',
@@ -67,90 +71,32 @@ export default function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-    let isVisible = true;
-    let lockUntil = 0;
-    const delta = 10;
-    const transitionLockMs = 220;
-
-    const updateTabsVisibility = () => {
-      const currentScrollY = window.scrollY;
-      const now = performance.now();
-      const diff = currentScrollY - lastScrollY;
-
-      if (now < lockUntil) {
-        ticking = false;
-        return;
-      }
-
-      if (currentScrollY <= 8) {
-        if (!isVisible) {
-          setShowMobileTabs(true);
-          isVisible = true;
-          lockUntil = now + transitionLockMs;
-        }
-        lastScrollY = currentScrollY;
-        ticking = false;
-        return;
-      }
-
-      if (Math.abs(diff) < delta) {
-        ticking = false;
-        return;
-      }
-
-      if (diff > 0 && isVisible) {
-        setShowMobileTabs(false);
-        isVisible = false;
-        lockUntil = now + transitionLockMs;
-      } else if (diff < 0 && !isVisible) {
-        setShowMobileTabs(true);
-        isVisible = true;
-        lockUntil = now + transitionLockMs;
-      }
-
-      lastScrollY = currentScrollY;
-      ticking = false;
-    };
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(updateTabsVisibility);
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full overflow-hidden border-b border-gray-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-4">
-        {/* Left: Logo */}
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/logo-mobile.webp"
-            alt="Orange Park"
-            width={40}
-            height={40}
-            className="h-9 w-auto sm:hidden"
-            priority
-          />
-          <Image
-            src="/logo.webp"
-            alt="Orange Park"
-            width={140}
-            height={40}
-            className="hidden h-9 w-auto sm:block"
-            priority
-          />
-        </Link>
+      <div className="relative mx-auto flex h-14 max-w-[1200px] items-center justify-between px-4">
+        {/* Left: Mobile menu / Desktop logo */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openNav}
+            className="inline-flex h-9 w-9 items-center justify-center text-gray-600 transition-colors hover:text-gray-900 lg:hidden"
+            aria-label="메뉴 열기"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <Link href="/" className="hidden items-center sm:flex">
+            <Image
+              src="/logo.webp"
+              alt="Orange Park"
+              width={140}
+              height={40}
+              className="h-9 w-auto"
+              priority
+            />
+          </Link>
+        </div>
 
         {/* Center: Nav */}
         <nav className="hidden items-center gap-6 text-sm text-gray-700 md:flex">
@@ -166,8 +112,19 @@ export default function Header() {
           </Link>
         </nav>
 
+        <Link href="/" className="absolute left-1/2 -translate-x-1/2 sm:hidden">
+          <Image
+            src="/logo-mobile.webp"
+            alt="Orange Park"
+            width={40}
+            height={40}
+            className="h-9 w-auto"
+            priority
+          />
+        </Link>
+
         {/* Right: Auth */}
-        <div className="flex items-center gap-3">
+        <div className="relative flex items-center gap-2">
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <button
@@ -190,6 +147,15 @@ export default function Header() {
                         communityProfileMode === 'real' ? 'nickname' : 'real',
                       )
                     }
+                    onProfileClick={() =>
+                      openProfileMenu({
+                        showCommunitySwitch: true,
+                        onToggleProfileMode: () =>
+                          syncCommunityProfileMode(
+                            communityProfileMode === 'real' ? 'nickname' : 'real',
+                          ),
+                      })
+                    }
                     currentUser={mobileCommunityHeaderProfileUser}
                   />
                 </div>
@@ -198,7 +164,8 @@ export default function Header() {
               {!isCommunityRoute ? (
                 <button
                   type="button"
-                  className="inline-flex items-center"
+                  onClick={() => openProfileMenu()}
+                  className="inline-flex cursor-pointer items-center transition-transform hover:scale-105"
                   aria-label="마이페이지로 이동"
                   title="마이페이지 진입 예정"
                 >
@@ -211,7 +178,8 @@ export default function Header() {
               ) : (
                 <button
                   type="button"
-                  className="hidden items-center lg:inline-flex"
+                  onClick={() => openProfileMenu()}
+                  className="hidden cursor-pointer items-center transition-transform hover:scale-105 lg:inline-flex"
                   aria-label="마이페이지로 이동"
                   title="마이페이지 진입 예정"
                 >
@@ -224,47 +192,17 @@ export default function Header() {
               )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setIsLoggedIn(true)}
-              className="text-sm font-medium text-orange-600 hover:underline"
-            >
-              로그인
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLoggedIn(true)}
+                className="text-sm font-medium text-orange-600 hover:underline"
+              >
+                로그인
+              </button>
+            </div>
           )}
-        </div>
-      </div>
-      <div
-        className={`relative overflow-hidden transition-[height] duration-200 md:hidden ${
-          showMobileTabs ? 'h-11' : 'h-0'
-        }`}
-      >
-        <div
-          className={`absolute inset-x-0 top-0 border-t border-gray-100 bg-white/90 backdrop-blur transition-transform duration-200 ${
-            showMobileTabs ? 'translate-y-0' : '-translate-y-full pointer-events-none'
-          }`}
-        >
-          <nav className="mx-auto grid h-11 max-w-[1200px] grid-cols-3 px-2 text-sm text-gray-700">
-            <Link
-              href="/community"
-              className="flex items-center justify-center font-medium text-gray-900 border-b-2 border-orange-500"
-            >
-              커뮤니티
-            </Link>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-1 text-gray-700"
-            >
-              캠퍼스
-              <span className="text-[10px]">▾</span>
-            </button>
-            <Link
-              href="/article"
-              className="flex items-center justify-center text-gray-700"
-            >
-              아티클
-            </Link>
-          </nav>
+
         </div>
       </div>
     </header>

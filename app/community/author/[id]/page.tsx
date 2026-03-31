@@ -362,7 +362,6 @@ export default function CommunityAuthorPage() {
               selectedTags={selectedTags}
               onToggleTag={toggleTag}
               onClearTags={clearSelectedTags}
-              showWriteButton={false}
               showFollowingFilter={false}
             />
 
@@ -452,39 +451,8 @@ export default function CommunityAuthorPage() {
           </section>
 
           <aside className="hidden lg:block">
-            <div className="sticky top-4 space-y-4">
+            <div className="sticky top-4">
               <AuthorProfileCard author={author} displayMode={displayMode} variant="sidebar" />
-
-              <section className="rounded-lg border border-gray-200 bg-white p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-lg">📝</span>
-                  <h2 className="text-base font-bold text-gray-900">활동 요약</h2>
-                </div>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-center justify-between">
-                    <span>전체 게시글</span>
-                    <span className="font-semibold text-gray-900">{authorPosts.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>피드형 게시글</span>
-                    <span className="font-semibold text-gray-900">
-                      {authorPosts.filter((post) => (post.images || []).length > 0).length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>게시판형 게시글</span>
-                    <span className="font-semibold text-gray-900">
-                      {authorPosts.filter((post) => (post.images || []).length === 0).length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>누적 좋아요</span>
-                    <span className="font-semibold text-gray-900">
-                      {authorPosts.reduce((sum, post) => sum + post.likes, 0)}
-                    </span>
-                  </div>
-                </div>
-              </section>
             </div>
           </aside>
         </div>

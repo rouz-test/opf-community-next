@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, Eye, Heart, MessageSquare } from 'lucide-react';
 import {
   mockCommunityPosts,
   mockNotices,
@@ -18,7 +17,7 @@ import { FeedPostCard } from '@/components/community/FeedPostCard';
 import { BoardPostRow } from '@/components/community/BoardPostRow';
 import { WritePostModal } from '@/components/community/WritePostModal';
 import { CommunityToolbar } from '@/components/community/CommunityToolbar';
-
+import { CommunityWriteAction } from '@/components/community/CommunityWriteAction';
 type PostCardBaseProps = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
@@ -257,6 +256,8 @@ export default function CommunityPage() {
               <CommunityProfileCard
                 profileMode={profileMode}
                 onToggleProfileMode={toggleProfileMode}
+                onWriteClick={() => setIsWriteModalOpen(true)}
+                showWriteButton
                 currentUser={COMMUNITY_CURRENT_USER}
               />
 
@@ -273,25 +274,24 @@ export default function CommunityPage() {
           
 
           <CommunityToolbar
-  searchQuery={searchQuery}
-  onSearchQueryChange={setSearchQuery}
-  showFollowingOnly={showFollowingOnly}
-  onToggleFollowingOnly={toggleFollowingOnly}
-  sortBy={sortBy}
-  onSortByChange={setSortBy}
-  viewMode={viewMode}
-  onViewModeChange={setViewMode}
-  isFilterOpen={isFilterOpen}
-  onToggleFilterOpen={toggleFilterOpen}
-  onCloseFilterOpen={closeFilterOpen}
-  isTagFilterOpen={isMobileTagFilterOpen}
-  onToggleTagFilterOpen={toggleMobileTagFilterOpen}
-  allTags={allTags}
-  selectedTags={selectedTags}
-  onToggleTag={toggleTag}
-  onClearTags={clearSelectedTags}
-  onWriteClick={() => setIsWriteModalOpen(true)}
-/>
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            showFollowingOnly={showFollowingOnly}
+            onToggleFollowingOnly={toggleFollowingOnly}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            isFilterOpen={isFilterOpen}
+            onToggleFilterOpen={toggleFilterOpen}
+            onCloseFilterOpen={closeFilterOpen}
+            isTagFilterOpen={isMobileTagFilterOpen}
+            onToggleTagFilterOpen={toggleMobileTagFilterOpen}
+            allTags={allTags}
+            selectedTags={selectedTags}
+            onToggleTag={toggleTag}
+            onClearTags={clearSelectedTags}
+          />
 
 
             {highlightPosts.length > 0 && <HighlightCarousel posts={highlightPosts} />}
@@ -336,6 +336,8 @@ export default function CommunityPage() {
         </div>
       </div>
 
+      <CommunityWriteAction onClick={() => setIsWriteModalOpen(true)} />
+        
       <WritePostModal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}

@@ -5,7 +5,6 @@ import {
   Filter,
   LayoutGrid,
   List,
-  SquarePen,
   Tag,
   UserCheck,
   TrendingUp,
@@ -30,8 +29,6 @@ export type CommunityToolbarProps = {
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
   onClearTags: () => void;
-  onWriteClick?: () => void;
-  showWriteButton?: boolean;
   searchPlaceholder?: string;
   showFollowingFilter?: boolean;
 };
@@ -54,8 +51,6 @@ export function CommunityToolbar({
   selectedTags,
   onToggleTag,
   onClearTags,
-  onWriteClick,
-  showWriteButton = true,
   searchPlaceholder = '게시글 검색...',
   showFollowingFilter = true,
 }: CommunityToolbarProps) {
@@ -87,16 +82,6 @@ export function CommunityToolbar({
             <span>필터</span>
           </button>
 
-          {showWriteButton && onWriteClick ? (
-            <button
-              type="button"
-              onClick={onWriteClick}
-              className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-            >
-              <SquarePen className="h-4 w-4" />
-              글쓰기
-            </button>
-          ) : null}
         </div>
 
         <div className="space-y-3 lg:hidden">
@@ -111,7 +96,7 @@ export function CommunityToolbar({
             />
           </div>
 
-          <div className={`grid gap-3 ${showWriteButton ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={onToggleTagFilterOpen}
@@ -138,16 +123,6 @@ export function CommunityToolbar({
               <span>필터</span>
             </button>
 
-            {showWriteButton && onWriteClick ? (
-              <button
-                type="button"
-                onClick={onWriteClick}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-              >
-                <SquarePen className="h-4 w-4" />
-                <span>글쓰기</span>
-              </button>
-            ) : null}
           </div>
         </div>
       </div>

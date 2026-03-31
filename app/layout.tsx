@@ -4,6 +4,10 @@ import "./globals.css";
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { MobileNavProvider } from '@/components/providers/MobileNavProvider';
+import MobileNavDrawer from '@/components/layout/MobileNavDrawer';
+import { ProfileMenuProvider } from '@/components/providers/ProfileMenuProvider';
+import ProfileMenuLayer from '@/components/layout/ProfileMenuLayer';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +36,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <MobileNavProvider>
+            <ProfileMenuProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <MobileNavDrawer />
+              <ProfileMenuLayer />
+            </ProfileMenuProvider>
+          </MobileNavProvider>
         </AuthProvider>
       </body>
     </html>
