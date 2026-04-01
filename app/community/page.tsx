@@ -6,8 +6,10 @@ import {
   mockNotices,
   getPopularPosts,
   orangePickArticles,
+  communityAuthors,
   type CommunityPost,
 } from '@/data/mockCommunityPosts';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/components/community/HighlightCarousel';
 import { CommunityProfileCard } from '@/components/community/CommunityProfileCard';
 import { CommunityTagFilter } from '@/components/community/CommunityTagFilter';
@@ -26,12 +28,16 @@ type PostCardBaseProps = {
 
 
 const COMMUNITY_CURRENT_USER = {
-  name: '박민수',
-  nickname: 'StartupHero',
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-  position: '스타트업 개발자',
-  postsCount: 12,
-  commentsCount: 45,
+  real: {
+    ...communityAuthors.startupDreamerReal,
+    postsCount: 7,
+    commentsCount: 10,
+  },
+  nickname: {
+    ...communityAuthors.startupDreamer,
+    postsCount: 7,
+    commentsCount: 10,
+  },
 };
 
 const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
@@ -142,6 +148,7 @@ export default function CommunityPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const { isLoggedIn } = useAuth();
 
   const allTags = useMemo(() => getAllTags(mockCommunityPosts), []);
 
@@ -162,6 +169,8 @@ export default function CommunityPage() {
       }),
     [searchQuery, selectedTags, showFollowingOnly, sortBy],
   );
+  const communityCurrentUser =
+    profileMode === 'real' ? COMMUNITY_CURRENT_USER.real : COMMUNITY_CURRENT_USER.nickname;
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -253,13 +262,15 @@ export default function CommunityPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
           <aside className="hidden lg:block">
             <div className="sticky top-4 space-y-4">
-              <CommunityProfileCard
-                profileMode={profileMode}
-                onToggleProfileMode={toggleProfileMode}
-                onWriteClick={() => setIsWriteModalOpen(true)}
-                showWriteButton
-                currentUser={COMMUNITY_CURRENT_USER}
-              />
+              {isLoggedIn ? (
+                <CommunityProfileCard
+                  profileMode={profileMode}
+                  onToggleProfileMode={toggleProfileMode}
+                  onWriteClick={() => setIsWriteModalOpen(true)}
+                  showWriteButton
+                  currentUser={communityCurrentUser}
+                />
+              ) : null}
 
               <CommunityTagFilter
                 allTags={allTags}
@@ -341,7 +352,7 @@ export default function CommunityPage() {
       <WritePostModal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}
-        currentUser={COMMUNITY_CURRENT_USER}
+        currentUser={communityCurrentUser}
       />
     </main>
   );

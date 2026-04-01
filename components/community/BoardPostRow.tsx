@@ -2,12 +2,17 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   BadgeCheck,
   Heart,
   MessageSquare,
   Bookmark,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  EyeOff,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import {
@@ -45,12 +50,15 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 };
 
 export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
-  const authorName = post.author.nickname;
+  const authorName = post.isRealName ? post.author.name : post.author.nickname;
+  const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const likeCount = post.likes;
   const commentCount = post.commentCount ?? 0;
   const { isLoggedIn } = useAuth();
   const [isPostBookmarked, setIsPostBookmarked] = useState(false);
+  const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -58,9 +66,94 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
     router.push(`/community/author/${post.author.id}`);
   };
 
+  useEffect(() => {
+    if (!isOwnPostMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!ownPostMenuRef.current) return;
+      if (ownPostMenuRef.current.contains(event.target as Node)) return;
+      setIsOwnPostMenuOpen(false);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isOwnPostMenuOpen]);
+
   return (
     <Link href={`/community/post/${post.id}`} className="block">
-      <article className="rounded-lg border border-gray-200 bg-white transition-all hover:border-gray-300 hover:shadow-sm">
+      <article className="relative rounded-lg border border-gray-200 bg-white transition-all hover:border-gray-300 hover:shadow-sm">
+        {isOwnPost ? (
+          <div ref={ownPostMenuRef} className="absolute right-4 top-4 z-10">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsOwnPostMenuOpen((prev) => !prev);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-700"
+              aria-label="내 게시글 메뉴 열기"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+
+            {isOwnPostMenuOpen ? (
+              <div className="absolute right-0 top-10 w-[176px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsOwnPostMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <Pencil className="h-4 w-4" />
+                  수정
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsOwnPostMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  삭제
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsOwnPostMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  숨김
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsOwnPostMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {post.isRealName ? '닉네임으로 전환' : '실명으로 전환'}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {post.highlightedComment && (
           <div className="border-b border-gray-100 px-5 pb-3 pt-3">
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -82,7 +175,7 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
             </div>
           </div>
         )}
-        <div className="flex gap-4 p-5">
+        <div className="flex gap-4 p-5 pr-14">
           <div className="min-w-0 flex-1">
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               

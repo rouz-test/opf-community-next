@@ -14,6 +14,13 @@ export interface CommunityProfile extends CommunityIdentity {
   position?: string;
 }
 
+export interface CommunityAccountSummary {
+  accountId: string;
+  profileIds: string[];
+  realProfileId?: string;
+  nicknameProfileId?: string;
+}
+
 export interface CommunityAuthor extends CommunityProfile {}
 
 export interface CommunityInteractionAuthor extends CommunityProfile {
@@ -91,7 +98,7 @@ export const orangePickArticles: OrangePickArticle[] = [
 ];
 
 
-const communityAuthors = {
+export const communityAuthors = {
   adminSystem: {
     id: 'profile-admin-system',
     accountId: 'account-admin',
@@ -106,9 +113,19 @@ const communityAuthors = {
     accountId: 'account-user-1',
     profileId: 'profile-user-1-nickname',
     mode: 'nickname' as const,
-    name: '김창업',
+    name: '김준호',
     nickname: 'StartupDreamer',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
+    position: '스타트업 대표',
+  },
+  startupDreamerReal: {
+    id: 'profile-user-1-real',
+    accountId: 'account-user-1',
+    profileId: 'profile-user-1-real',
+    mode: 'real' as const,
+    name: '김준호',
+    nickname: 'StartupDreamer',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
     position: '스타트업 대표',
   },
   bizModelPro: {
@@ -166,7 +183,7 @@ const communityAuthors = {
     accountId: 'account-user-7',
     profileId: 'profile-user-7-real',
     mode: 'real' as const,
-    name: '이성공',
+    name: '이현우',
     nickname: 'SpaceHunter',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
     position: 'CEO, 스타트업코리아',
@@ -206,7 +223,7 @@ const communityAuthors = {
     accountId: 'account-user-9',
     profileId: 'profile-user-9-real',
     mode: 'real' as const,
-    name: '최마케팅',
+    name: '최민석',
     nickname: 'EventMaster',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
     position: '마케팅 팀장',
@@ -260,6 +277,87 @@ const communityAuthors = {
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
   },
 };
+
+export const communityAccounts: CommunityAccountSummary[] = [
+  {
+    accountId: 'account-admin',
+    profileIds: ['profile-admin-system'],
+    realProfileId: 'profile-admin-system',
+  },
+  {
+    accountId: 'account-user-1',
+    profileIds: ['profile-user-1-real', 'profile-user-1-nickname'],
+    realProfileId: 'profile-user-1-real',
+    nicknameProfileId: 'profile-user-1-nickname',
+  },
+  {
+    accountId: 'account-user-2',
+    profileIds: ['profile-user-2-nickname'],
+    nicknameProfileId: 'profile-user-2-nickname',
+  },
+  {
+    accountId: 'account-user-3',
+    profileIds: ['profile-user-3-nickname'],
+    nicknameProfileId: 'profile-user-3-nickname',
+  },
+  {
+    accountId: 'account-user-4',
+    profileIds: ['profile-user-4-nickname'],
+    nicknameProfileId: 'profile-user-4-nickname',
+  },
+  {
+    accountId: 'account-user-5',
+    profileIds: ['profile-user-5-nickname'],
+    nicknameProfileId: 'profile-user-5-nickname',
+  },
+  {
+    accountId: 'account-user-6',
+    profileIds: ['profile-user-6-nickname'],
+    nicknameProfileId: 'profile-user-6-nickname',
+  },
+  {
+    accountId: 'account-user-7',
+    profileIds: ['profile-user-7-real', 'profile-user-7-nickname'],
+    realProfileId: 'profile-user-7-real',
+    nicknameProfileId: 'profile-user-7-nickname',
+  },
+  {
+    accountId: 'account-user-8',
+    profileIds: ['profile-user-8-nickname'],
+    nicknameProfileId: 'profile-user-8-nickname',
+  },
+  {
+    accountId: 'account-user-8-alt',
+    profileIds: ['profile-user-8-alt-nickname'],
+    nicknameProfileId: 'profile-user-8-alt-nickname',
+  },
+  {
+    accountId: 'account-user-9',
+    profileIds: ['profile-user-9-real', 'profile-user-9-nickname'],
+    realProfileId: 'profile-user-9-real',
+    nicknameProfileId: 'profile-user-9-nickname',
+  },
+  {
+    accountId: 'account-user-10',
+    profileIds: ['profile-user-10-nickname'],
+    nicknameProfileId: 'profile-user-10-nickname',
+  },
+  {
+    accountId: 'account-user-11',
+    profileIds: ['profile-user-11-nickname'],
+    nicknameProfileId: 'profile-user-11-nickname',
+  },
+  {
+    accountId: 'account-user-12',
+    profileIds: ['profile-user-12-nickname'],
+    nicknameProfileId: 'profile-user-12-nickname',
+  },
+  {
+    accountId: 'account-user-13',
+    profileIds: ['profile-user-13-nickname'],
+    nicknameProfileId: 'profile-user-13-nickname',
+  },
+];
 
 
 
@@ -602,6 +700,108 @@ Referral (추천): 거의 없음 😭
     tags: ['피칭덱', 'IR', '투자유치'],
     isHighlight: true,
   },
+  {
+    id: 'post-11',
+    type: 'community',
+    title: '초기 팀원 채용 전에 역할 정의를 어디까지 해야 할까요?',
+    content: `최근 개발자와 디자이너 합류를 고민하면서 느낀 건, 채용 공고보다 먼저 역할 정의가 선행되어야 한다는 점이었습니다.
+
+현재 저희가 고민 중인 건 아래 세 가지예요.
+1. 공동창업자 수준의 오너십을 기대할지
+2. 실무 중심의 초기 멤버를 찾을지
+3. 역할이 겹칠 때 의사결정을 어떻게 나눌지
+
+혹시 초기 팀빌딩 경험 있으신 분들은 어떤 기준으로 역할을 나누셨는지 궁금합니다.` ,
+    author: communityAuthors.startupDreamer,
+    createdAt: '2026-03-20T09:10:00',
+    views: 411,
+    likes: 31,
+    commentCount: 14,
+    isLikedByMe: false,
+    tags: ['팀빌딩', '초기팀', '채용'],
+  },
+  {
+    id: 'post-12',
+    type: 'community',
+    title: '실명 프로필로 활동할 때와 닉네임 프로필로 활동할 때 차이가 있네요',
+    content: `같은 내용을 써도 실명 프로필과 닉네임 프로필의 반응이 미묘하게 다르다는 걸 느끼고 있습니다.
+
+실명 프로필은 신뢰도가 높고,
+닉네임 프로필은 질문을 조금 더 편하게 던질 수 있는 분위기가 있더라고요.
+
+커뮤니티 안에서 두 프로필을 어떻게 나눠 쓰는 게 좋을지 궁금해서 경험을 공유해봅니다. 여러분은 어떤 기준으로 쓰시나요?`,
+    author: communityAuthors.startupDreamerReal,
+    createdAt: '2026-03-20T18:25:00',
+    views: 528,
+    likes: 42,
+    commentCount: 16,
+    isLikedByMe: true,
+    tags: ['프로필', '커뮤니티', '실명'],
+    isRealName: true,
+  },
+  {
+    id: 'post-13',
+    type: 'community',
+    title: '정부지원사업 신청 전에 꼭 정리해둬야 하는 자료 체크리스트',
+    content: `요즘 지원사업을 몇 개 준비하면서 매번 같은 자료를 다시 정리하게 되더라고요.
+
+그래서 최소한 아래 항목은 평소에 업데이트해두는 게 좋겠다고 느꼈습니다.
+- 회사/팀 소개 한 줄 버전, 세 줄 버전
+- 문제 정의와 고객 세그먼트
+- 제품 소개 이미지
+- 현재까지의 성과 수치
+- 향후 6개월 실행 계획
+
+혹시 놓치기 쉬운 항목이 더 있다면 알려주세요.`,
+    author: communityAuthors.startupDreamer,
+    createdAt: '2026-03-21T08:40:00',
+    views: 689,
+    likes: 55,
+    commentCount: 21,
+    isLikedByMe: false,
+    tags: ['지원사업', '사업계획서', '체크리스트'],
+  },
+  {
+    id: 'post-14',
+    type: 'study',
+    studyId: '3',
+    studyTitle: '예비창업자 실전 검증 모임',
+    title: '이번 주 인터뷰 질문지 공유드립니다. 피드백 부탁드려요',
+    content: `이번 주에는 잠재 고객 인터뷰 질문지를 조금 더 날카롭게 다듬어보려고 합니다.
+
+기존에는 제품 설명이 먼저 나가서 답변이 유도되는 느낌이 있었고,
+이번에는 문제 상황과 기존 대안부터 물어보는 방식으로 바꿔봤어요.
+
+질문 순서나 표현에서 어색한 부분이 있다면 피드백 부탁드립니다. 다음 주 인터뷰 전에 반영해보려 합니다.`,
+    author: communityAuthors.startupDreamer,
+    createdAt: '2026-03-21T21:05:00',
+    views: 274,
+    likes: 18,
+    commentCount: 9,
+    isLikedByMe: false,
+    tags: ['고객인터뷰', '질문지', '스터디'],
+  },
+  {
+    id: 'post-15',
+    type: 'community',
+    title: '첫 랜딩페이지를 공개했는데 전환율이 생각보다 낮습니다',
+    content: `주말 동안 랜딩페이지를 열고 광고를 소액 집행해봤는데 클릭 대비 신청 전환율이 기대보다 낮게 나왔습니다.
+
+현재 가설은 아래 세 가지입니다.
+1. 헤드라인이 문제를 충분히 찌르지 못한다
+2. CTA 문구가 약하다
+3. 후기/신뢰 요소가 부족하다
+
+혹시 랜딩페이지 전환율 개선 경험 있으신 분들, 어떤 요소부터 손보셨는지 듣고 싶습니다.`,
+    author: communityAuthors.startupDreamerReal,
+    createdAt: '2026-03-22T13:50:00',
+    views: 803,
+    likes: 61,
+    commentCount: 27,
+    isLikedByMe: false,
+    tags: ['랜딩페이지', '전환율', '마케팅'],
+    isRealName: true,
+  },
 ];
 
 // 인기 게시글 (좋아요 순)
@@ -711,6 +911,126 @@ export const mockComments: Comment[] = [
     },
     content: '고객 인터뷰 100명 이상 진행한 부분이 특히 인상 깊습니다.',
     createdAt: '2026-03-18T20:05:00',
+    likes: 2,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-2-startupdreamer-1',
+    postId: 'post-2',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: '2번 항목 정말 공감합니다. 저도 한동안 문제보다 솔루션 설명에만 집중했던 것 같아요.',
+    createdAt: '2026-03-20T09:45:00',
+    likes: 4,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-4-startupdreamerreal-1',
+    postId: 'post-4',
+    author: {
+      ...communityAuthors.startupDreamerReal,
+      isFollowing: false,
+    },
+    content: '거절당한 미팅이어도 남는 피드백이 있으면 다음 자료가 훨씬 단단해지더라고요. 공유 감사합니다.',
+    createdAt: '2026-03-20T10:20:00',
+    likes: 3,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-5-startupdreamer-1',
+    postId: 'post-5',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: '공동창업자 모집 글에서 현재 단계와 기대 역할을 명확히 적어두신 게 좋네요. 참고하겠습니다.',
+    createdAt: '2026-03-20T11:05:00',
+    likes: 2,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-6-startupdreamer-1',
+    postId: 'post-6',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: 'Retention 30%면 아직 해볼 수 있는 여지가 많아 보여요. 어떤 구간에서 많이 이탈하는지 궁금합니다.',
+    createdAt: '2026-03-20T11:50:00',
+    likes: 1,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-7-startupdreamerreal-1',
+    postId: 'post-7',
+    author: {
+      ...communityAuthors.startupDreamerReal,
+      isFollowing: false,
+    },
+    content: '후기 덕분에 스터디 참여를 좀 더 진지하게 검토하게 됐습니다. 과제량 정보도 큰 도움이 되네요.',
+    createdAt: '2026-03-20T13:15:00',
+    likes: 5,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-8-startupdreamer-1',
+    postId: 'post-8',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: '저도 비슷한 시기를 고민 중인데, 투자 유치 계획이 있다면 법인 전환 타이밍을 조금 앞당겨보는 것도 고민 중입니다.',
+    createdAt: '2026-03-20T14:40:00',
+    likes: 2,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-9-startupdreamerreal-1',
+    postId: 'post-9',
+    author: {
+      ...communityAuthors.startupDreamerReal,
+      isFollowing: false,
+    },
+    content: '실행력 있는 팀이라는 인상을 주는 포인트가 잘 정리된 것 같습니다. 특히 고객 검증 부분이 인상 깊어요.',
+    createdAt: '2026-03-20T16:05:00',
+    likes: 6,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-10-startupdreamer-1',
+    postId: 'post-10',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: 'Ask 슬라이드를 마지막에 명확하게 두라는 부분이 도움이 됐습니다. 저도 그 부분이 항상 약했거든요.',
+    createdAt: '2026-03-20T17:20:00',
+    likes: 4,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-1-with-images-startupdreamer-1',
+    postId: 'post-1-with-images',
+    author: {
+      ...communityAuthors.startupDreamer,
+      isFollowing: false,
+    },
+    content: '공유 오피스와 독립 오피스 비교 포인트가 현실적이네요. 저희도 다음 달에 공간을 알아보는 중이라 도움 됐습니다.',
+    createdAt: '2026-03-20T18:40:00',
+    likes: 3,
+    isLikedByMe: false,
+  },
+  {
+    id: 'comment-post-3-with-images-startupdreamerreal-1',
+    postId: 'post-3-with-images',
+    author: {
+      ...communityAuthors.startupDreamerReal,
+      isFollowing: false,
+    },
+    content: 'QR 코드 활용 팁은 바로 적용해볼 수 있겠네요. 첫 행사 준비 중인데 실무적으로 큰 도움이 됩니다.',
+    createdAt: '2026-03-20T19:25:00',
     likes: 2,
     isLikedByMe: false,
   },

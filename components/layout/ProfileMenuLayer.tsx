@@ -8,7 +8,7 @@ import { useProfileMenu } from '@/components/providers/ProfileMenuProvider';
 export default function ProfileMenuLayer() {
   const router = useRouter();
   const { setIsLoggedIn } = useAuth();
-  const { isOpen, closeProfileMenu, showCommunitySwitch, onToggleProfileMode } = useProfileMenu();
+  const { isOpen, anchor, closeProfileMenu, showCommunitySwitch, onToggleProfileMode } = useProfileMenu();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -26,6 +26,12 @@ export default function ProfileMenuLayer() {
     };
   }, [isOpen, closeProfileMenu]);
 
+  const menuWidth = 180;
+  const defaultTop = 64;
+  const defaultLeft = typeof window !== 'undefined' ? window.innerWidth - 24 : 0;
+  const computedTop = anchor?.top ?? defaultTop;
+  const computedLeft = anchor ? Math.max(16, anchor.left - menuWidth) : Math.max(16, defaultLeft - menuWidth);
+
   if (!isOpen) return null;
 
   return (
@@ -37,7 +43,10 @@ export default function ProfileMenuLayer() {
         className="absolute inset-0 bg-black/20"
       />
 
-      <div className="absolute right-4 top-16 w-[180px] overflow-hidden rounded-2xl border border-gray-200 bg-white py-2 shadow-lg lg:right-6">
+      <div
+        className="absolute w-[180px] overflow-hidden rounded-2xl border border-gray-200 bg-white py-2 shadow-lg"
+        style={{ top: computedTop, left: computedLeft }}
+      >
         {showCommunitySwitch ? (
           <>
             <button

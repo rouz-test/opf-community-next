@@ -5,10 +5,17 @@ import { createContext, useContext, useMemo, useState } from 'react';
 type OpenProfileMenuOptions = {
   showCommunitySwitch?: boolean;
   onToggleProfileMode?: () => void;
+  anchor?: ProfileMenuAnchor;
+};
+
+type ProfileMenuAnchor = {
+  top: number;
+  left: number;
 };
 
 type ProfileMenuContextValue = {
   isOpen: boolean;
+  anchor: ProfileMenuAnchor | null;
   showCommunitySwitch: boolean;
   onToggleProfileMode?: (() => void) | undefined;
   openProfileMenu: (options?: OpenProfileMenuOptions) => void;
@@ -19,6 +26,7 @@ const ProfileMenuContext = createContext<ProfileMenuContextValue | null>(null);
 
 export function ProfileMenuProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [anchor, setAnchor] = useState<ProfileMenuAnchor | null>(null);
   const [showCommunitySwitch, setShowCommunitySwitch] = useState(false);
   const [onToggleProfileMode, setOnToggleProfileMode] = useState<(() => void) | undefined>(
     undefined,
@@ -26,6 +34,7 @@ export function ProfileMenuProvider({ children }: { children: React.ReactNode })
 
   const closeProfileMenu = () => {
     setIsOpen(false);
+    setAnchor(null);
     setShowCommunitySwitch(false);
     setOnToggleProfileMode(undefined);
   };
@@ -33,18 +42,20 @@ export function ProfileMenuProvider({ children }: { children: React.ReactNode })
   const openProfileMenu = (options?: OpenProfileMenuOptions) => {
     setShowCommunitySwitch(Boolean(options?.showCommunitySwitch));
     setOnToggleProfileMode(() => options?.onToggleProfileMode);
+    setAnchor(options?.anchor ?? null);
     setIsOpen(true);
   };
 
   const value = useMemo(
     () => ({
       isOpen,
+      anchor,
       showCommunitySwitch,
       onToggleProfileMode,
       openProfileMenu,
       closeProfileMenu,
     }),
-    [isOpen, showCommunitySwitch, onToggleProfileMode],
+    [isOpen, anchor, showCommunitySwitch, onToggleProfileMode],
   );
 
   return <ProfileMenuContext.Provider value={value}>{children}</ProfileMenuContext.Provider>;
