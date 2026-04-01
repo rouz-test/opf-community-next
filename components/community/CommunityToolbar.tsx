@@ -57,6 +57,7 @@ export function CommunityToolbar({
 }: CommunityToolbarProps) {
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const mobileFilterModalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isFilterOpen) return;
@@ -66,6 +67,7 @@ export function CommunityToolbar({
 
       if (filterPanelRef.current?.contains(target)) return;
       if (filterTriggerRef.current?.contains(target)) return;
+      if (mobileFilterModalRef.current?.contains(target)) return;
 
       onCloseFilterOpen();
     };
@@ -332,7 +334,10 @@ export function CommunityToolbar({
             className="absolute inset-0"
             onClick={onCloseFilterOpen}
           />
-          <div className="relative z-10 max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+          <div
+            ref={mobileFilterModalRef}
+            className="relative z-10 max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl"
+          >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold text-gray-900">필터 설정</h3>
               <button

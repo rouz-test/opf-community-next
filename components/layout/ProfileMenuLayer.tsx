@@ -87,7 +87,7 @@ export default function ProfileMenuLayer() {
           type="button"
           onClick={() => {
             closeProfileMenu();
-            router.push('/mypage');
+            router.push('/mypage/settings');
           }}
           className="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-orange-600"
         >
@@ -99,6 +99,7 @@ export default function ProfileMenuLayer() {
           onClick={() => {
             closeProfileMenu();
             setIsLoggedIn(false);
+            router.push('/community');
           }}
           className="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
         >

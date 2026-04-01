@@ -1,14 +1,13 @@
-
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function MyPageIndexPage() {
+export default function SettingsIndexPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/mypage/community');
+    router.replace('/mypage/settings/profile');
   }, [router]);
 
   return null;

@@ -125,6 +125,7 @@ export default function CommunityPostDetailPage() {
 
   const postImages = post.images ?? [];
   const hasPostImages = postImages.length > 0;
+  const isOwnPost = post.author.accountId === 'account-user-1';
   const previewImages = useMemo(() => getPreviewImages(postImages), [postImages]);
   const selectedImage =
     selectedImageIndex !== null && selectedImageIndex >= 0 && selectedImageIndex < postImages.length
@@ -294,50 +295,61 @@ export default function CommunityPostDetailPage() {
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </button>
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsPostMenuOpen((prev) => !prev)}
-                        className="-mr-1 inline-flex h-7 w-7 items-center justify-center text-gray-400 transition-colors hover:text-gray-600"
-                        aria-label="게시글 더보기"
-                      >
-                        <Ellipsis className="h-5 w-5" />
-                      </button>
-                      {isPostMenuOpen && (
-                        <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsPostEditing(true);
-                              setIsPostMenuOpen(false);
-                            }}
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            수정
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsPostDeleted(true);
-                              setIsPostMenuOpen(false);
-                            }}
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            삭제
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPostAuthorDisplayMode((prev) => (prev === 'nickname' ? 'real' : 'nickname'));
-                              setIsPostMenuOpen(false);
-                            }}
-                            className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            {postAuthorDisplayMode === 'nickname' ? '실명으로 전환' : '닉네임으로 전환'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {isOwnPost ? (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsPostMenuOpen((prev) => !prev)}
+                          className="-mr-1 inline-flex h-7 w-7 items-center justify-center text-gray-400 transition-colors hover:text-gray-600"
+                          aria-label="게시글 더보기"
+                        >
+                          <Ellipsis className="h-5 w-5" />
+                        </button>
+                        {isPostMenuOpen && (
+                          <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPostEditing(true);
+                                setIsPostMenuOpen(false);
+                              }}
+                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPostDeleted(true);
+                                setIsPostMenuOpen(false);
+                              }}
+                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              삭제
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsPostMenuOpen(false);
+                              }}
+                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              숨김
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPostAuthorDisplayMode((prev) => (prev === 'nickname' ? 'real' : 'nickname'));
+                                setIsPostMenuOpen(false);
+                              }}
+                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              {postAuthorDisplayMode === 'nickname' ? '실명으로 전환' : '닉네임으로 전환'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
 
                   <h1 className="mb-4 text-xl font-bold leading-snug text-gray-900 sm:text-2xl">

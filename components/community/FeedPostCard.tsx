@@ -49,6 +49,12 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 
 export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProps) {
   const authorName = post.isRealName ? post.author.name : post.author.nickname;
+  const highlightedCommentAuthorName = post.highlightedComment
+    ? post.highlightedComment.author.mode === 'real'
+      ? post.highlightedComment.author.name
+      : post.highlightedComment.author.nickname
+    : '';
+  const isHighlightedCommentRealName = post.highlightedComment?.author.mode === 'real';
   const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const commentCount = post.commentCount ?? 0;
@@ -160,7 +166,7 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             {post.highlightedComment.author.avatar ? (
               <img
                 src={post.highlightedComment.author.avatar}
-                alt={post.highlightedComment.author.nickname}
+                alt={highlightedCommentAuthorName}
                 className="h-7 w-7 rounded-full object-cover"
               />
             ) : (
@@ -168,8 +174,11 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             )}
             <div className="min-w-0 flex items-center gap-1.5 text-sm text-gray-600">
               <span className="truncate font-medium text-gray-800">
-                {post.highlightedComment.author.nickname}
+                {highlightedCommentAuthorName}
               </span>
+              {isHighlightedCommentRealName ? (
+                <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+              ) : null}
               <span className="shrink-0">님이 댓글을 남김</span>
             </div>
           </div>
@@ -238,33 +247,6 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
           {highlightMatchedText(post.content, searchQuery)}
         </p>
 
-        {post.highlightedComment && (
-          <div className="mb-3 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-3 sm:px-4">
-            <div className="flex items-start gap-3">
-              {post.highlightedComment.author.avatar ? (
-                <img
-                  src={post.highlightedComment.author.avatar}
-                  alt={post.highlightedComment.author.nickname}
-                  className="h-8 w-8 flex-shrink-0 rounded-full object-cover sm:h-9 sm:w-9"
-                />
-              ) : (
-                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200 sm:h-9 sm:w-9" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold text-gray-900">
-                    {post.highlightedComment.author.nickname}
-                  </span>
-                  <span className="text-xs text-gray-500">댓글</span>
-                </div>
-                <p className="line-clamp-2 text-sm leading-relaxed text-gray-700 sm:line-clamp-3">
-                  {post.highlightedComment.content}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {images.length > 0 && (
           <div className="mb-3 grid grid-cols-2 gap-2">
             {visibleImages.map((image, index) => (
@@ -277,6 +259,36 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {post.highlightedComment && (
+          <div className="mb-3 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-3 sm:px-4">
+            <div className="flex items-start gap-3">
+              {post.highlightedComment.author.avatar ? (
+                <img
+                  src={post.highlightedComment.author.avatar}
+                  alt={highlightedCommentAuthorName}
+                  className="h-8 w-8 flex-shrink-0 rounded-full object-cover sm:h-9 sm:w-9"
+                />
+              ) : (
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200 sm:h-9 sm:w-9" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold text-gray-900">
+                    {highlightedCommentAuthorName}
+                  </span>
+                  {isHighlightedCommentRealName ? (
+                    <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                  ) : null}
+                  <span className="text-xs text-gray-500">댓글</span>
+                </div>
+                <p className="line-clamp-2 text-sm leading-relaxed text-gray-700 sm:line-clamp-3">
+                  {post.highlightedComment.content}
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </Link>

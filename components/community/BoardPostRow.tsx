@@ -51,6 +51,12 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 
 export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
   const authorName = post.isRealName ? post.author.name : post.author.nickname;
+  const highlightedCommentAuthorName = post.highlightedComment
+    ? post.highlightedComment.author.mode === 'real'
+      ? post.highlightedComment.author.name
+      : post.highlightedComment.author.nickname
+    : '';
+  const isHighlightedCommentRealName = post.highlightedComment?.author.mode === 'real';
   const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const likeCount = post.likes;
@@ -85,82 +91,13 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
   return (
     <Link href={`/community/post/${post.id}`} className="block">
       <article className="relative rounded-lg border border-gray-200 bg-white transition-all hover:border-gray-300 hover:shadow-sm">
-        {isOwnPost ? (
-          <div ref={ownPostMenuRef} className="absolute right-4 top-4 z-10">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsOwnPostMenuOpen((prev) => !prev);
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-700"
-              aria-label="내 게시글 메뉴 열기"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-
-            {isOwnPostMenuOpen ? (
-              <div className="absolute right-0 top-10 w-[176px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsOwnPostMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <Pencil className="h-4 w-4" />
-                  수정
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsOwnPostMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  삭제
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsOwnPostMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <EyeOff className="h-4 w-4" />
-                  숨김
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsOwnPostMenuOpen(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  {post.isRealName ? '닉네임으로 전환' : '실명으로 전환'}
-                </button>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
         {post.highlightedComment && (
           <div className="border-b border-gray-100 px-5 pb-3 pt-3">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               {post.highlightedComment.author.avatar ? (
                 <img
                   src={post.highlightedComment.author.avatar}
-                  alt={post.highlightedComment.author.nickname}
+                  alt={highlightedCommentAuthorName}
                   className="h-7 w-7 rounded-full object-cover"
                 />
               ) : (
@@ -168,14 +105,17 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
               )}
               <div className="min-w-0 flex items-center gap-1.5 text-sm text-gray-600">
                 <span className="truncate font-medium text-gray-800">
-                  {post.highlightedComment.author.nickname}
+                  {highlightedCommentAuthorName}
                 </span>
+                {isHighlightedCommentRealName ? (
+                  <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                ) : null}
                 <span className="shrink-0">님이 댓글을 남김</span>
               </div>
             </div>
           </div>
         )}
-        <div className="flex gap-4 p-5 pr-14">
+        <div className="flex gap-4 p-5">
           <div className="min-w-0 flex-1">
             <div className="mb-2.5 flex flex-wrap gap-1.5">
               
@@ -197,28 +137,101 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
             </h3>
           </div>
 
-          <div className="hidden min-w-[200px] flex-shrink-0 flex-col items-end justify-between md:flex">
-            <button
-              type="button"
-              onClick={handleAuthorAvatarClick}
-              className="flex items-center gap-2 text-left"
-              aria-label={`${authorName} 작성자 페이지로 이동`}
-            >
-              {post.author.avatar && (
-                <img
-                  src={post.author.avatar}
-                  alt={authorName}
-                  className="h-6 w-6 rounded-full object-cover"
-                />
-              )}
-              <div className="flex items-center gap-1.5 text-right">
-                <p className="text-sm font-medium text-gray-900">{authorName}</p>
-                {post.isRealName && <BadgeCheck className="h-3.5 w-3.5 text-blue-500" />}
-                {post.author.position && (
-                  <span className="text-xs text-gray-500">· {post.author.position}</span>
+          <div className="hidden min-w-[220px] flex-shrink-0 flex-col items-end justify-between md:flex">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleAuthorAvatarClick}
+                className="flex items-center gap-2 text-left"
+                aria-label={`${authorName} 작성자 페이지로 이동`}
+              >
+                {post.author.avatar && (
+                  <img
+                    src={post.author.avatar}
+                    alt={authorName}
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
                 )}
-              </div>
-            </button>
+                <div className="flex items-center gap-1.5 text-right leading-none">
+                  <p className="text-sm font-medium text-gray-900">{authorName}</p>
+                  {post.isRealName && <BadgeCheck className="h-3.5 w-3.5 text-blue-500" />}
+                  {post.author.position && (
+                    <span className="text-xs text-gray-500">· {post.author.position}</span>
+                  )}
+                </div>
+              </button>
+
+              {isOwnPost ? (
+                <div ref={ownPostMenuRef} className="relative ml-0.5">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setIsOwnPostMenuOpen((prev) => !prev);
+                    }}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                    aria-label="내 게시글 메뉴 열기"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+
+                  {isOwnPostMenuOpen ? (
+                    <div className="absolute right-0 top-10 z-10 w-[176px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setIsOwnPostMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setIsOwnPostMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        삭제
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setIsOwnPostMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <EyeOff className="h-4 w-4" />
+                        숨김
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setIsOwnPostMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        {post.isRealName ? '닉네임으로 전환' : '실명으로 전환'}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <span className="text-xs">{formatDate(post.createdAt)}</span>
               <span className="flex items-center gap-1">
