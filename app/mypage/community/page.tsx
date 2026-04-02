@@ -161,18 +161,23 @@ export default function MyPageCommunityPage() {
     });
 
     return Array.from(latestCommentByPostId.entries()).reduce<CommunityPostWithHighlight[]>((acc, [postId, comment]) => {
-      const post = mockCommunityPosts.find((item) => item.id === postId);
+      const post = mockCommunityPosts.find((item) => item.id === postId) as CommunityPost | undefined;
 
       if (!post) return acc;
 
-      acc.push({
+      const highlightedPost: CommunityPostWithHighlight = {
         ...post,
         highlightedComment: {
+          id: comment.id,
           author: comment.author as CommunityPost['author'],
           content: comment.content,
           createdAt: comment.createdAt,
+          likes: comment.likes ?? 0,
+          replyCount: 0,
         },
-      });
+      };
+
+      acc.push(highlightedPost);
 
       return acc;
     }, []);
@@ -212,7 +217,7 @@ export default function MyPageCommunityPage() {
   const followerCount = 892;
   const followingCount = 124;
 
-  const followingProfiles: Record<'real' | 'nickname', Array<(typeof communityAuthors)[keyof typeof communityAuthors]>> = {
+  const followingProfiles = {
     real: [
       communityAuthors.spaceHunterReal,
       communityAuthors.eventMasterReal,
@@ -227,7 +232,7 @@ export default function MyPageCommunityPage() {
       communityAuthors.newbieFounderNickname,
       communityAuthors.devExpertNickname,
     ],
-  };
+  } satisfies Record<'real' | 'nickname', CommunityPost['author'][]>;
 
   const activeFollowingProfiles = followingProfiles[followingModalProfile];
 
@@ -477,7 +482,10 @@ export default function MyPageCommunityPage() {
 
             <div className="mt-4 space-y-3">
               {activeFollowingProfiles.map((profile) => {
-                const displayName = profile.mode === 'real' ? profile.name : profile.nickname;
+                const displayName = profile.mode === 'real'
+                  ? ('name' in profile && profile.name ? profile.name : profile.nickname)
+                  : profile.nickname;
+                const profilePosition = 'position' in profile ? profile.position : undefined;
 
                 return (
                   <div
@@ -498,7 +506,7 @@ export default function MyPageCommunityPage() {
                           ) : null}
                         </div>
                         <p className="truncate text-[11px] text-gray-500">
-                          {profile.position ?? '커뮤니티 활동 중'}
+                          {profilePosition ?? '커뮤니티 활동 중'}
                         </p>
                         <p className="truncate text-[11px] text-gray-400">
                           {profile.mode === 'real'
