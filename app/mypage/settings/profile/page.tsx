@@ -1,9 +1,5 @@
-
 'use client';
 
-export const dynamic = 'force-dynamic';
-
-import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { communityAuthors } from '@/data/mockCommunityPosts';
@@ -11,15 +7,16 @@ import { communityAuthors } from '@/data/mockCommunityPosts';
 type ProfileMode = 'real' | 'nickname';
 
 export default function MyPageSettingsProfilePage() {
-    const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ProfileMode>('real');
+
   useEffect(() => {
-    const tab = searchParams.get('tab');
-  
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+
     if (tab === 'real' || tab === 'nickname') {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, []);
   const realProfile = communityAuthors.startupDreamerReal;
   const nicknameProfile = communityAuthors.startupDreamer;
 
