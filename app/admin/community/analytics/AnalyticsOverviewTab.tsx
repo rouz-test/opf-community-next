@@ -524,71 +524,69 @@ type AnalyticsOverviewTabProps = {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 [grid-template-columns:minmax(0,1fr)_360px]">
+        <div className="mt-4 space-y-4">
           <div className="flex flex-wrap gap-3">
             {selectedSummaryPanel.cards.map((card) => (
               <SummaryCard key={`${selectedSummaryPanel.title}-${card.title}`} card={card} />
             ))}
           </div>
 
-          <div>
-            <article className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-              <div>
-                <h3 className="text-[12px] font-semibold text-[#111827]">태그 현황</h3>
-                <p className="mt-1 text-[11px] text-[#6B7280]">
-                  {dateRange === 'all' ? '전체 기준 상위 태그 분포입니다.' : '선택한 기간 기준 상위 태그 분포입니다.'}
-                </p>
-              </div>
+          <article className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+            <div>
+              <h3 className="text-[12px] font-semibold text-[#111827]">태그 현황</h3>
+              <p className="mt-1 text-[11px] text-[#6B7280]">
+                {dateRange === 'all' ? '전체 기준 상위 태그 분포입니다.' : '선택한 기간 기준 상위 태그 분포입니다.'}
+              </p>
+            </div>
 
-              <div className="mt-4 h-[220px] rounded-md border border-[#E5E7EB] bg-[#FCFCFD] p-4">
-                {(() => {
-                  const items = dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems;
-                  const maxCount = Math.max(...items.map((item) => item.count), 1);
-                  const totalCount = items.reduce((sum, item) => sum + item.count, 0);
+            <div className="mt-4 h-[220px] rounded-md border border-[#E5E7EB] bg-[#FCFCFD] px-4 pb-4 pt-6">
+              {(() => {
+                const items = dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems;
+                const maxCount = Math.max(...items.map((item) => item.count), 1);
+                const totalCount = items.reduce((sum, item) => sum + item.count, 0);
 
-                  return (
-                    <div className="flex h-full items-end justify-between gap-3">
-                      {items.map((item) => {
-                        const percent = Math.round((item.count / totalCount) * 100);
-                        const height = Math.max((item.count / maxCount) * 100, 8);
+                return (
+                  <div className="flex h-full items-end justify-between gap-3 pt-1">
+                    {items.map((item) => {
+                      const percent = Math.round((item.count / totalCount) * 100);
+                      const height = Math.max((item.count / maxCount) * 100, 8);
 
-                        return (
-                          <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                            <div className="text-[10px] font-medium text-[#6B7280]">{percent}%</div>
+                      return (
+                        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                          <div className="text-[10px] font-medium text-[#6B7280]">{percent}%</div>
+                          <div
+                            className="relative overflow-hidden rounded-t-[6px] border border-[#E5E7EB]"
+                            style={{ width: '28px', height: '160px', backgroundColor: '#F3F4F6' }}
+                          >
                             <div
-                              className="relative overflow-hidden rounded-t-[6px] border border-[#E5E7EB]"
-                              style={{ width: '28px', height: '160px', backgroundColor: '#F3F4F6' }}
-                            >
-                              <div
-                                className="absolute left-0 bottom-0 w-full rounded-t-[6px]"
-                                style={{
-                                  height: `${height}%`,
-                                  minHeight: '12px',
-                                  backgroundColor: '#FDBA74',
-                                }}
-                              />
-                            </div>
-                            <div className="w-full truncate text-center text-[10px] font-medium text-[#4B5563]">
-                              {item.label}
-                            </div>
+                              className="absolute left-0 bottom-0 w-full rounded-t-[6px]"
+                              style={{
+                                height: `${height}%`,
+                                minHeight: '12px',
+                                backgroundColor: '#FDBA74',
+                              }}
+                            />
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
+                          <div className="w-full truncate text-center text-[10px] font-medium text-[#4B5563]">
+                            {item.label}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
 
-              <div className="mt-3 space-y-1 text-[11px] text-[#6B7280]">
-                <div>표시 기준: 상위 9개 태그 + 기타</div>
-                <div>
-                  총 집계: {(dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems)
-                    .reduce((sum, item) => sum + item.count, 0)
-                    .toLocaleString()}건
-                </div>
+            <div className="mt-3 space-y-1 text-[11px] text-[#6B7280]">
+              <div>표시 기준: 상위 9개 태그 + 기타</div>
+              <div>
+                총 집계: {(dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems)
+                  .reduce((sum, item) => sum + item.count, 0)
+                  .toLocaleString()}건
               </div>
-            </article>
-          </div>
+            </div>
+          </article>
         </div>
       </section>
     </section>
