@@ -552,11 +552,11 @@ type AnalyticsOverviewTabProps = {
                       const height = Math.max((item.count / maxCount) * 100, 8);
 
                       return (
-                        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                          <div className="text-[10px] font-medium text-[#6B7280]">{percent}%</div>
+                        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2 pt-4">
+                          <div className="mt-2 text-[10px] font-medium text-[#6B7280]">{percent}%</div>
                           <div
-                            className="relative overflow-hidden rounded-t-[6px] border border-[#E5E7EB]"
-                            style={{ width: '28px', height: '160px', backgroundColor: '#F3F4F6' }}
+                            className="relative overflow-hidden"
+                            style={{ width: '20px', height: '140px' }}
                           >
                             <div
                               className="absolute left-0 bottom-0 w-full rounded-t-[6px]"
