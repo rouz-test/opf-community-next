@@ -1,5 +1,9 @@
 'use client';
 
+import { Box, Flex, Grid, Text } from '@chakra-ui/react';
+import AdminCard from '@/app/admin/components/ui/card';
+import AdminBadge from '@/app/admin/components/ui/badge';
+
 type RankingItem = {
   rank: number;
   label: string;
@@ -278,82 +282,115 @@ const rankingSections: RankingSection[] = [
 
 function RankingCard({ card }: { card: RankingCardItem }) {
   return (
-    <article className="rounded-lg border border-[#E5E7EB] bg-white">
-      <div className="border-b border-[#E5E7EB] px-4 py-3">
-        <div className="text-[12px] font-semibold text-[#374151]">{card.title}</div>
-      </div>
-      <div className="divide-y divide-[#F3F4F6] px-4 py-1">
+    <AdminCard as="article" borderRadius="8px" p="0">
+      <Box borderBottom="1px solid" borderColor="#E5E7EB" px="16px" py="12px">
+        <Text fontSize="12px" fontWeight="600" color="#374151">
+          {card.title}
+        </Text>
+      </Box>
+      <Box px="16px" py="4px">
         {card.items.map((item, index) => {
           const isTop = index === 0;
           const profileInitial = item.label.trim().charAt(0).toUpperCase();
 
           return (
-            <div
+            <Flex
               key={`${card.title}-${item.rank}-${item.label}`}
-              className={[
-                'flex items-center gap-2 py-2 text-[12px]',
-                isTop ? 'bg-[#FFFBEB]' : '',
-              ].join(' ')}
+              align="center"
+              gap="8px"
+              py="8px"
+              fontSize="12px"
+              bg="transparent"
+              borderTop={index === 0 ? 'none' : '1px solid'}
+              borderColor="#F3F4F6"
             >
-              <div className={[
-                'w-[40px] shrink-0',
-                isTop ? 'font-semibold text-[#B45309]' : 'font-medium text-[#111827]',
-              ].join(' ')}>
+              <Text
+                w="40px"
+                flexShrink={0}
+                fontWeight={isTop ? '600' : '500'}
+                color={isTop ? '#B45309' : '#111827'}
+              >
                 {item.rank}위
-              </div>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-[11px] font-semibold text-[#6B7280]">
+              </Text>
+
+              <Flex
+                h="32px"
+                w="32px"
+                flexShrink={0}
+                align="center"
+                justify="center"
+                borderRadius="full"
+                border="1px solid"
+                borderColor="#E5E7EB"
+                bg="#F9FAFB"
+                fontSize="11px"
+                fontWeight="600"
+                color="#6B7280"
+              >
                 {profileInitial}
-              </div>
-              <div
-                className={[
-                  'min-w-0 flex-1 truncate',
-                  isTop ? 'font-semibold text-[#111827]' : 'text-[#4B5563]',
-                ].join(' ')}
+              </Flex>
+
+              <Text
+                minW="0"
+                flex="1"
+                truncate
+                fontWeight={isTop ? '600' : '400'}
+                color={isTop ? '#111827' : '#4B5563'}
               >
                 {item.label}
-              </div>
+              </Text>
+
               {item.badge ? (
-                <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-[#FFF7ED] px-2 text-[10px] font-medium leading-none text-[#F97316] whitespace-nowrap">
+                <AdminBadge tone="orange" h="20px" px="8px" fontSize="10px" fontWeight="500">
                   {item.badge}
-                </span>
+                </AdminBadge>
               ) : null}
-              <div className={[
-                'w-[64px] shrink-0 text-right tabular-nums text-[#111827]',
-                isTop ? 'font-semibold' : 'font-medium',
-              ].join(' ')}>
+
+              <Text
+                w="64px"
+                flexShrink={0}
+                textAlign="right"
+                color="#111827"
+                fontWeight={isTop ? '600' : '500'}
+                fontVariantNumeric="tabular-nums"
+              >
                 {item.value}
-              </div>
-            </div>
+              </Text>
+            </Flex>
           );
         })}
-      </div>
-    </article>
+      </Box>
+    </AdminCard>
   );
 }
 
 function RankingSectionBlock({ section }: { section: RankingSection }) {
   return (
-    <section className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-      <div className="border-b border-[#F3F4F6] pb-3">
-        <h2 className="text-[13px] font-semibold text-[#111827]">{section.title}</h2>
-        <p className="mt-1 text-[12px] text-[#6B7280]">{section.description}</p>
-      </div>
+    <AdminCard as="section" borderRadius="8px" p="16px">
+      <Box borderBottom="1px solid" borderColor="#F3F4F6" pb="12px">
+        <Text fontSize="13px" fontWeight="600" color="#111827">
+          {section.title}
+        </Text>
+        <Text mt="4px" fontSize="12px" color="#6B7280">
+          {section.description}
+        </Text>
+      </Box>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <Grid mt="16px" templateColumns="repeat(3, minmax(0, 1fr))" gap="12px">
         {section.cards.map((card) => (
           <RankingCard key={`${section.title}-${card.title}`} card={card} />
         ))}
-      </div>
-    </section>
+      </Grid>
+    </AdminCard>
   );
 }
 
 export default function AnalyticsProfileRankingTab() {
   return (
-    <div className="space-y-4">
+    <Flex direction="column" gap="16px">
       {rankingSections.map((section) => (
         <RankingSectionBlock key={section.title} section={section} />
       ))}
-    </div>
+    </Flex>
   );
 }

@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { Box, Button, Flex, Menu, Portal } from '@chakra-ui/react';
+import AdminButton from '@/app/admin/components/ui/button';
 import AnalyticsContentRankingTab from './AnalyticsContentRankingTab';
 import AnalyticsProfileRankingTab from './AnalyticsProfileRankingTab';
 import AnalyticsOverviewTab from './AnalyticsOverviewTab';
+import PageContainer from '@/app/admin/components/page/page-container';
+import PageHeader from '@/app/admin/components/page/page-header';
+import AdminSelectTrigger from '@/app/admin/components/ui/select-trigger';
 
 const analyticsTabs = [
   { key: 'default', label: '기본' },
@@ -24,65 +29,90 @@ const dateRangeOptions: Array<{ key: DateRangeKey; label: string }> = [
 ];
 
 export default function CommunityAnalyticsPage() {
-    const [activeTab, setActiveTab] = useState<AnalyticsTabKey>('default');
-    const [dateRange, setDateRange] = useState<DateRangeKey>('today');
+  const [activeTab, setActiveTab] = useState<AnalyticsTabKey>('default');
+  const [dateRange, setDateRange] = useState<DateRangeKey>('today');
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-3">
-      <div>
-        </div>
-
-        <div className="flex items-end justify-between">
-          <div className="flex items-center gap-4">
+    <PageContainer>
+      <PageHeader
+        left={
+          <Flex align="center" gap="16px">
             {analyticsTabs.map((tab) => {
               const isActive = tab.key === activeTab;
 
               return (
-                <button
+                <Button
                   key={tab.key}
                   type="button"
+                  unstyled
                   onClick={() => setActiveTab(tab.key)}
-                  className={[
-                    'relative pb-2 text-[12px] font-medium transition',
-                    isActive ? 'text-[#F97316]' : 'text-[#6B7280] hover:text-[#111827]',
-                  ].join(' ')}
+                  position="relative"
+                  pb="8px"
+                  fontSize="12px"
+                  fontWeight="500"
+                  color={isActive ? '#F97316' : '#6B7280'}
+                  transition="color 0.2s ease"
+                  _hover={{ color: isActive ? '#F97316' : '#111827' }}
                 >
                   {tab.label}
                   {isActive ? (
-                    <span className="absolute left-0 right-0 bottom-0 h-[2px] rounded-full bg-[#F97316]" />
+                    <Box
+                      position="absolute"
+                      bottom="0"
+                      left="0"
+                      right="0"
+                      h="2px"
+                      borderRadius="9999px"
+                      bg="#F97316"
+                    />
                   ) : null}
-                </button>
+                </Button>
               );
             })}
-          </div>
-
-          <div className="flex items-center gap-2 pb-1">
-            <div className="relative">
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value as DateRangeKey)}
-                className="appearance-none inline-flex h-9 min-w-[72px] items-center rounded-lg border border-[#F97316] bg-white px-3 pr-8 text-[13px] font-medium text-[#F97316]"
-              >
-                {dateRangeOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[#F97316]">
-                ▾
-              </span>
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-9 items-center rounded-lg border border-[#F97316] bg-white px-5 text-[13px] font-medium text-[#F97316] hover:bg-[#FFF7ED]"
-            >
+          </Flex>
+        }
+        right={
+          <Flex align="center" gap="8px" pb="4px">
+            <Menu.Root positioning={{ placement: 'bottom-end' }}>
+              <Menu.Trigger asChild>
+                <Box>
+                  <AdminSelectTrigger
+                    label={dateRangeOptions.find((o) => o.key === dateRange)?.label ?? '선택'}
+                    minW="96px"
+                  />
+                </Box>
+              </Menu.Trigger>
+              <Portal>
+                <Menu.Positioner>
+                  <Menu.Content minW="120px" borderRadius="12px" borderColor="#E5E7EB" boxShadow="lg" p="4px">
+                    {dateRangeOptions.map((option) => {
+                      const isSelected = option.key === dateRange;
+                      return (
+                        <Menu.Item
+                          key={option.key}
+                          value={option.key}
+                          onClick={() => setDateRange(option.key)}
+                          borderRadius="8px"
+                          fontSize="13px"
+                          fontWeight="500"
+                          color={isSelected ? '#F59E42' : '#374151'}
+                          bg={isSelected ? '#FFF8F1' : 'transparent'}
+                          _highlighted={{ bg: '#FFF8F1', color: '#111827' }}
+                        >
+                          {option.label}
+                        </Menu.Item>
+                      );
+                    })}
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Portal>
+            </Menu.Root>
+            <AdminButton variantStyle="outline" size="sm">
               다운로드
-            </button>
-          </div>
-        </div>
-      </section>
+            </AdminButton>
+          </Flex>
+        }
+      />
 
       {activeTab === 'default' ? (
         <AnalyticsOverviewTab dateRange={dateRange} />
@@ -91,6 +121,6 @@ export default function CommunityAnalyticsPage() {
       ) : (
         <AnalyticsContentRankingTab />
       )}
-    </div>
+    </PageContainer>
   );
 }

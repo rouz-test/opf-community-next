@@ -1,6 +1,10 @@
 
 
+
 'use client';
+
+import { Box, Flex, Grid, Text } from '@chakra-ui/react';
+import AdminCard from '@/app/admin/components/ui/card';
 
 type DateRangeKey = 'today' | '7days' | '30days' | '90days' | 'all';
 
@@ -435,76 +439,91 @@ function SummaryCard({ card }: { card: SummaryCardItem }) {
 
   if (card.children?.length) {
     return (
-      <article className="min-w-0 flex-none rounded-lg border border-[#E5E7EB] bg-white px-4 py-3">
-        <div className="text-[12px] font-medium text-[#6B7280]">{card.title}</div>
+      <AdminCard as="article" minW="0" flex="none" borderRadius="8px" p="12px 16px">
+        <Text fontSize="12px" fontWeight="500" color="#6B7280">
+          {card.title}
+        </Text>
 
-        <div className="mt-2 text-[22px] font-semibold leading-none text-[#111827]">
+        <Text mt="8px" fontSize="22px" fontWeight="600" lineHeight="1" color="#111827">
           {card.total}
-        </div>
+        </Text>
 
-        <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-[#6B7280]">
-          <span className="truncate">
+        <Flex mt="12px" align="center" justify="space-between" gap="16px" fontSize="11px" color="#6B7280">
+          <Text truncate>
             {leftIndicator} {leftValue}
-          </span>
-          <span className="truncate text-right">
+          </Text>
+          <Text truncate textAlign="right">
             {rightIndicator} {rightValue}
-          </span>
-        </div>
+          </Text>
+        </Flex>
 
-        <div className="mt-2">
-          <div
-            className="h-2.5 rounded-full border border-[#E5E7EB]"
+        <Box mt="8px">
+          <Box
+            h="10px"
+            borderRadius="9999px"
+            border="1px solid"
+            borderColor="#E5E7EB"
             style={{
               background: `linear-gradient(to right, #FDBA74 0%, #FDBA74 ${realRatio}%, #D1D5DB ${realRatio}%, #D1D5DB 100%)`,
             }}
           />
-          <div className="mt-1 flex items-center justify-between text-[10px] text-[#9CA3AF]">
-            <span>{Math.round(realRatio)}%</span>
-            <span>{Math.round(nickRatio)}%</span>
-          </div>
-        </div>
+          <Flex mt="4px" align="center" justify="space-between" fontSize="10px" color="#9CA3AF">
+            <Text>{Math.round(realRatio)}%</Text>
+            <Text>{Math.round(nickRatio)}%</Text>
+          </Flex>
+        </Box>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[#F3F4F6] pt-4">
+        <Grid mt="16px" templateColumns="1fr" gap="12px" borderTop="1px solid" borderColor="#F3F4F6" pt="16px">
           {card.children.map((child) => (
             <SummaryCard key={child.title} card={child} />
           ))}
-        </div>
-      </article>
+        </Grid>
+      </AdminCard>
     );
   }
 
   return (
-    <article 
-    style ={{ width: 256}}
-    className="min-w-0 flex-none rounded-lg border border-[#E5E7EB] bg-white px-4 py-3">
-      <div className="text-[12px] font-medium text-[#6B7280]">{card.title}</div>
+    <AdminCard
+      as="article"
+      style={{ width: 256 }}
+      minW="0"
+      flex="none"
+      borderRadius="8px"
+      p="12px 16px"
+    >
+      <Text fontSize="12px" fontWeight="500" color="#6B7280">
+        {card.title}
+      </Text>
 
-      <div className="mt-2 text-[22px] font-semibold leading-none text-[#111827]">
+      <Text mt="8px" fontSize="22px" fontWeight="600" lineHeight="1" color="#111827">
         {card.total}
-      </div>
+      </Text>
 
-      <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-[#6B7280]">
-        <span className="truncate">
+      <Flex mt="12px" align="center" justify="space-between" gap="16px" fontSize="11px" color="#6B7280">
+        <Text truncate>
           {leftIndicator} {leftValue}
-        </span>
-        <span className="truncate text-right">
+        </Text>
+        <Text truncate textAlign="right">
           {rightIndicator} {rightValue}
-        </span>
-      </div>
+        </Text>
+      </Flex>
 
-      <div className="mt-2">
-        <div
-          className="h-2.5 rounded-full border border-[#E5E7EB]"
+      <Box mt="8px">
+        <Box
+          h="10px"
+          borderRadius="9999px"
+          border="1px solid"
+          borderColor="#E5E7EB"
           style={{
             background: `linear-gradient(to right, #FDBA74 0%, #FDBA74 ${realRatio}%, #D1D5DB ${realRatio}%, #D1D5DB 100%)`,
           }}
         />
-        <div className="mt-1 flex items-center justify-between text-[10px] text-[#9CA3AF]">
-          <span>{Math.round(realRatio)}%</span>
-          <span>{Math.round(nickRatio)}%</span>
-        </div>
-      </div>
-    </article>
+        <Flex mt="4px" align="center" justify="space-between" fontSize="10px" color="#9CA3AF">
+          <Text>{Math.round(realRatio)}%</Text>
+          <Text>{Math.round(nickRatio)}%</Text>
+        </Flex>
+      </Box>
+    </AdminCard>
   );
 }
 type AnalyticsOverviewTabProps = {
@@ -515,80 +534,101 @@ type AnalyticsOverviewTabProps = {
     const selectedSummaryPanel = summaryCardsByRange[dateRange];
 
   return (
-    <section className="space-y-4">
-      <section className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-               <div className="flex items-start justify-between gap-4 border-b border-[#F3F4F6] pb-3">
-          <div>
-            <h2 className="text-[13px] font-semibold text-[#111827]">{selectedSummaryPanel.title}</h2>
-            <p className="mt-1 text-[12px] text-[#6B7280]">{selectedSummaryPanel.description}</p>
-          </div>
-        </div>
+    <Flex as="section" direction="column" gap="16px">
+      <AdminCard as="section" borderRadius="8px" p="16px">
+        <Flex align="flex-start" justify="space-between" gap="16px" borderBottom="1px solid" borderColor="#F3F4F6" pb="12px">
+          <Box>
+            <Text fontSize="13px" fontWeight="600" color="#111827">
+              {selectedSummaryPanel.title}
+            </Text>
+            <Text mt="4px" fontSize="12px" color="#6B7280">
+              {selectedSummaryPanel.description}
+            </Text>
+          </Box>
+        </Flex>
 
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-3">
+        <Flex direction="column" gap="16px" mt="16px">
+          <Flex wrap="wrap" gap="12px">
             {selectedSummaryPanel.cards.map((card) => (
               <SummaryCard key={`${selectedSummaryPanel.title}-${card.title}`} card={card} />
             ))}
-          </div>
+          </Flex>
 
-          <article className="rounded-lg border border-[#E5E7EB] bg-white p-4">
-            <div>
-              <h3 className="text-[12px] font-semibold text-[#111827]">태그 현황</h3>
-              <p className="mt-1 text-[11px] text-[#6B7280]">
+          <AdminCard as="article" borderRadius="8px" p="16px">
+            <Box>
+              <Text fontSize="12px" fontWeight="600" color="#111827">
+                태그 현황
+              </Text>
+              <Text mt="4px" fontSize="11px" color="#6B7280">
                 {dateRange === 'all' ? '전체 기준 상위 태그 분포입니다.' : '선택한 기간 기준 상위 태그 분포입니다.'}
-              </p>
-            </div>
+              </Text>
+            </Box>
 
-            <div className="mt-4 h-[220px] rounded-md border border-[#E5E7EB] bg-[#FCFCFD] px-4 pb-4 pt-6">
+            <Box
+              mt="16px"
+              h="220px"
+              borderRadius="6px"
+              border="1px solid"
+              borderColor="#E5E7EB"
+              bg="#FCFCFD"
+              px="16px"
+              pb="16px"
+              pt="24px"
+            >
               {(() => {
                 const items = dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems;
                 const maxCount = Math.max(...items.map((item) => item.count), 1);
                 const totalCount = items.reduce((sum, item) => sum + item.count, 0);
 
                 return (
-                  <div className="flex h-full items-end justify-between gap-3 pt-1">
+                  <Flex h="full" align="flex-end" justify="space-between" gap="12px" pt="4px">
                     {items.map((item) => {
                       const percent = Math.round((item.count / totalCount) * 100);
                       const height = Math.max((item.count / maxCount) * 100, 8);
 
                       return (
-                        <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2 pt-4">
-                          <div className="mt-2 text-[10px] font-medium text-[#6B7280]">{percent}%</div>
-                          <div
-                            className="relative overflow-hidden"
-                            style={{ width: '20px', height: '140px' }}
-                          >
-                            <div
-                              className="absolute left-0 bottom-0 w-full rounded-t-[6px]"
+                        <Flex key={item.label} minW="0" flex="1" direction="column" align="center" gap="8px" pt="16px">
+                          <Text mt="8px" fontSize="10px" fontWeight="500" color="#6B7280">
+                            {percent}%
+                          </Text>
+                          <Box position="relative" overflow="hidden" style={{ width: '20px', height: '140px' }}>
+                            <Box
+                              position="absolute"
+                              left="0"
+                              bottom="0"
+                              width="100%"
+                              borderTopRadius="6px"
                               style={{
                                 height: `${height}%`,
                                 minHeight: '12px',
                                 backgroundColor: '#FDBA74',
                               }}
                             />
-                          </div>
-                          <div className="w-full truncate text-center text-[10px] font-medium text-[#4B5563]">
+                          </Box>
+                          <Text w="100%" truncate textAlign="center" fontSize="10px" fontWeight="500" color="#4B5563">
                             {item.label}
-                          </div>
-                        </div>
+                          </Text>
+                        </Flex>
                       );
                     })}
-                  </div>
+                  </Flex>
                 );
               })()}
-            </div>
+            </Box>
 
-            <div className="mt-3 space-y-1 text-[11px] text-[#6B7280]">
-              <div>표시 기준: 상위 9개 태그 + 기타</div>
-              <div>
-                총 집계: {(dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems)
-                  .reduce((sum, item) => sum + item.count, 0)
-                  .toLocaleString()}건
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
-    </section>
+            <Box mt="12px">
+              <Flex direction="column" gap="4px" fontSize="11px" color="#6B7280">
+                <Text>표시 기준: 상위 9개 태그 + 기타</Text>
+                <Text>
+                  총 집계: {(dateRange === 'all' ? cumulativeTagChartItems : periodTagChartItems)
+                    .reduce((sum, item) => sum + item.count, 0)
+                    .toLocaleString()}건
+                </Text>
+              </Flex>
+            </Box>
+          </AdminCard>
+        </Flex>
+      </AdminCard>
+    </Flex>
   );
 }
