@@ -12,6 +12,7 @@ import { DragHandleIcon, EditIcon, DeleteIcon } from '@/app/admin/components/ui/
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
+import { toaster } from '@/app/admin/components/ui/toaster';
 import AdminCard from '@/app/admin/components/ui/card';
 import AdminBadge from '@/app/admin/components/ui/badge';
 import AdminSwitch from '@/app/admin/components/ui/switch';
@@ -104,6 +105,12 @@ export default function CommunityTagsPage() {
         isVisible: true,
       },
     ]);
+
+    toaster.create({
+      description: '태그가 추가되었습니다.',
+      type: 'success',
+      duration: 2000,
+    });
   };
 
   const handleOpenEdit = (index: number) => {
@@ -119,6 +126,12 @@ export default function CommunityTagsPage() {
         index === editingTagIndex ? { ...tag, ...values } : tag,
       ),
     );
+
+    toaster.create({
+      description: '태그가 수정되었습니다.',
+      type: 'success',
+      duration: 2000,
+    });
   };
 
   const handleDeleteTag = (targetIndex: number) => {
@@ -136,6 +149,12 @@ export default function CommunityTagsPage() {
     }
 
     setDeletingTagIndex(null);
+
+    toaster.create({
+      description: '태그가 삭제되었습니다.',
+      type: 'success',
+      duration: 2000,
+    });
   };
 
   const editingTag = editingTagIndex !== null ? tags[editingTagIndex] ?? null : null;
@@ -150,22 +169,24 @@ export default function CommunityTagsPage() {
               태그 관리
             </Text>
           }
-          right={
-            <AdminButton
-              type="button"
-              variantStyle="primary"
-              size="sm"
-              borderRadius="12px"
-              bg="#F59E42"
-              color="white"
-              _hover={{ bg: '#EC8A2E' }}
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Text as="span" fontSize="18px" lineHeight="1">+</Text>
-              <Text as="span">태그 추가</Text>
-            </AdminButton>
-          }
+          right={null}
         />
+
+        <Flex justify="flex-end" mb="16px">
+          <AdminButton
+            type="button"
+            variantStyle="primary"
+            size="sm"
+            borderRadius="12px"
+            bg="#F59E42"
+            color="white"
+            _hover={{ bg: '#EC8A2E' }}
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Text as="span" fontSize="18px" lineHeight="1">+</Text>
+            <Text as="span">태그 추가</Text>
+          </AdminButton>
+        </Flex>
 
         <Flex direction="column" gap="12px">
           {tags.map((tag, index) => {
@@ -273,13 +294,13 @@ export default function CommunityTagsPage() {
         title="태그 삭제"
         onClose={() => setDeletingTagIndex(null)}
         footer={
-          <Flex align="center" gap="12px">
+          <Flex gap="8px" w="100%">
             <AdminButton
               type="button"
               variantStyle="outline"
               size="md"
-              flex="1"
               onClick={() => setDeletingTagIndex(null)}
+              flex={1}
             >
               취소
             </AdminButton>
@@ -287,22 +308,21 @@ export default function CommunityTagsPage() {
               type="button"
               variantStyle="primary"
               size="md"
-              flex="1"
-              bg="#EF4444"
-              borderColor="#EF4444"
-              _hover={{ bg: '#DC2626', borderColor: '#DC2626' }}
               onClick={handleConfirmDelete}
+              flex={1}
             >
-              삭제
+              삭제하기
             </AdminButton>
           </Flex>
         }
       >
         <Flex direction="column" gap="8px">
-          <Text fontSize="14px" color="#374151">
-            {deletingTag ? `‘${deletingTag.name}’ 태그를 삭제하시겠습니까?` : '선택한 태그를 삭제하시겠습니까?'}
+          <Text fontSize="14px" fontWeight="600" color="#111827">
+            선택한 태그를 삭제하시겠습니까?
           </Text>
-          
+          <Text fontSize="13px" color="#6B7280">
+            {deletingTag ? `삭제 대상: ${deletingTag.name}` : ''}
+          </Text>
         </Flex>
       </BaseModal>
     </>

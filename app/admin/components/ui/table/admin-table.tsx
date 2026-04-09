@@ -87,16 +87,32 @@ type AdminTablePrimitiveProps = {
   children: ReactNode;
 };
 
-export function AdminTableRoot({ children }: AdminTablePrimitiveProps) {
-  return <Table.Root size="sm" variant="line" tableLayout="fixed">{children}</Table.Root>;
+type AdminTableRootProps = {
+  children: ReactNode;
+} & React.ComponentProps<typeof Table.Root>;
+
+type AdminTableHeadProps = {
+  children: ReactNode;
+} & React.ComponentProps<typeof Table.Header>;
+
+type AdminTableBodyProps = {
+  children: ReactNode;
+} & React.ComponentProps<typeof Table.Body>;
+
+export function AdminTableRoot({ children, ...rest }: AdminTableRootProps) {
+  return (
+    <Table.Root size="sm" variant="line" tableLayout="fixed" {...rest}>
+      {children}
+    </Table.Root>
+  );
 }
 
-export function AdminTableHead({ children }: AdminTablePrimitiveProps) {
-  return <Table.Header bg="#F3F4F6">{children}</Table.Header>;
+export function AdminTableHead({ children, ...rest }: AdminTableHeadProps) {
+  return <Table.Header {...rest}>{children}</Table.Header>;
 }
 
-export function AdminTableBody({ children }: AdminTablePrimitiveProps) {
-  return <Table.Body>{children}</Table.Body>;
+export function AdminTableBody({ children, ...rest }: AdminTableBodyProps) {
+  return <Table.Body {...rest}>{children}</Table.Body>;
 }
 
 type AdminTableRowProps = {
@@ -124,9 +140,10 @@ export function AdminTableColumnHeader({ children, ...rest }: AdminTableColumnHe
     <Table.ColumnHeader
       px="16px"
       py="14px"
+      bg="#F3F4F6"
       color="#374151"
       fontSize="12px"
-      fontWeight="600"
+      fontWeight="700"
       whiteSpace="nowrap"
       borderBottomWidth="1px"
       borderBottomColor="#D1D5DB"

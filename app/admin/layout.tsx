@@ -10,6 +10,7 @@ import {
   formatBreadcrumbLabel,
   getAdminBreadcrumb,
 } from './components/breadcrumb/admin-breadcrumb-utils';
+import Toaster from './components/ui/toaster';
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -21,6 +22,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <AdminChakraProvider>
+      <Toaster />
       <Box minH="100vh" bg="white" color="#111827">
         <Flex minH="100vh">
           <AdminSidebar />

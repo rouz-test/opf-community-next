@@ -1,6 +1,27 @@
+import {
+  Box,
+  Checkbox,
+  Flex,
+  IconButton,
+  Table,
+  Text,
+} from '@chakra-ui/react';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
-import AdminCard from '@/app/admin/components/ui/card';
+import AdminButton from '@/app/admin/components/ui/button';
+import AdminTable, {
+  AdminTableBody,
+  AdminTableCell,
+  AdminTableColumnHeader,
+  AdminTableEllipsisText,
+  AdminTableHead,
+  AdminTableRoot,
+  AdminTableRow,
+} from '@/app/admin/components/ui/table/admin-table';
+import AdminTablePagination, {
+  type AdminTablePaginationItem,
+} from '@/app/admin/components/ui/table/admin-table-pagination';
+
 const selectedTags = ['디자인', '개발', 'UX/UI'];
 
 const contentRows = [
@@ -139,6 +160,20 @@ const contentRows = [
   },
 ];
 
+const paginationItems: AdminTablePaginationItem[] = [
+  { type: 'first' },
+  { type: 'prev' },
+  { type: 'page', value: 1, isActive: true },
+  { type: 'page', value: 2 },
+  { type: 'page', value: 3 },
+  { type: 'page', value: 4 },
+  { type: 'page', value: 5 },
+  { type: 'ellipsis' },
+  { type: 'page', value: 163 },
+  { type: 'next' },
+  { type: 'last' },
+];
+
 function getStatusClassName(status: string) {
   if (status === '보관') {
     return 'bg-[#F3F4F6] text-[#9CA3AF]';
@@ -275,124 +310,125 @@ export default function CommunityContentPage() {
         right={null}
       />
 
-      <AdminCard as="section" overflow="hidden" borderRadius="16px" p="0">
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="bg-[#F9FAFB] text-left text-[12px] font-medium text-[#6B7280]">
-                <th className="w-[44px] px-4 py-4">
-                  <input type="checkbox" className="h-4 w-4 rounded border-[#D1D5DB]" />
-                </th>
-                <th className="px-3 py-4">번호</th>
-                <th className="px-3 py-4">구분</th>
-                <th className="min-w-[260px] px-3 py-4">제목</th>
-                <th className="px-3 py-4">작성자</th>
-                <th className="px-3 py-4">발행일시</th>
-                <th className="px-3 py-4 text-center">댓글 수</th>
-                <th className="px-3 py-4 text-center">좋아요 수</th>
-                <th className="px-3 py-4 text-center">저장 수</th>
-                <th className="px-3 py-4 text-center">조회수</th>
-                <th className="px-3 py-4 text-center">상태</th>
-                <th className="w-[56px] px-3 py-4 text-center">액션</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contentRows.map((row, index) => (
-                <tr key={`${row.id}-${row.author}-${index}`} className="border-t border-[#F3F4F6] text-[13px] text-[#111827]">
-                  <td className="px-4 py-4 align-middle">
-                    <input type="checkbox" className="h-4 w-4 rounded border-[#D1D5DB]" />
-                  </td>
-                  <td className="px-3 py-4 font-semibold text-[#374151]">{row.id}</td>
-                  <td className="px-3 py-4 text-[#4B5563]">{row.type}</td>
-                  <td className="px-3 py-4">
-                    <div className="flex items-center gap-2">
-                      {row.isNotice ? (
-                        <span className="inline-flex h-5 items-center rounded-md bg-[#111827] px-1.5 text-[10px] font-semibold text-white">
-                          공지
-                        </span>
-                      ) : null}
-                      <span className="max-w-[220px] truncate font-medium text-[#111827]">{row.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-4 font-medium text-[#4B5563]">{row.author}</td>
-                  <td className="px-3 py-4 text-[#6B7280]">{row.publishedAt}</td>
-                  <td className="px-3 py-4 text-center font-medium text-[#374151]">{row.commentCount}</td>
-                  <td className="px-3 py-4 text-center font-medium text-[#374151]">{row.likeCount}</td>
-                  <td className="px-3 py-4 text-center font-medium text-[#374151]">{row.exposureCount}</td>
-                  <td className="px-3 py-4 text-center font-medium text-[#374151]">{row.viewCount}</td>
-                  <td className="px-3 py-4 text-center">
-                    <span
-                      className={`inline-flex h-6 items-center rounded-full px-3 text-[11px] font-semibold ${getStatusClassName(row.status)}`}
-                    >
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-4 text-center">
-                    <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#9CA3AF] hover:bg-[#F9FAFB]">
-                      <MoreVerticalIcon />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <AdminTable>
+        <AdminTableRoot>
+          <AdminTableHead>
+            <Table.Row>
+              <AdminTableColumnHeader w="44px" textAlign="center" px="16px">
+                <Checkbox.Root size="sm">
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control />
+                </Checkbox.Root>
+              </AdminTableColumnHeader>
+              <AdminTableColumnHeader w="72px">번호</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="88px">구분</AdminTableColumnHeader>
+              <AdminTableColumnHeader minW="260px">제목</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="120px">작성자</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="160px">발행일시</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="96px" textAlign="center">댓글 수</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="96px" textAlign="center">좋아요 수</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="96px" textAlign="center">저장 수</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="96px" textAlign="center">조회수</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="96px" textAlign="center">상태</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="56px" textAlign="center">액션</AdminTableColumnHeader>
+            </Table.Row>
+          </AdminTableHead>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[#F3F4F6] px-6 py-4">
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[#9CA3AF]"
-          >
-            ‹
-          </button>
-          <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#F59E42] text-[13px] font-semibold text-white">
-            1
-          </button>
-          <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[13px] font-medium text-[#4B5563]">
-            2
-          </button>
-          <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[13px] font-medium text-[#4B5563]">
-            3
-          </button>
-          <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[13px] font-medium text-[#4B5563]">
-            4
-          </button>
-          <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[13px] font-medium text-[#4B5563]">
-            5
-          </button>
-          <span className="px-1 text-[13px] text-[#9CA3AF]">…</span>
-          <button type="button" className="inline-flex h-8 items-center justify-center rounded-md border border-[#E5E7EB] px-3 text-[13px] font-medium text-[#4B5563]">
-            163
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[#6B7280]"
-          >
-            ›
-          </button>
-        </div>
-      </AdminCard>
+          <AdminTableBody>
+            {contentRows.map((row, index) => (
+              <AdminTableRow key={`${row.id}-${row.author}-${index}`}>
+                <AdminTableCell textAlign="center" px="16px">
+                  <Checkbox.Root size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                </AdminTableCell>
+                <AdminTableCell fontWeight="600" color="#374151">{row.id}</AdminTableCell>
+                <AdminTableCell color="#4B5563">{row.type}</AdminTableCell>
+                <AdminTableCell>
+                  <Flex align="center" gap="8px" minW="0">
+                    {row.isNotice ? (
+                      <Box
+                        as="span"
+                        display="inline-flex"
+                        h="20px"
+                        alignItems="center"
+                        borderRadius="6px"
+                        bg="#111827"
+                        px="6px"
+                        fontSize="10px"
+                        fontWeight="700"
+                        color="white"
+                        flexShrink={0}
+                      >
+                        공지
+                      </Box>
+                    ) : null}
+                    <AdminTableEllipsisText fontSize="13px" fontWeight="500" color="#111827">
+                      {row.title}
+                    </AdminTableEllipsisText>
+                  </Flex>
+                </AdminTableCell>
+                <AdminTableCell fontWeight="500" color="#4B5563">
+                  <AdminTableEllipsisText>{row.author}</AdminTableEllipsisText>
+                </AdminTableCell>
+                <AdminTableCell color="#6B7280">
+                  <AdminTableEllipsisText>{row.publishedAt}</AdminTableEllipsisText>
+                </AdminTableCell>
+                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.commentCount}</AdminTableCell>
+                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.likeCount}</AdminTableCell>
+                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.exposureCount}</AdminTableCell>
+                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.viewCount}</AdminTableCell>
+                <AdminTableCell textAlign="center">
+                  <Box
+                    as="span"
+                    display="inline-flex"
+                    h="24px"
+                    alignItems="center"
+                    borderRadius="9999px"
+                    px="12px"
+                    fontSize="11px"
+                    fontWeight="700"
+                    className={getStatusClassName(row.status)}
+                  >
+                    {row.status}
+                  </Box>
+                </AdminTableCell>
+                <AdminTableCell textAlign="center">
+                  <IconButton
+                    aria-label="콘텐츠 액션"
+                    variant="ghost"
+                    size="xs"
+                    color="#9CA3AF"
+                    _hover={{ bg: '#F9FAFB', color: '#6B7280' }}
+                  >
+                    <MoreVerticalIcon />
+                  </IconButton>
+                </AdminTableCell>
+              </AdminTableRow>
+            ))}
+          </AdminTableBody>
+        </AdminTableRoot>
+      </AdminTable>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#374151]"
-          >
-            <span className="text-[#9CA3AF]">☷</span>
-            <span>선택 항목 보관</span>
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#374151]"
-          >
-            <span className="text-[#9CA3AF]">☷</span>
-            <span>선택 항목 삭제</span>
-          </button>
-        </div>
+      <Flex align="center" justify="space-between" gap="16px">
+        <Flex flexWrap="wrap" align="center" gap="8px">
+          <AdminButton type="button" variantStyle="outline" size="sm">
+            <Text as="span">선택 항목 보관</Text>
+          </AdminButton>
+          <AdminButton type="button" variantStyle="outline" size="sm">
+            <Text as="span">선택 항목 삭제</Text>
+          </AdminButton>
+        </Flex>
 
-        <div className="text-[13px] font-medium text-[#4B5563]">항목 수 : 1,324,234개</div>
-      </div>
+        <Text fontSize="13px" fontWeight="500" color="#4B5563">
+          항목 수 : {contentRows.length}개
+        </Text>
+      </Flex>
+
+      <Flex justify="flex-end" mt="4px">
+        <AdminTablePagination items={paginationItems} />
+      </Flex>
     </PageContainer>
   );
 }
