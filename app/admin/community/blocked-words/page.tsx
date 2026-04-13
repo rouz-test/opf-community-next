@@ -223,7 +223,7 @@ export default function CommunityBlockedWordsPage() {
         </AdminTable>
         <Flex justify="space-between" align="center" mt="4px">
           <Text fontSize="12px" fontWeight="600" color="#374151">
-            항목 수 : {blockedWords.length}개
+            항목 수 : {blockedWords.length}개선태
           </Text>
 
           <AdminTablePagination items={paginationItems} />

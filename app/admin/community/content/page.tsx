@@ -1,14 +1,23 @@
+'use client';
+import { LuTrash2, LuArchive, LuCalendar } from 'react-icons/lu';
 import {
   Box,
+  Button,
   Checkbox,
+  CheckboxGroup,
   Flex,
+  Icon,
   IconButton,
+  Input,
   Table,
   Text,
 } from '@chakra-ui/react';
+import { useRef, useState } from 'react';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
+import AdminBadge from '@/app/admin/components/ui/badge';
+import AdminSwitch from '@/app/admin/components/ui/switch';
 import AdminTable, {
   AdminTableBody,
   AdminTableCell,
@@ -22,7 +31,6 @@ import AdminTablePagination, {
   type AdminTablePaginationItem,
 } from '@/app/admin/components/ui/table/admin-table-pagination';
 
-const selectedTags = ['디자인', '개발', 'UX/UI'];
 
 const contentRows = [
   {
@@ -36,6 +44,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '보관',
+    tags: ['디자인', 'UX/UI'],
   },
   {
     id: 102,
@@ -48,6 +57,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    tags: ['개발'],
   },
   {
     id: 102,
@@ -60,6 +70,7 @@ const contentRows = [
     exposureCount: 32,
     viewCount: 80,
     status: '노출',
+    tags: ['운영'],
   },
   {
     id: 102,
@@ -72,6 +83,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    tags: ['개발', '공지'],
   },
   {
     id: 102,
@@ -84,6 +96,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '고정',
+    tags: ['UX/UI'],
   },
   {
     id: 102,
@@ -96,6 +109,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    tags: ['개발'],
   },
   {
     id: 102,
@@ -109,6 +123,7 @@ const contentRows = [
     viewCount: 80,
     status: '고정',
     isNotice: true,
+    tags: ['공지'],
   },
   {
     id: 102,
@@ -121,6 +136,7 @@ const contentRows = [
     exposureCount: 32,
     viewCount: 80,
     status: '노출',
+    tags: ['디자인'],
   },
   {
     id: 102,
@@ -133,6 +149,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '임시',
+    tags: ['운영', 'UX/UI'],
   },
   {
     id: 102,
@@ -145,6 +162,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    tags: ['개발'],
   },
   {
     id: 102,
@@ -157,6 +175,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    tags: ['디자인', '개발'],
   },
 ];
 
@@ -174,24 +193,38 @@ const paginationItems: AdminTablePaginationItem[] = [
   { type: 'last' },
 ];
 
-function getStatusClassName(status: string) {
+const tagOptions = ['디자인', '개발', 'UX/UI', '운영', '공지'];
+
+function formatDateDisplay(value: string) {
+  if (!value) return 'YYYY.MM.DD';
+  return value.replaceAll('-', '.');
+}
+
+function parsePublishedAtDate(value: string) {
+  const [datePart] = value.split(' ');
+  const normalized = datePart.replaceAll('.', '-');
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getStatusTone(status: string) {
   if (status === '보관') {
-    return 'bg-[#F3F4F6] text-[#9CA3AF]';
+    return 'gray';
   }
 
   if (status === '노출') {
-    return 'bg-[#111827] text-white';
+    return 'black';
   }
 
   if (status === '고정') {
-    return 'bg-[#FB923C] text-white';
+    return 'orange';
   }
 
   if (status === '임시') {
-    return 'bg-[#FACC15] text-white';
+    return 'yellow';
   }
 
-  return 'bg-[#E5E7EB] text-[#4B5563]';
+  return 'gray';
 }
 
 function SearchIcon() {
@@ -221,94 +254,347 @@ function MoreVerticalIcon() {
   );
 }
 
+
 export default function CommunityContentPage() {
+  const [isPromotedOnly, setIsPromotedOnly] = useState(false);
+  const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [appliedStartDate, setAppliedStartDate] = useState('');
+  const [appliedEndDate, setAppliedEndDate] = useState('');
+  const startDateInputRef = useRef<HTMLInputElement | null>(null);
+  const endDateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    const input = ref.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+      return;
+    }
+
+    input.click();
+  };
+
+  const handleApplyDateFilter = () => {
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+  };
+
+  const filteredRows = contentRows.filter((row) => {
+    const publishedAt = parsePublishedAtDate(row.publishedAt);
+    if (!publishedAt) return true;
+
+    if (appliedStartDate) {
+      const start = new Date(appliedStartDate);
+      start.setHours(0, 0, 0, 0);
+      if (publishedAt < start) return false;
+    }
+
+    if (appliedEndDate) {
+      const end = new Date(appliedEndDate);
+      end.setHours(23, 59, 59, 999);
+      if (publishedAt > end) return false;
+    }
+
+    return true;
+  });
+
+  const tagFilterLabel = selectedTags.length > 0 ? `태그 ${selectedTags.length}개` : '태그';
+
   return (
     <PageContainer>
       <PageHeader
         left={
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#374151]"
-            >
-              <span>발행일시</span>
-              <ChevronDownIcon />
-            </button>
-
-            <div className="inline-flex h-10 items-center rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] text-[#9CA3AF]">
-              YYYY.MM.DD
-            </div>
-
-            <div className="inline-flex h-10 items-center rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#374151]">
-              2024. 09
-            </div>
-
-            <button
-              type="button"
-              aria-label="기간 검색"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#E5E7EB] bg-white text-[#9CA3AF]"
-            >
-              <SearchIcon />
-            </button>
-
-            <div className="flex h-10 min-w-[300px] items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 text-[#9CA3AF]">
-              <SearchIcon />
-              <span className="text-[13px]">제목 / 내용 / 작성자 프로필 명</span>
-            </div>
-
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#374151]"
-            >
-              <span>태그</span>
-              <ChevronDownIcon />
-            </button>
-
-            <div className="ml-auto flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-[#6B7280]">홍보글만 보기</span>
-                <button
-                  type="button"
-                  className="relative inline-flex h-5 w-9 items-center rounded-full bg-[#E5E7EB] transition"
+          <Flex direction="column" gap="12px">
+            <Flex direction="column" gap="12px">
+              <Flex wrap="wrap" align="center" gap="8px">
+                <Flex
+                  align="stretch"
+                  overflow="hidden"
+                  borderWidth="1px"
+                  borderColor="#D1D5DB"
+                  borderRadius="12px"
+                  bg="#FFFFFF"
                 >
-                  <span className="absolute left-[2px] h-4 w-4 rounded-full bg-white shadow" />
-                </button>
-              </div>
+                  <Flex
+                    h="40px"
+                    minW="68px"
+                    align="center"
+                    justify="center"
+                    borderRightWidth="1px"
+                    borderRightColor="#D1D5DB"
+                    bg="#F3F4F6"
+                    px="16px"
+                  >
+                    <Text fontSize="13px" fontWeight="700" color="#111827">
+                      일시
+                    </Text>
+                  </Flex>
 
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-1 rounded-lg border border-[#F59E42] bg-white px-3 text-[13px] font-semibold text-[#F59E42]"
-              >
-                <span>13</span>
-                <ChevronDownIcon />
-              </button>
+                  <Box position="relative">
+                    <input
+                      ref={startDateInputRef}
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0,
+                        pointerEvents: 'none',
+                      }}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      h="40px"
+                      minW="146px"
+                      borderRadius="0"
+                      borderRightWidth="1px"
+                      borderRightColor="#D1D5DB"
+                      bg="#FFFFFF"
+                      px="14px"
+                      _hover={{ bg: '#F9FAFB' }}
+                      onClick={() => openDatePicker(startDateInputRef)}
+                    >
+                      <Flex align="center" justify="space-between" w="100%" gap="8px">
+                        <Text
+                          as="span"
+                          fontSize="13px"
+                          fontWeight="500"
+                          color={startDate ? '#374151' : '#9CA3AF'}
+                        >
+                          {formatDateDisplay(startDate)}
+                        </Text>
+                        <Icon as={LuCalendar} boxSize="14px" color="#9CA3AF" />
+                      </Flex>
+                    </Button>
+                  </Box>
 
-              <button
-                type="button"
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#F59E42] px-5 text-[14px] font-semibold text-white hover:bg-[#EC8A2E]"
-              >
-                글 작성
-              </button>
-            </div>
-          </div>
+                  <Box position="relative">
+                    <input
+                      ref={endDateInputRef}
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        opacity: 0,
+                        pointerEvents: 'none',
+                      }}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      h="40px"
+                      minW="146px"
+                      borderRadius="0"
+                      borderRightWidth="1px"
+                      borderRightColor="#D1D5DB"
+                      bg="#FFFFFF"
+                      px="14px"
+                      _hover={{ bg: '#F9FAFB' }}
+                      onClick={() => openDatePicker(endDateInputRef)}
+                    >
+                      <Flex align="center" justify="space-between" w="100%" gap="8px">
+                        <Text
+                          as="span"
+                          fontSize="13px"
+                          fontWeight="500"
+                          color={endDate ? '#374151' : '#9CA3AF'}
+                        >
+                          {formatDateDisplay(endDate)}
+                        </Text>
+                        <Icon as={LuCalendar} boxSize="14px" color="#9CA3AF" />
+                      </Flex>
+                    </Button>
+                  </Box>
 
-            <div className="flex flex-wrap items-center gap-2 text-[13px]">
-              <span className="font-medium text-[#4B5563]">선택된 태그:</span>
-              {selectedTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex h-7 items-center gap-1 rounded-full bg-[#FFF1E8] px-3 text-[12px] font-medium text-[#F97316]"
-                >
-                  <span>{tag}</span>
-                  <span className="text-[11px]">×</span>
-                </span>
-              ))}
-            </div>
-          </div>
+                  <IconButton
+                    type="button"
+                    aria-label="기간 검색"
+                    variant="ghost"
+                    h="40px"
+                    w="44px"
+                    minW="44px"
+                    borderRadius="0"
+                    bg="#FFFFFF"
+                    color="#111827"
+                    _hover={{ bg: '#F9FAFB' }}
+                    onClick={handleApplyDateFilter}
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                </Flex>
+
+                <Box position="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    h="40px"
+                    px="16px"
+                    borderRadius="8px"
+                    borderColor="#E5E7EB"
+                    bg="#FFFFFF"
+                    color="#374151"
+                    fontSize="13px"
+                    fontWeight="500"
+                    _hover={{ bg: '#F9FAFB' }}
+                    onClick={() => setIsTagFilterOpen((prev) => !prev)}
+                  >
+                    <Flex align="center" gap="8px">
+                      <Text as="span">{tagFilterLabel}</Text>
+                      <ChevronDownIcon />
+                    </Flex>
+                  </Button>
+
+                  {isTagFilterOpen ? (
+                    <Box
+                      position="absolute"
+                      top="calc(100% + 8px)"
+                      left="0"
+                      minW="220px"
+                      borderWidth="1px"
+                      borderColor="#E5E7EB"
+                      borderRadius="12px"
+                      bg="#FFFFFF"
+                      boxShadow="0 12px 32px rgba(17, 24, 39, 0.12)"
+                      p="8px"
+                      zIndex={20}
+                    >
+                      <CheckboxGroup
+                        value={selectedTags}
+                        onValueChange={(values) => setSelectedTags([...values])}
+                      >
+                        <Flex direction="column" gap="2px">
+                          {tagOptions.map((tag) => (
+                            <Checkbox.Root
+                              key={tag}
+                              value={tag}
+                              size="sm"
+                              px="10px"
+                              py="8px"
+                              borderRadius="8px"
+                              _hover={{ bg: '#F9FAFB' }}
+                            >
+                              <Checkbox.HiddenInput />
+                              <Flex align="center" gap="8px">
+                                <Checkbox.Control />
+                                <Checkbox.Label>
+                                  <Text fontSize="13px" fontWeight="500" color="#374151">
+                                    {tag}
+                                  </Text>
+                                </Checkbox.Label>
+                              </Flex>
+                            </Checkbox.Root>
+                          ))}
+                        </Flex>
+                      </CheckboxGroup>
+                    </Box>
+                  ) : null}
+                </Box>
+
+                <Flex ml="auto" align="center" gap="8px">
+                  <Text fontSize="13px" fontWeight="500" color="#6B7280">
+                    홍보글만 보기
+                  </Text>
+                  <AdminSwitch
+                    size="sm"
+                    checked={isPromotedOnly}
+                    onCheckedChange={setIsPromotedOnly}
+                  />
+                </Flex>
+              </Flex>
+
+            </Flex>
+
+          </Flex>
         }
         right={null}
       />
+
+      <Flex align="center" justify="space-between" gap="12px" mb="4px">
+        <Flex
+          flex="1"
+          minW="320px"
+          maxW="420px"
+          h="40px"
+          align="center"
+          gap="8px"
+          borderWidth="1px"
+          borderColor="#E5E7EB"
+          borderRadius="8px"
+          bg="#FFFFFF"
+          px="12px"
+        >
+          <Box color="#9CA3AF" flexShrink={0}>
+            <SearchIcon />
+          </Box>
+          <Input
+            h="100%"
+            border="0"
+            bg="transparent"
+            px="0"
+            fontSize="13px"
+            color="#111827"
+            placeholder="제목 / 내용 / 작성자 프로필 명"
+            _placeholder={{ color: '#9CA3AF' }}
+            _hover={{ borderColor: 'transparent' }}
+            _focus={{
+              borderColor: 'transparent',
+              boxShadow: 'none',
+              outline: 'none',
+            }}
+          />
+        </Flex>
+
+        <Flex align="center" gap="8px">
+          <Button
+            type="button"
+            variant="outline"
+            h="40px"
+            px="12px"
+            borderRadius="8px"
+            borderColor="#F59E42"
+            bg="#FFFFFF"
+            color="#F59E42"
+            fontSize="13px"
+            fontWeight="600"
+            _hover={{ bg: '#FFF7ED' }}
+          >
+            <Flex align="center" gap="4px">
+              <Text as="span">13</Text>
+              <ChevronDownIcon />
+            </Flex>
+          </Button>
+
+          <AdminButton type="button" variantStyle="outline" size="sm">
+            <Flex align="center" gap="6px">
+              <Icon as={LuArchive} boxSize="14px" />
+              <Text as="span">선택 항목 보관</Text>
+            </Flex>
+          </AdminButton>
+
+          <AdminButton type="button" variantStyle="outline" size="sm">
+            <Flex align="center" gap="6px">
+              <Icon as={LuTrash2} boxSize="14px" />
+              <Text as="span">선택 항목 삭제</Text>
+            </Flex>
+          </AdminButton>
+
+          <AdminButton type="button" variantStyle="primary" size="sm">
+            글 작성
+          </AdminButton>
+        </Flex>
+      </Flex>
 
       <AdminTable>
         <AdminTableRoot>
@@ -322,12 +608,10 @@ export default function CommunityContentPage() {
               </AdminTableColumnHeader>
               <AdminTableColumnHeader w="72px">번호</AdminTableColumnHeader>
               <AdminTableColumnHeader w="88px">구분</AdminTableColumnHeader>
-              <AdminTableColumnHeader minW="260px">제목</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="180px">태그</AdminTableColumnHeader>
+              <AdminTableColumnHeader minW="320px">제목</AdminTableColumnHeader>
               <AdminTableColumnHeader w="120px">작성자</AdminTableColumnHeader>
               <AdminTableColumnHeader w="160px">발행일시</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="96px" textAlign="center">댓글 수</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="96px" textAlign="center">좋아요 수</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="96px" textAlign="center">저장 수</AdminTableColumnHeader>
               <AdminTableColumnHeader w="96px" textAlign="center">조회수</AdminTableColumnHeader>
               <AdminTableColumnHeader w="96px" textAlign="center">상태</AdminTableColumnHeader>
               <AdminTableColumnHeader w="56px" textAlign="center">액션</AdminTableColumnHeader>
@@ -335,7 +619,7 @@ export default function CommunityContentPage() {
           </AdminTableHead>
 
           <AdminTableBody>
-            {contentRows.map((row, index) => (
+            {filteredRows.map((row, index) => (
               <AdminTableRow key={`${row.id}-${row.author}-${index}`}>
                 <AdminTableCell textAlign="center" px="16px">
                   <Checkbox.Root size="sm">
@@ -346,23 +630,41 @@ export default function CommunityContentPage() {
                 <AdminTableCell fontWeight="600" color="#374151">{row.id}</AdminTableCell>
                 <AdminTableCell color="#4B5563">{row.type}</AdminTableCell>
                 <AdminTableCell>
+                  <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                    {row.tags.slice(0, 1).map((tag) => (
+                      <AdminBadge
+                        key={tag}
+                        tone="orange"
+                        h="24px"
+                        px="10px"
+                        fontSize="12px"
+                        fontWeight="500"
+                        flexShrink={0}
+                      >
+                        {tag}
+                      </AdminBadge>
+                    ))}
+                    {row.tags.length > 1 ? (
+                      <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
+                        +{row.tags.length - 1}
+                      </Text>
+                    ) : null}
+                  </Flex>
+                </AdminTableCell>
+                <AdminTableCell>
                   <Flex align="center" gap="8px" minW="0">
                     {row.isNotice ? (
-                      <Box
-                        as="span"
-                        display="inline-flex"
+                      <AdminBadge
+                        tone="black"
+                        rounded="md"
                         h="20px"
-                        alignItems="center"
-                        borderRadius="6px"
-                        bg="#111827"
                         px="6px"
                         fontSize="10px"
                         fontWeight="700"
-                        color="white"
                         flexShrink={0}
                       >
                         공지
-                      </Box>
+                      </AdminBadge>
                     ) : null}
                     <AdminTableEllipsisText fontSize="13px" fontWeight="500" color="#111827">
                       {row.title}
@@ -375,31 +677,24 @@ export default function CommunityContentPage() {
                 <AdminTableCell color="#6B7280">
                   <AdminTableEllipsisText>{row.publishedAt}</AdminTableEllipsisText>
                 </AdminTableCell>
-                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.commentCount}</AdminTableCell>
-                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.likeCount}</AdminTableCell>
-                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.exposureCount}</AdminTableCell>
                 <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.viewCount}</AdminTableCell>
                 <AdminTableCell textAlign="center">
-                  <Box
-                    as="span"
-                    display="inline-flex"
+                  <AdminBadge
+                    tone={getStatusTone(row.status)}
                     h="24px"
-                    alignItems="center"
-                    borderRadius="9999px"
                     px="12px"
                     fontSize="11px"
                     fontWeight="700"
-                    className={getStatusClassName(row.status)}
                   >
                     {row.status}
-                  </Box>
+                  </AdminBadge>
                 </AdminTableCell>
                 <AdminTableCell textAlign="center">
                   <IconButton
                     aria-label="콘텐츠 액션"
-                    variant="ghost"
                     size="xs"
                     color="#9CA3AF"
+                    bg="transparent"
                     _hover={{ bg: '#F9FAFB', color: '#6B7280' }}
                   >
                     <MoreVerticalIcon />
@@ -411,22 +706,11 @@ export default function CommunityContentPage() {
         </AdminTableRoot>
       </AdminTable>
 
-      <Flex align="center" justify="space-between" gap="16px">
-        <Flex flexWrap="wrap" align="center" gap="8px">
-          <AdminButton type="button" variantStyle="outline" size="sm">
-            <Text as="span">선택 항목 보관</Text>
-          </AdminButton>
-          <AdminButton type="button" variantStyle="outline" size="sm">
-            <Text as="span">선택 항목 삭제</Text>
-          </AdminButton>
-        </Flex>
-
+      <Flex justify="space-between" align="center" mt="4px">
         <Text fontSize="13px" fontWeight="500" color="#4B5563">
-          항목 수 : {contentRows.length}개
+          항목 수 : {filteredRows.length}개
         </Text>
-      </Flex>
 
-      <Flex justify="flex-end" mt="4px">
         <AdminTablePagination items={paginationItems} />
       </Flex>
     </PageContainer>
