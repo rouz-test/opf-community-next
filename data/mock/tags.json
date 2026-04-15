@@ -1,0 +1,58 @@
+[
+  {
+    "id": "tag_1",
+    "name": "미지정",
+    "slug": "미지정",
+    "status": "active",
+    "isDefault": true,
+    "sortOrder": 1,
+    "style": {
+      "textColor": "#454545",
+      "bgColor": "#DEDEDE"
+    },
+    "createdAt": "2026-04-13T10:00:00.000Z",
+    "updatedAt": "2026-04-15T04:44:18.238Z"
+  },
+  {
+    "id": "tag_1776216676340",
+    "name": "테스트1",
+    "slug": "테스트1",
+    "status": "inactive",
+    "isDefault": false,
+    "sortOrder": 3,
+    "style": {
+      "textColor": "#686B00",
+      "bgColor": "#FFFED5"
+    },
+    "createdAt": "2026-04-15T01:31:16.339Z",
+    "updatedAt": "2026-04-15T04:44:18.263Z"
+  },
+  {
+    "id": "tag_1776227414022",
+    "name": "테스트2",
+    "slug": "테스트2",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 2,
+    "style": {
+      "textColor": "#C2410C",
+      "bgColor": "#FFEDD5"
+    },
+    "createdAt": "2026-04-15T04:30:14.022Z",
+    "updatedAt": "2026-04-15T04:44:18.257Z"
+  },
+  {
+    "id": "tag_1776227420728",
+    "name": "테스트3",
+    "slug": "테스트3",
+    "status": "inactive",
+    "isDefault": false,
+    "sortOrder": 4,
+    "style": {
+      "textColor": "#007D0E",
+      "bgColor": "#CCFFA6"
+    },
+    "createdAt": "2026-04-15T04:30:20.728Z",
+    "updatedAt": "2026-04-15T04:44:18.269Z"
+  }
+]

@@ -25,7 +25,7 @@ export default function AdminTextField({
   const isError = isOverLimit || hasExternalError;
 
   return (
-    <Flex direction="column" gap="8px">
+    <Flex direction="column" gap="8px" w="100%">
       {label ? (
         <Text fontSize="12px" fontWeight="600" color="#4B5563">
           {label}
@@ -33,6 +33,7 @@ export default function AdminTextField({
       ) : null}
 
       <Input
+        w="100%"
         h={h}
         borderRadius={borderRadius}
         borderColor={isError ? '#FF5A5A' : borderColor}

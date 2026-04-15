@@ -1,9 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import {
   Box,
-  Button,
   Flex,
   Text,
 } from '@chakra-ui/react';
@@ -18,45 +17,102 @@ import AdminBadge from '@/app/admin/components/ui/badge';
 import AdminSwitch from '@/app/admin/components/ui/switch';
 import CreateTagModal, { type TagFormValues } from './CreateTagModal';
 import BaseModal from '@/app/admin/components/modal/base-modal';
+import { createTag, deleteTag, getTags, updateTag } from '@/lib/tags';
+import type { Tag } from '@/types/tag';
 
 type TagItem = TagFormValues & {
+  id: string;
   count: string;
   countAccent?: boolean;
   isVisible: boolean;
   isFixed?: boolean;
 };
 
-const initialTags: TagItem[] = [
-  { name: '미지정', count: '195,405', textColor: '#6B7280', bgColor: '#F3F4F6', isVisible: true, isFixed: true },
-  { name: '마케팅', count: '195,405', textColor: '#F59E42', bgColor: '#FFF1E8', isVisible: true },
-  { name: '프로덕트', count: '193', textColor: '#5B5CE2', bgColor: '#ECEBFF', isVisible: true },
-  { name: '인사', count: '32,344', textColor: '#EC4899', bgColor: '#FDE7F3', isVisible: false },
-  { name: 'MVP', count: '0', textColor: '#3B82F6', bgColor: '#DBEAFE', isVisible: true },
-  { name: '마케팅', count: '195,405', textColor: '#F59E42', bgColor: '#FFF1E8', countAccent: true, isVisible: true },
-  { name: '마케팅', count: '195,405', textColor: '#F59E42', bgColor: '#FFF1E8', countAccent: true, isVisible: false },
-  { name: '마케팅', count: '195,405', textColor: '#F59E42', bgColor: '#FFF1E8', countAccent: true, isVisible: true },
-];
+const mapTagToTagItem = (tag: Tag): TagItem => ({
+  id: tag.id,
+  name: tag.name,
+  textColor: tag.style.textColor,
+  bgColor: tag.style.bgColor,
+  count: '0',
+  isVisible: tag.isDefault ? true : tag.status === 'active',
+  isFixed: tag.isDefault,
+});
+
+const sortTagsByOrder = (items: Tag[]) =>
+  [...items].sort((a, b) => a.sortOrder - b.sortOrder);
 
 export default function CommunityTagsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTagIndex, setEditingTagIndex] = useState<number | null>(null);
   const [deletingTagIndex, setDeletingTagIndex] = useState<number | null>(null);
-  const [tags, setTags] = useState<TagItem[]>(initialTags);
+  const [tags, setTags] = useState<TagItem[]>([]);
 
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const handleToggleVisibility = (targetIndex: number, checked: boolean) => {
-    setTags((prev) =>
-      prev.map((tag, index) =>
-        index === targetIndex ? { ...tag, isVisible: checked } : tag,
-      ),
-    );
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTags = async () => {
+      try {
+        const fetchedTags = await getTags();
+
+        if (!isMounted) return;
+
+        setTags(sortTagsByOrder(fetchedTags).map(mapTagToTagItem));
+      } catch (error) {
+        console.error('[CommunityTagsPage] failed to load tags:', error);
+
+        toaster.create({
+          description: '태그 목록을 불러오지 못했습니다.',
+          type: 'error',
+          duration: 2000,
+        });
+      }
+    };
+
+    void loadTags();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleToggleVisibility = async (targetIndex: number, checked: boolean) => {
+    const targetTag = tags[targetIndex];
+    if (!targetTag) return;
+
+    try {
+      const updatedTag = await updateTag({
+        id: targetTag.id,
+        name: targetTag.name,
+        textColor: targetTag.textColor,
+        bgColor: targetTag.bgColor,
+        status: checked ? 'active' : 'inactive',
+      });
+
+      setTags((prev) =>
+        prev.map((tag, index) =>
+          index === targetIndex ? mapTagToTagItem(updatedTag) : tag,
+        ),
+      );
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '태그 상태를 변경하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleDragStart = (event: DragEvent<HTMLDivElement>, index: number) => {
-    if (index === 0) return;
+    const targetTag = tags[index];
+    if (!targetTag || targetTag.isFixed) return;
 
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(index));
@@ -64,31 +120,70 @@ export default function CommunityTagsPage() {
   };
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>, index: number) => {
-    if (index === 0 || draggingIndex === null || draggingIndex === index) return;
+    const targetTag = tags[index];
+    if (!targetTag || targetTag.isFixed || draggingIndex === null || draggingIndex === index) {
+      return;
+    }
 
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     setDragOverIndex(index);
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>, targetIndex: number) => {
+  const handleDrop = async (event: DragEvent<HTMLDivElement>, targetIndex: number) => {
     event.preventDefault();
 
-    if (draggingIndex === null || draggingIndex === targetIndex || targetIndex === 0) {
+    const targetTag = tags[targetIndex];
+    if (!targetTag || targetTag.isFixed || draggingIndex === null || draggingIndex === targetIndex) {
       setDraggingIndex(null);
       setDragOverIndex(null);
       return;
     }
 
-    setTags((prev) => {
-      const next = [...prev];
-      const [movedItem] = next.splice(draggingIndex, 1);
-      next.splice(targetIndex, 0, movedItem);
-      return next;
-    });
+    const previousTags = tags;
+    const nextTags = [...tags];
+    const [movedItem] = nextTags.splice(draggingIndex, 1);
 
+    if (!movedItem) {
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    nextTags.splice(targetIndex, 0, movedItem);
+    setTags(nextTags);
     setDraggingIndex(null);
     setDragOverIndex(null);
+
+    try {
+      for (const [index, tag] of nextTags.entries()) {
+        await updateTag({
+          id: tag.id,
+          name: tag.name,
+          textColor: tag.textColor,
+          bgColor: tag.bgColor,
+          status: tag.isVisible ? 'active' : 'inactive',
+          sortOrder: index + 1,
+        });
+      }
+      toaster.create({
+        description: '태그 순서가 변경되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      setTags(previousTags);
+
+      const message = error instanceof Error
+        ? error.message
+        : '태그 순서를 저장하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleDragEnd = () => {
@@ -96,21 +191,32 @@ export default function CommunityTagsPage() {
     setDragOverIndex(null);
   };
 
-  const handleCreateTag = (values: TagFormValues) => {
-    setTags((prev) => [
-      ...prev,
-      {
-        ...values,
-        count: '0',
-        isVisible: true,
-      },
-    ]);
+  const handleCreateTag = async (values: TagFormValues) => {
+    try {
+      const createdTag = await createTag({
+        name: values.name,
+        textColor: values.textColor,
+        bgColor: values.bgColor,
+      });
 
-    toaster.create({
-      description: '태그가 추가되었습니다.',
-      type: 'success',
-      duration: 2000,
-    });
+      setTags((prev) => [...prev, mapTagToTagItem(createdTag)]);
+
+      toaster.create({
+        description: '태그가 추가되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '태그를 저장하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleOpenEdit = (index: number) => {
@@ -118,46 +224,95 @@ export default function CommunityTagsPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleSubmitEdit = (values: TagFormValues) => {
+  const handleSubmitEdit = async (values: TagFormValues) => {
     if (editingTagIndex === null) return;
 
-    setTags((prev) =>
-      prev.map((tag, index) =>
-        index === editingTagIndex ? { ...tag, ...values } : tag,
-      ),
-    );
+    const editingTag = tags[editingTagIndex];
+    if (!editingTag) return;
 
-    toaster.create({
-      description: '태그가 수정되었습니다.',
-      type: 'success',
-      duration: 2000,
-    });
+    try {
+      const updatedTag = await updateTag({
+        id: editingTag.id,
+        name: values.name,
+        textColor: values.textColor,
+        bgColor: values.bgColor,
+      });
+
+      setTags((prev) =>
+        prev.map((tag, index) =>
+          index === editingTagIndex ? mapTagToTagItem(updatedTag) : tag,
+        ),
+      );
+
+      setIsEditModalOpen(false);
+      setEditingTagIndex(null);
+
+      toaster.create({
+        description: '태그가 수정되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '태그를 수정하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleDeleteTag = (targetIndex: number) => {
     setDeletingTagIndex(targetIndex);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingTagIndex === null) return;
 
-    setTags((prev) => prev.filter((_, index) => index !== deletingTagIndex));
+    const deletingTag = tags[deletingTagIndex];
+    if (!deletingTag) return;
 
-    if (editingTagIndex === deletingTagIndex) {
-      setEditingTagIndex(null);
-      setIsEditModalOpen(false);
+    try {
+      await deleteTag(deletingTag.id);
+
+      setTags((prev) => prev.filter((_, index) => index !== deletingTagIndex));
+
+      if (editingTagIndex === deletingTagIndex) {
+        setEditingTagIndex(null);
+        setIsEditModalOpen(false);
+      }
+
+      setDeletingTagIndex(null);
+
+      toaster.create({
+        description: '태그가 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '태그를 삭제하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
     }
-
-    setDeletingTagIndex(null);
-
-    toaster.create({
-      description: '태그가 삭제되었습니다.',
-      type: 'success',
-      duration: 2000,
-    });
   };
 
   const editingTag = editingTagIndex !== null ? tags[editingTagIndex] ?? null : null;
+  const editingTagValues = editingTag
+    ? {
+        name: editingTag.name,
+        textColor: editingTag.textColor,
+        bgColor: editingTag.bgColor,
+      }
+    : null;
   const deletingTag = deletingTagIndex !== null ? tags[deletingTagIndex] ?? null : null;
 
   return (
@@ -190,13 +345,13 @@ export default function CommunityTagsPage() {
 
         <Flex direction="column" gap="12px">
           {tags.map((tag, index) => {
-            const isFirst = index === 0;
+            const isFixedTag = !!tag.isFixed;
             const isDragging = draggingIndex === index;
             const isDragOver = dragOverIndex === index;
 
             return (
               <Box
-                key={`${tag.name}-${index}`}
+                key={`${tag.name}-${tag.textColor}-${tag.bgColor}-${index}`}
                 onDragOver={(event) => handleDragOver(event, index)}
                 onDrop={(event) => handleDrop(event, index)}
               >
@@ -216,12 +371,12 @@ export default function CommunityTagsPage() {
                       align="center"
                       justify="center"
                       color="#4B5563"
-                      draggable={!isFirst}
-                      cursor={isFirst ? 'default' : isDragging ? 'grabbing' : 'grab'}
+                      draggable={!isFixedTag}
+                      cursor={isFixedTag ? 'default' : isDragging ? 'grabbing' : 'grab'}
                       onDragStart={(event) => handleDragStart(event, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      {!isFirst ? <DragHandleIcon /> : null}
+                      {!isFixedTag ? <DragHandleIcon /> : null}
                     </Flex>
 
                     <AdminBadge
@@ -247,7 +402,7 @@ export default function CommunityTagsPage() {
                         checked={tag.isVisible}
                         onCheckedChange={(checked) => handleToggleVisibility(index, checked)}
                       />
-                      {!isFirst ? (
+                      {!isFixedTag ? (
                         <>
                           <AdminIconButton aria-label="태그 수정" onClick={() => handleOpenEdit(index)}>
                             <EditIcon />
@@ -261,7 +416,7 @@ export default function CommunityTagsPage() {
                   </Flex>
                 </AdminCard>
 
-                {isFirst ? <Box my="16px" borderTop="1px solid" borderColor="#E5E7EB" /> : null}
+                {isFixedTag ? <Box my="16px" borderTop="1px solid" borderColor="#E5E7EB" /> : null}
               </Box>
             );
           })}
@@ -284,10 +439,12 @@ export default function CommunityTagsPage() {
           setEditingTagIndex(null);
         }}
         onSubmit={handleSubmitEdit}
-        initialValues={editingTag}
+        initialValues={editingTagValues}
         title="태그 수정"
         submitLabel="저장"
-        existingTagNames={tags.map((tag) => tag.name)}
+        existingTagNames={tags
+          .filter((_, index) => index !== editingTagIndex)
+          .map((tag) => tag.name)}
       />
       <BaseModal
         isOpen={deletingTagIndex !== null}

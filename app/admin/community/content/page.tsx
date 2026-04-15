@@ -8,7 +8,6 @@ import {
   Flex,
   Icon,
   IconButton,
-  Input,
   Table,
   Text,
 } from '@chakra-ui/react';
@@ -18,6 +17,7 @@ import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminBadge from '@/app/admin/components/ui/badge';
 import AdminSwitch from '@/app/admin/components/ui/switch';
+import AdminSearchField from '@/app/admin/components/ui/search-field';
 import AdminTable, {
   AdminTableBody,
   AdminTableCell,
@@ -57,6 +57,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    isPromoted: true,
     tags: ['개발'],
   },
   {
@@ -83,6 +84,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '노출',
+    isPromoted: true,
     tags: ['개발', '공지'],
   },
   {
@@ -149,6 +151,7 @@ const contentRows = [
     exposureCount: 80,
     viewCount: 32,
     status: '임시',
+    isPromoted: true,
     tags: ['운영', 'UX/UI'],
   },
   {
@@ -259,6 +262,9 @@ export default function CommunityContentPage() {
   const [isPromotedOnly, setIsPromotedOnly] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [appliedStartDate, setAppliedStartDate] = useState('');
@@ -283,9 +289,11 @@ export default function CommunityContentPage() {
     setAppliedEndDate(endDate);
   };
 
+  const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
+
   const filteredRows = contentRows.filter((row) => {
     const publishedAt = parsePublishedAtDate(row.publishedAt);
-    if (!publishedAt) return true;
+    if (!publishedAt) return false;
 
     if (appliedStartDate) {
       const start = new Date(appliedStartDate);
@@ -299,8 +307,41 @@ export default function CommunityContentPage() {
       if (publishedAt > end) return false;
     }
 
+    if (normalizedSearchKeyword) {
+      const searchTarget = [row.title, row.author, row.type, ...(row.tags ?? [])]
+        .join(' ')
+        .toLowerCase();
+
+      if (!searchTarget.includes(normalizedSearchKeyword)) {
+        return false;
+      }
+    }
+
     return true;
   });
+
+  const visibleRowKeys = filteredRows.map((row, index) => `${row.id}-${row.author}-${index}`);
+  const isAllSelected = visibleRowKeys.length > 0 && visibleRowKeys.every((key) => selectedRowKeys.includes(key));
+  const isIndeterminate = selectedRowKeys.length > 0 && !isAllSelected;
+
+  const handleToggleAllRows = (checked: boolean) => {
+    if (checked) {
+      setSelectedRowKeys(visibleRowKeys);
+      return;
+    }
+
+    setSelectedRowKeys([]);
+  };
+
+  const handleToggleRow = (rowKey: string, checked: boolean) => {
+    setSelectedRowKeys((prev) => {
+      if (checked) {
+        return prev.includes(rowKey) ? prev : [...prev, rowKey];
+      }
+
+      return prev.filter((key) => key !== rowKey);
+    });
+  };
 
   const tagFilterLabel = selectedTags.length > 0 ? `태그 ${selectedTags.length}개` : '태그';
 
@@ -421,7 +462,6 @@ export default function CommunityContentPage() {
                   <IconButton
                     type="button"
                     aria-label="기간 검색"
-                    variant="ghost"
                     h="40px"
                     w="44px"
                     minW="44px"
@@ -522,39 +562,18 @@ export default function CommunityContentPage() {
       />
 
       <Flex align="center" justify="space-between" gap="12px" mb="4px">
-        <Flex
-          flex="1"
-          minW="320px"
-          maxW="420px"
-          h="40px"
-          align="center"
-          gap="8px"
-          borderWidth="1px"
-          borderColor="#E5E7EB"
-          borderRadius="8px"
-          bg="#FFFFFF"
-          px="12px"
-        >
-          <Box color="#9CA3AF" flexShrink={0}>
-            <SearchIcon />
-          </Box>
-          <Input
-            h="100%"
-            border="0"
-            bg="transparent"
-            px="0"
-            fontSize="13px"
-            color="#111827"
-            placeholder="제목 / 내용 / 작성자 프로필 명"
-            _placeholder={{ color: '#9CA3AF' }}
-            _hover={{ borderColor: 'transparent' }}
-            _focus={{
-              borderColor: 'transparent',
-              boxShadow: 'none',
-              outline: 'none',
-            }}
-          />
-        </Flex>
+      <Box flex="1" minW="640px" maxW="840px">
+        <AdminSearchField
+          w="480px"
+          placeholder="제목 / 내용 / 작성자 프로필 명"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          onEnter={(value) => {
+            setAppliedSearchKeyword(value);
+            setSelectedRowKeys([]);
+          }}
+        />
+      </Box>
 
         <Flex align="center" gap="8px">
           <Button
@@ -601,7 +620,11 @@ export default function CommunityContentPage() {
           <AdminTableHead>
             <Table.Row>
               <AdminTableColumnHeader w="44px" textAlign="center" px="16px">
-                <Checkbox.Root size="sm">
+                <Checkbox.Root
+                  size="sm"
+                  checked={isAllSelected ? true : isIndeterminate ? 'indeterminate' : false}
+                  onCheckedChange={(details) => handleToggleAllRows(details.checked === true)}
+                >
                   <Checkbox.HiddenInput />
                   <Checkbox.Control />
                 </Checkbox.Root>
@@ -619,10 +642,17 @@ export default function CommunityContentPage() {
           </AdminTableHead>
 
           <AdminTableBody>
-            {filteredRows.map((row, index) => (
-              <AdminTableRow key={`${row.id}-${row.author}-${index}`}>
+            {filteredRows.map((row, index) => {
+              const rowKey = `${row.id}-${row.author}-${index}`;
+
+              return (
+              <AdminTableRow key={rowKey}>
                 <AdminTableCell textAlign="center" px="16px">
-                  <Checkbox.Root size="sm">
+                  <Checkbox.Root
+                    size="sm"
+                    checked={selectedRowKeys.includes(rowKey)}
+                    onCheckedChange={(details) => handleToggleRow(rowKey, details.checked === true)}
+                  >
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />
                   </Checkbox.Root>
@@ -631,6 +661,19 @@ export default function CommunityContentPage() {
                 <AdminTableCell color="#4B5563">{row.type}</AdminTableCell>
                 <AdminTableCell>
                   <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                    {row.isPromoted ? (
+                      <AdminBadge
+                        tone="black"
+                        h="24px"
+                        px="10px"
+                        fontSize="12px"
+                        fontWeight="500"
+                        flexShrink={0}
+                      >
+                        홍보
+                      </AdminBadge>
+                    ) : null}
+
                     {row.tags.slice(0, 1).map((tag) => (
                       <AdminBadge
                         key={tag}
@@ -644,6 +687,7 @@ export default function CommunityContentPage() {
                         {tag}
                       </AdminBadge>
                     ))}
+
                     {row.tags.length > 1 ? (
                       <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
                         +{row.tags.length - 1}
@@ -701,14 +745,15 @@ export default function CommunityContentPage() {
                   </IconButton>
                 </AdminTableCell>
               </AdminTableRow>
-            ))}
+              );
+            })}
           </AdminTableBody>
         </AdminTableRoot>
       </AdminTable>
 
       <Flex justify="space-between" align="center" mt="4px">
         <Text fontSize="13px" fontWeight="500" color="#4B5563">
-          항목 수 : {filteredRows.length}개
+          항목 수 : {filteredRows.length}
         </Text>
 
         <AdminTablePagination items={paginationItems} />

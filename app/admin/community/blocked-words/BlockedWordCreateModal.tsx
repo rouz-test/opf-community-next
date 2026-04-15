@@ -17,7 +17,8 @@ type BlockedWordCreateModalProps = {
   value: string;
   onChange: (value: string) => void;
   onSubmit?: () => void;
-  existingKeywords?: string[];
+  errorMessage?: string;
+  isSubmitting?: boolean;
 };
 
 export default function BlockedWordCreateModal({
@@ -26,10 +27,10 @@ export default function BlockedWordCreateModal({
   value,
   onChange,
   onSubmit,
-  existingKeywords = [],
+  errorMessage,
+  isSubmitting = false,
 }: BlockedWordCreateModalProps) {
   const trimmedValue = value.trim();
-  const isDuplicate = existingKeywords.some((keyword) => keyword === trimmedValue);
   return (
     <BaseModal
       isOpen={isOpen}
@@ -52,7 +53,7 @@ export default function BlockedWordCreateModal({
             size="md"
             onClick={onSubmit}
             flex={1}
-            disabled={!trimmedValue || isDuplicate}
+            disabled={!trimmedValue || isSubmitting}
           >
             등록하기
           </AdminButton>
@@ -68,7 +69,7 @@ export default function BlockedWordCreateModal({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && trimmedValue && !isDuplicate) {
+              if (e.key === 'Enter' && trimmedValue && !isSubmitting) {
                 onSubmit?.();
               }
             }}
@@ -86,9 +87,9 @@ export default function BlockedWordCreateModal({
             }}
           />
         </InputGroup>
-        {isDuplicate && (
+        {errorMessage && (
           <Text fontSize="12px" color="#DC2626">
-            이미 등록된 키워드입니다.
+            {errorMessage}
           </Text>
         )}
       </Flex>
