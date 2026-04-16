@@ -87,3 +87,44 @@ export async function deleteTag(id: string): Promise<void> {
     throw new Error(errorBody?.message || '태그를 삭제하지 못했습니다.');
   }
 }
+
+export interface ResolvedTag {
+  id: string;
+  name: string;
+  textColor: string;
+  bgColor: string;
+  isDefault: boolean;
+  status: Tag['status'];
+  sortOrder: number;
+}
+
+type ResolveTagsOptions = {
+  includeInactive?: boolean;
+};
+
+export function resolveTags(
+  tagIds: string[],
+  tags: Tag[],
+  options: ResolveTagsOptions = {},
+): ResolvedTag[] {
+  const { includeInactive = true } = options;
+  const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
+
+  return tagIds
+    .map((tagId) => tagMap.get(tagId))
+    .filter((tag): tag is Tag => {
+      if (!tag) return false;
+      if (!includeInactive && tag.status === 'inactive') return false;
+      return true;
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      textColor: tag.style.textColor,
+      bgColor: tag.style.bgColor,
+      isDefault: tag.isDefault,
+      status: tag.status,
+      sortOrder: tag.sortOrder,
+    }));
+}

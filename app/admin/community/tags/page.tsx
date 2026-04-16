@@ -13,7 +13,7 @@ import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
 import { toaster } from '@/app/admin/components/ui/toaster';
 import AdminCard from '@/app/admin/components/ui/card';
-import AdminBadge from '@/app/admin/components/ui/badge';
+import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import AdminSwitch from '@/app/admin/components/ui/switch';
 import CreateTagModal, { type TagFormValues } from './CreateTagModal';
 import BaseModal from '@/app/admin/components/modal/base-modal';
@@ -379,19 +379,17 @@ export default function CommunityTagsPage() {
                       {!isFixedTag ? <DragHandleIcon /> : null}
                     </Flex>
 
-                    <AdminBadge
-                      tone="gray"
-                      minW="56px"
-                      px="12px"
-                      py="4px"
-                      fontSize="11px"
-                      fontWeight="600"
-                      color={tag.textColor}
-                      bg={tag.bgColor}
-                      borderColor="transparent"
-                    >
-                      {tag.name}
-                    </AdminBadge>
+                    <AdminTagBadge
+                      tag={{
+                        id: tag.id,
+                        name: tag.name,
+                        textColor: tag.textColor,
+                        bgColor: tag.bgColor,
+                        isDefault: !!tag.isFixed,
+                        status: tag.isVisible ? 'active' : 'inactive',
+                        sortOrder: index + 1,
+                      }}
+                    />
 
                     <Text minW="72px" fontSize="14px" fontWeight="500" color={tag.countAccent ? '#F59E42' : '#374151'}>
                       {tag.count}

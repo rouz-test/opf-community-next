@@ -186,7 +186,7 @@ export function AdminTableEllipsisText({
   tooltipLabel,
   ...rest
 }: AdminTableEllipsisTextProps) {
-  const textRef = useRef<HTMLParagraphElement | null>(null);
+  const textRef = useRef<HTMLDivElement | null>(null);
   const [isTruncated, setIsTruncated] = useState(false);
 
   useEffect(() => {
@@ -211,26 +211,35 @@ export function AdminTableEllipsisText({
       window.removeEventListener('resize', updateTruncated);
     };
   }, [children]);
+  const resolvedTooltipLabel =
+    typeof tooltipLabel === 'string'
+      ? tooltipLabel
+      : typeof children === 'string' || typeof children === 'number'
+      ? String(children)
+      : undefined;
 
-  return (
-    <Text
+  const textElement = (
+    <Box
       ref={textRef}
-      whiteSpace="nowrap"
-      overflow="hidden"
-      textOverflow="ellipsis"
       minW="0"
-      title={
-        isTruncated
-          ? typeof tooltipLabel === 'string'
-            ? tooltipLabel
-            : typeof children === 'string' || typeof children === 'number'
-            ? String(children)
-            : undefined
-          : undefined
-      }
-      {...rest}
+      maxW="100%"
+      display="block"
+      title={isTruncated ? resolvedTooltipLabel : undefined}
     >
-      {children}
-    </Text>
+      <Text
+        as="span"
+        whiteSpace="nowrap"
+        overflow="hidden"
+        textOverflow="ellipsis"
+        minW="0"
+        display="block"
+        maxW="100%"
+        {...rest}
+      >
+        {children}
+      </Text>
+    </Box>
   );
+
+  return textElement;
 }

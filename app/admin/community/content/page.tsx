@@ -1,5 +1,7 @@
 'use client';
 import { LuTrash2, LuArchive, LuCalendar } from 'react-icons/lu';
+import { ChevronDownIcon, MoreVerticalIcon, SearchIcon } from '@/app/admin/components/ui/icons';
+import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import {
   Box,
   Button,
@@ -11,7 +13,15 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import contentsData from '@/data/mock/contents.json';
+import tagsData from '@/data/mock/tags.json';
+import usersData from '@/data/mock/users.json';
+import type { Content, TiptapNode } from '@/types/content';
+import type { User } from '@/types/user';
+import { resolveTags } from '@/lib/tags';
+import type { Tag } from '@/types/tag';
+import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
@@ -31,183 +41,153 @@ import AdminTablePagination, {
   type AdminTablePaginationItem,
 } from '@/app/admin/components/ui/table/admin-table-pagination';
 
+const DEFAULT_PAGE_SIZE = 13;
+const PAGE_SIZE_OPTIONS = [13, 30, 50] as const;
+const PAGE_WINDOW = 5;
 
-const contentRows = [
-  {
-    id: 102,
-    type: '닉네임',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'User_A',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '보관',
-    tags: ['디자인', 'UX/UI'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '노출',
-    isPromoted: true,
-    tags: ['개발'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 32,
-    viewCount: 80,
-    status: '노출',
-    tags: ['운영'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '노출',
-    isPromoted: true,
-    tags: ['개발', '공지'],
-  },
-  {
-    id: 102,
-    type: '닉네임',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'User_A',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '고정',
-    tags: ['UX/UI'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '노출',
-    tags: ['개발'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '공지 레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 32,
-    viewCount: 80,
-    status: '고정',
-    isNotice: true,
-    tags: ['공지'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 32,
-    viewCount: 80,
-    status: '노출',
-    tags: ['디자인'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '임시',
-    isPromoted: true,
-    tags: ['운영', 'UX/UI'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '노출',
-    tags: ['개발'],
-  },
-  {
-    id: 102,
-    type: '실명',
-    title: '레딧 같은 앱 UI 추천좀...',
-    author: 'ADMIN',
-    publishedAt: '2024.01.20 14:23',
-    commentCount: 130,
-    likeCount: 80,
-    exposureCount: 80,
-    viewCount: 32,
-    status: '노출',
-    tags: ['디자인', '개발'],
-  },
-];
+function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): AdminTablePaginationItem[] {
+  if (totalPages <= 1) {
+    return [
+      { type: 'first' },
+      { type: 'prev' },
+      { type: 'page', value: 1, isActive: true },
+      { type: 'next' },
+      { type: 'last' },
+    ];
+  }
 
-const paginationItems: AdminTablePaginationItem[] = [
-  { type: 'first' },
-  { type: 'prev' },
-  { type: 'page', value: 1, isActive: true },
-  { type: 'page', value: 2 },
-  { type: 'page', value: 3 },
-  { type: 'page', value: 4 },
-  { type: 'page', value: 5 },
-  { type: 'ellipsis' },
-  { type: 'page', value: 163 },
-  { type: 'next' },
-  { type: 'last' },
-];
+  const items: AdminTablePaginationItem[] = [
+    { type: 'first' },
+    { type: 'prev' },
+  ];
 
-const tagOptions = ['디자인', '개발', 'UX/UI', '운영', '공지'];
+  const halfWindow = Math.floor(PAGE_WINDOW / 2);
+  let startPage = Math.max(1, currentPage - halfWindow);
+  let endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
+
+  if (endPage - startPage + 1 < PAGE_WINDOW) {
+    startPage = Math.max(1, endPage - PAGE_WINDOW + 1);
+  }
+
+  if (startPage > 1) {
+    items.push({ type: 'page', value: 1, isActive: currentPage === 1 });
+  }
+
+  if (startPage > 2) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push({
+      type: 'page',
+      value: page,
+      isActive: currentPage === page,
+    });
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  if (endPage < totalPages) {
+    items.push({
+      type: 'page',
+      value: totalPages,
+      isActive: currentPage === totalPages,
+    });
+  }
+
+  items.push({ type: 'next' }, { type: 'last' });
+
+  return items;
+}
+
+const contents = contentsData as Content[];
+const tags = tagsData as Tag[];
+const users = usersData as User[];
+const userMap = new Map(users.map((user) => [user.id, user]));
+const tagOptions = tags
+  .filter((tag) => tag.status !== 'inactive')
+  .map((tag) => tag.name);
+
+function extractTextFromTiptapNodes(nodes?: TiptapNode[]): string {
+  if (!nodes?.length) return '';
+
+  return nodes
+    .map((node) => {
+      const currentText = node.text ?? '';
+      const childText = extractTextFromTiptapNodes(node.content);
+      return [currentText, childText].filter(Boolean).join(' ');
+    })
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
+function getContentTypeLabel(isAnonymous: boolean) {
+  return isAnonymous ? '익명' : '실명';
+}
+
+function getAuthorDisplay(content: Content) {
+  const author = userMap.get(content.authorId);
+
+  if (!author) {
+    return content.authorId;
+  }
+
+  return content.isAnonymous ? author.profile.email : author.profile.name;
+}
+
+function getPublishedAtDisplay(content: Content) {
+  if (!content.timestamps.publishedAt) return '-';
+
+  const publishedAt = new Date(content.timestamps.publishedAt);
+  if (Number.isNaN(publishedAt.getTime())) return '-';
+
+  const yyyy = publishedAt.getFullYear();
+  const mm = String(publishedAt.getMonth() + 1).padStart(2, '0');
+  const dd = String(publishedAt.getDate()).padStart(2, '0');
+  const hh = String(publishedAt.getHours()).padStart(2, '0');
+  const min = String(publishedAt.getMinutes()).padStart(2, '0');
+
+  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+}
+
+function getContentStatusLabel(content: Content) {
+  if (content.publicationStatus === 'draft') return '임시';
+  if (content.publicationStatus === 'archived') return '보관';
+  if (content.flags.isNotice) return '공지';
+  if (content.flags.isPinned) return '고정';
+  return '노출';
+}
+
+function getContentReferenceDate(content: Content) {
+  const candidate = content.timestamps.publishedAt ?? content.timestamps.createdAt;
+  const parsed = new Date(candidate);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+const contentRows = contents.map((content) => ({
+  id: content.id,
+  type: getContentTypeLabel(content.isAnonymous),
+  title: content.title,
+  bodyText: extractTextFromTiptapNodes(content.body.content),
+  author: getAuthorDisplay(content),
+  publishedAt: getPublishedAtDisplay(content),
+  referenceDate: getContentReferenceDate(content),
+  viewCount: content.stats.viewCount,
+  status: getContentStatusLabel(content),
+  isPromoted: content.flags.isPromoted,
+  isNotice: content.flags.isNotice,
+  tags: resolveTags(content.tagIds, tags),
+}));
 
 function formatDateDisplay(value: string) {
   if (!value) return 'YYYY.MM.DD';
   return value.replaceAll('-', '.');
-}
-
-function parsePublishedAtDate(value: string) {
-  const [datePart] = value.split(' ');
-  const normalized = datePart.replaceAll('.', '-');
-  const parsed = new Date(normalized);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function getStatusTone(status: string) {
@@ -230,32 +210,6 @@ function getStatusTone(status: string) {
   return 'gray';
 }
 
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="9" cy="9" r="4.75" />
-      <path d="M12.5 12.5L16 16" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M5.5 7.5L10 12l4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function MoreVerticalIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
-      <circle cx="10" cy="4.5" r="1.2" />
-      <circle cx="10" cy="10" r="1.2" />
-      <circle cx="10" cy="15.5" r="1.2" />
-    </svg>
-  );
-}
 
 
 export default function CommunityContentPage() {
@@ -271,6 +225,9 @@ export default function CommunityContentPage() {
   const [appliedEndDate, setAppliedEndDate] = useState('');
   const startDateInputRef = useRef<HTMLInputElement | null>(null);
   const endDateInputRef = useRef<HTMLInputElement | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
 
   const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     const input = ref.current;
@@ -287,40 +244,101 @@ export default function CommunityContentPage() {
   const handleApplyDateFilter = () => {
     setAppliedStartDate(startDate);
     setAppliedEndDate(endDate);
+    setCurrentPage(1);
+    setIsPageSizeMenuOpen(false);
+  };
+
+  const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
+    if (item.type === 'first') {
+      setCurrentPage(1);
+      return;
+    }
+  
+    if (item.type === 'prev') {
+      setCurrentPage((prev) => Math.max(1, prev - 1));
+      return;
+    }
+  
+    if (item.type === 'next') {
+      setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+      return;
+    }
+  
+    if (item.type === 'last') {
+      setCurrentPage(totalPages);
+      return;
+    }
+  
+    if (item.type === 'page' && typeof item.value === 'number') {
+      setCurrentPage(item.value);
+    }
   };
 
   const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
 
   const filteredRows = contentRows.filter((row) => {
-    const publishedAt = parsePublishedAtDate(row.publishedAt);
-    if (!publishedAt) return false;
-
+    const referenceDate = row.referenceDate;
+  
     if (appliedStartDate) {
+      if (!referenceDate) return false;
       const start = new Date(appliedStartDate);
       start.setHours(0, 0, 0, 0);
-      if (publishedAt < start) return false;
+      if (referenceDate < start) return false;
     }
-
+  
     if (appliedEndDate) {
+      if (!referenceDate) return false;
       const end = new Date(appliedEndDate);
       end.setHours(23, 59, 59, 999);
-      if (publishedAt > end) return false;
+      if (referenceDate > end) return false;
     }
-
+  
+    if (selectedTags.length > 0) {
+      const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
+      if (!hasSelectedTag) {
+        return false;
+      }
+    }
+  
+    if (isPromotedOnly && !row.isPromoted) {
+      return false;
+    }
+  
     if (normalizedSearchKeyword) {
-      const searchTarget = [row.title, row.author, row.type, ...(row.tags ?? [])]
+      const searchTarget = [
+        row.title,
+        row.bodyText,
+        row.author,
+        row.type,
+        ...row.tags.map((tag) => tag.name),
+      ]
         .join(' ')
         .toLowerCase();
-
+  
       if (!searchTarget.includes(normalizedSearchKeyword)) {
         return false;
       }
     }
-
+  
     return true;
   });
 
-  const visibleRowKeys = filteredRows.map((row, index) => `${row.id}-${row.author}-${index}`);
+  const totalCount = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const pagedRows = filteredRows.slice(
+    (currentPageSafe - 1) * pageSize,
+    currentPageSafe * pageSize,
+  );
+  const paginationItems = getPaginationItems(currentPageSafe, totalPages);
+  
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const visibleRowKeys = pagedRows.map((row) => row.id);
   const isAllSelected = visibleRowKeys.length > 0 && visibleRowKeys.every((key) => selectedRowKeys.includes(key));
   const isIndeterminate = selectedRowKeys.length > 0 && !isAllSelected;
 
@@ -512,7 +530,11 @@ export default function CommunityContentPage() {
                     >
                       <CheckboxGroup
                         value={selectedTags}
-                        onValueChange={(values) => setSelectedTags([...values])}
+                        onValueChange={(values) => {
+                          setSelectedTags([...values]);
+                          setCurrentPage(1);
+                          setIsTagFilterOpen(false);
+                        }}
                       >
                         <Flex direction="column" gap="2px">
                           {tagOptions.map((tag) => (
@@ -549,7 +571,11 @@ export default function CommunityContentPage() {
                   <AdminSwitch
                     size="sm"
                     checked={isPromotedOnly}
-                    onCheckedChange={setIsPromotedOnly}
+                    onCheckedChange={(checked) => {
+                      setIsPromotedOnly(checked);
+                      setIsPageSizeMenuOpen(false);
+                      setCurrentPage(1);
+                    }}
                   />
                 </Flex>
               </Flex>
@@ -565,35 +591,30 @@ export default function CommunityContentPage() {
       <Box flex="1" minW="640px" maxW="840px">
         <AdminSearchField
           w="480px"
-          placeholder="제목 / 내용 / 작성자 프로필 명"
+          placeholder="제목 / 내용 / 작성자명"
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
           onEnter={(value) => {
             setAppliedSearchKeyword(value);
             setSelectedRowKeys([]);
+            setCurrentPage(1);
+            setIsPageSizeMenuOpen(false);
           }}
         />
       </Box>
 
         <Flex align="center" gap="8px">
-          <Button
-            type="button"
-            variant="outline"
-            h="40px"
-            px="12px"
-            borderRadius="8px"
-            borderColor="#F59E42"
-            bg="#FFFFFF"
-            color="#F59E42"
-            fontSize="13px"
-            fontWeight="600"
-            _hover={{ bg: '#FFF7ED' }}
-          >
-            <Flex align="center" gap="4px">
-              <Text as="span">13</Text>
-              <ChevronDownIcon />
-            </Flex>
-          </Button>
+          <AdminPageSizeSelect
+            value={pageSize}
+            options={PAGE_SIZE_OPTIONS}
+            isOpen={isPageSizeMenuOpen}
+            onToggle={() => setIsPageSizeMenuOpen((prev) => !prev)}
+            onSelect={(value) => {
+              setPageSize(value);
+              setCurrentPage(1);
+              setIsPageSizeMenuOpen(false);
+            }}
+          />
 
           <AdminButton type="button" variantStyle="outline" size="sm">
             <Flex align="center" gap="6px">
@@ -642,8 +663,8 @@ export default function CommunityContentPage() {
           </AdminTableHead>
 
           <AdminTableBody>
-            {filteredRows.map((row, index) => {
-              const rowKey = `${row.id}-${row.author}-${index}`;
+            {pagedRows.map((row, index) => {
+              const rowKey = row.id;
 
               return (
               <AdminTableRow key={rowKey}>
@@ -657,7 +678,9 @@ export default function CommunityContentPage() {
                     <Checkbox.Control />
                   </Checkbox.Root>
                 </AdminTableCell>
-                <AdminTableCell fontWeight="600" color="#374151">{row.id}</AdminTableCell>
+                <AdminTableCell fontWeight="600" color="#374151">
+                  {(currentPageSafe - 1) * pageSize + index + 1}
+                </AdminTableCell>
                 <AdminTableCell color="#4B5563">{row.type}</AdminTableCell>
                 <AdminTableCell>
                   <Flex align="center" gap="6px" minW="0" wrap="nowrap">
@@ -675,17 +698,9 @@ export default function CommunityContentPage() {
                     ) : null}
 
                     {row.tags.slice(0, 1).map((tag) => (
-                      <AdminBadge
-                        key={tag}
-                        tone="orange"
-                        h="24px"
-                        px="10px"
-                        fontSize="12px"
-                        fontWeight="500"
-                        flexShrink={0}
-                      >
-                        {tag}
-                      </AdminBadge>
+                      <Box key={tag.id} flexShrink={0}>
+                        <AdminTagBadge tag={tag} />
+                      </Box>
                     ))}
 
                     {row.tags.length > 1 ? (
@@ -710,16 +725,26 @@ export default function CommunityContentPage() {
                         공지
                       </AdminBadge>
                     ) : null}
-                    <AdminTableEllipsisText fontSize="13px" fontWeight="500" color="#111827">
+                    <AdminTableEllipsisText
+                      flex="1"
+                      minW="0"
+                      fontSize="13px"
+                      fontWeight="500"
+                      color="#111827"
+                    >
                       {row.title}
                     </AdminTableEllipsisText>
                   </Flex>
                 </AdminTableCell>
                 <AdminTableCell fontWeight="500" color="#4B5563">
-                  <AdminTableEllipsisText>{row.author}</AdminTableEllipsisText>
+                  <AdminTableEllipsisText flex="1" minW="0">
+                    {row.author}
+                  </AdminTableEllipsisText>
                 </AdminTableCell>
                 <AdminTableCell color="#6B7280">
-                  <AdminTableEllipsisText>{row.publishedAt}</AdminTableEllipsisText>
+                  <AdminTableEllipsisText flex="1" minW="0">
+                    {row.publishedAt}
+                  </AdminTableEllipsisText>
                 </AdminTableCell>
                 <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.viewCount}</AdminTableCell>
                 <AdminTableCell textAlign="center">
@@ -753,10 +778,13 @@ export default function CommunityContentPage() {
 
       <Flex justify="space-between" align="center" mt="4px">
         <Text fontSize="13px" fontWeight="500" color="#4B5563">
-          항목 수 : {filteredRows.length}
+         항목 수 : {totalCount}
         </Text>
 
-        <AdminTablePagination items={paginationItems} />
+        <AdminTablePagination
+          items={paginationItems}
+          onItemClick={handlePaginationItemClick}
+        />
       </Flex>
     </PageContainer>
   );

@@ -26,3 +26,30 @@ export function DeleteIcon() {
     </svg>
   );
 }
+
+export function SearchIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="9" cy="9" r="4.75" />
+      <path d="M12.5 12.5L16 16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M5.5 7.5L10 12l4.5-4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function MoreVerticalIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+      <circle cx="10" cy="4.5" r="1.2" />
+      <circle cx="10" cy="10" r="1.2" />
+      <circle cx="10" cy="15.5" r="1.2" />
+    </svg>
+  );
+}

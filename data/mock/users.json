@@ -1,0 +1,16 @@
+[
+    {
+      "id": "user_admin_1",
+      "profile": {
+        "name": "ADMIN",
+        "email": "admin01@orangeplanet.kr"
+      }
+    },
+    {
+      "id": "user_member_12",
+      "profile": {
+        "name": "홍길동",
+        "email": "user_member_12@example.com"
+      }
+    }
+  ]

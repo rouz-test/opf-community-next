@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Box,
@@ -13,10 +13,10 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { LuPlus, LuTrash2 } from 'react-icons/lu';
+import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import BaseModal from '@/app/admin/components/modal/base-modal';
-import BlockedWordCreateModal from './BlockedWordCreateModal';
 import AdminButton from '@/app/admin/components/ui/button';
 import { toaster } from '@/app/admin/components/ui/toaster';
 import AdminSearchField from '@/app/admin/components/ui/search-field';
@@ -29,63 +29,176 @@ import AdminTable, {
   AdminTableRoot,
   AdminTableRow,
 } from '@/app/admin/components/ui/table/admin-table';
-import AdminTablePagination, { type AdminTablePaginationItem } from '@/app/admin/components/ui/table/admin-table-pagination';
+import AdminTablePagination, {
+  type AdminTablePaginationItem,
+} from '@/app/admin/components/ui/table/admin-table-pagination';
+import {
+  createBlockedWord,
+  deleteBlockedWord,
+  getBlockedWords,
+} from '@/lib/blocked-words';
+import type { BlockedWord } from '@/types/blocked-word';
 
-const initialBlockedWords = [
-  { id: 1, keyword: '불법도박', createdAt: '2023-10-24', createdBy: 'admin01' },
-  { id: 2, keyword: '바카라', createdAt: '2023-10-24', createdBy: 'admin01' },
-  { id: 3, keyword: '욕설테스트', createdAt: '2023-10-23', createdBy: 'manager02' },
-  { id: 4, keyword: '성인광고', createdAt: '2023-10-22', createdBy: 'system' },
-  { id: 5, keyword: '개인정보유출', createdAt: '2023-10-20', createdBy: 'admin01' },
-  { id: 6, keyword: '개인정보유출', createdAt: '2023-10-20', createdBy: 'admin01' },
-  { id: 7, keyword: '개인정보유출', createdAt: '2023-10-20', createdBy: 'admin01' },
-];
+import BlockedWordCreateModal from './BlockedWordCreateModal';
 
-const paginationItems: AdminTablePaginationItem[] = [
-  { type: 'first' },
-  { type: 'prev' },
-  { type: 'page', value: 1, isActive: true },
-  { type: 'page', value: 2 },
-  { type: 'page', value: 3 },
-  { type: 'page', value: 4 },
-  { type: 'page', value: 5 },
-  { type: 'ellipsis' },
-  { type: 'page', value: 16 },
-  { type: 'next' },
-  { type: 'last' },
-];
+const DEFAULT_PAGE_SIZE = 13;
+const PAGE_SIZE_OPTIONS = [13, 30, 50] as const;
+const PAGE_WINDOW = 5;
 
+function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): AdminTablePaginationItem[] {
+  if (totalPages <= 1) {
+    return [
+      { type: 'first' },
+      { type: 'prev' },
+      { type: 'page', value: 1, isActive: true },
+      { type: 'next' },
+      { type: 'last' },
+    ];
+  }
+
+  const items: AdminTablePaginationItem[] = [
+    { type: 'first' },
+    { type: 'prev' },
+  ];
+
+  const halfWindow = Math.floor(PAGE_WINDOW / 2);
+  let startPage = Math.max(1, currentPage - halfWindow);
+  let endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
+
+  if (endPage - startPage + 1 < PAGE_WINDOW) {
+    startPage = Math.max(1, endPage - PAGE_WINDOW + 1);
+  }
+
+  if (startPage > 1) {
+    items.push({ type: 'page', value: 1, isActive: currentPage === 1 });
+  }
+
+  if (startPage > 2) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push({
+      type: 'page',
+      value: page,
+      isActive: currentPage === page,
+    });
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  if (endPage < totalPages) {
+    items.push({
+      type: 'page',
+      value: totalPages,
+      isActive: currentPage === totalPages,
+    });
+  }
+
+  items.push({ type: 'next' }, { type: 'last' });
+
+  return items;
+}
 
 export default function CommunityBlockedWordsPage() {
   const { open, onOpen, onClose } = useDisclosure();
-  const [blockedWords, setBlockedWords] = useState(initialBlockedWords);
+  const [blockedWords, setBlockedWords] = useState<BlockedWord[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [newKeyword, setNewKeyword] = useState('');
   const [createKeywordError, setCreateKeywordError] = useState('');
   const [isCreatingKeyword, setIsCreatingKeyword] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<(typeof initialBlockedWords)[number] | null>(null);
-  const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<BlockedWord | null>(null);
+  const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>([]);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBlockedWords = async () => {
+      try {
+        const fetchedBlockedWords = await getBlockedWords();
+
+        if (!isMounted) return;
+
+        setBlockedWords(fetchedBlockedWords);
+      } catch (error) {
+        console.error('[CommunityBlockedWordsPage] failed to load blocked words:', error);
+
+        toaster.create({
+          description: '금지 키워드 목록을 불러오지 못했습니다.',
+          type: 'error',
+          duration: 2000,
+        });
+      }
+    };
+
+    void loadBlockedWords();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
   const filteredBlockedWords = blockedWords.filter((item) =>
     normalizedSearchKeyword ? item.keyword.toLowerCase().includes(normalizedSearchKeyword) : true,
   );
 
-  const validateKeywordDuplicate = async (keyword: string) => {
-    // TODO: Replace this local mock with an actual API request.
-    // Example: call a validation endpoint and read the duplicate status from the response.
-    await Promise.resolve();
+  const totalCount = filteredBlockedWords.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const pagedBlockedWords = filteredBlockedWords.slice(
+    (currentPageSafe - 1) * pageSize,
+    currentPageSafe * pageSize,
+  );
+  const paginationItems = getPaginationItems(currentPageSafe, totalPages);
 
-    return blockedWords.some(
-      (item) => item.keyword.trim().toLowerCase() === keyword.trim().toLowerCase(),
-    );
-  };
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const allKeywordIds = filteredBlockedWords.map((item) => item.id);
-  const isAllSelected = filteredBlockedWords.length > 0 && filteredBlockedWords.every((item) => selectedKeywordIds.includes(item.id));
+  const isAllSelected =
+    filteredBlockedWords.length > 0 &&
+    filteredBlockedWords.every((item) => selectedKeywordIds.includes(item.id));
   const isIndeterminate = selectedKeywordIds.length > 0 && !isAllSelected;
+
+  const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
+    if (item.type === 'first') {
+      setCurrentPage(1);
+      return;
+    }
+
+    if (item.type === 'prev') {
+      setCurrentPage((prev) => Math.max(1, prev - 1));
+      return;
+    }
+
+    if (item.type === 'next') {
+      setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+      return;
+    }
+
+    if (item.type === 'last') {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    if (item.type === 'page' && typeof item.value === 'number') {
+      setCurrentPage(item.value);
+    }
+  };
 
   const handleCreateKeyword = async () => {
     const trimmedKeyword = newKeyword.trim();
@@ -93,31 +206,19 @@ export default function CommunityBlockedWordsPage() {
 
     setIsCreatingKeyword(true);
     setCreateKeywordError('');
+    setCurrentPage(1);
+    setIsPageSizeMenuOpen(false);
 
     try {
-      const isDuplicate = await validateKeywordDuplicate(trimmedKeyword);
+      const createdBlockedWord = await createBlockedWord({
+        keyword: trimmedKeyword,
+        createdBy: 'admin01',
+      });
 
-      if (isDuplicate) {
-        setCreateKeywordError('이미 등록된 키워드입니다.');
-        return;
-      }
-
-      const today = new Date();
-      const createdAt = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-        today.getDate(),
-      ).padStart(2, '0')}`;
-
-      setBlockedWords((prev) => [
-        {
-          id: Date.now(),
-          keyword: trimmedKeyword,
-          createdAt,
-          createdBy: 'admin01',
-        },
-        ...prev,
-      ]);
+      setBlockedWords((prev) => [createdBlockedWord, ...prev]);
       setNewKeyword('');
       setCreateKeywordError('');
+      setCurrentPage(1);
       onClose();
 
       toaster.create({
@@ -125,6 +226,12 @@ export default function CommunityBlockedWordsPage() {
         type: 'success',
         duration: 2000,
       });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '키워드를 등록하지 못했습니다.';
+
+      setCreateKeywordError(message);
     } finally {
       setIsCreatingKeyword(false);
     }
@@ -139,7 +246,7 @@ export default function CommunityBlockedWordsPage() {
     setSelectedKeywordIds([]);
   };
 
-  const handleToggleKeyword = (id: number, checked: boolean) => {
+  const handleToggleKeyword = (id: string, checked: boolean) => {
     setSelectedKeywordIds((prev) => {
       if (checked) {
         return prev.includes(id) ? prev : [...prev, id];
@@ -149,7 +256,7 @@ export default function CommunityBlockedWordsPage() {
     });
   };
 
-  const handleOpenDeleteModal = (item: (typeof initialBlockedWords)[number]) => {
+  const handleOpenDeleteModal = (item: BlockedWord) => {
     setDeleteTarget(item);
   };
 
@@ -157,18 +264,33 @@ export default function CommunityBlockedWordsPage() {
     setDeleteTarget(null);
   };
 
-  const handleDeleteKeyword = () => {
+  const handleDeleteKeyword = async () => {
     if (!deleteTarget) return;
 
-    setBlockedWords((prev) => prev.filter((item) => item.id !== deleteTarget.id));
-    setSelectedKeywordIds((prev) => prev.filter((itemId) => itemId !== deleteTarget.id));
-    setDeleteTarget(null);
+    try {
+      await deleteBlockedWord(deleteTarget.id);
 
-    toaster.create({
-      description: '키워드가 삭제되었습니다.',
-      type: 'success',
-      duration: 2000,
-    });
+      setBlockedWords((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      setSelectedKeywordIds((prev) => prev.filter((itemId) => itemId !== deleteTarget.id));
+      setDeleteTarget(null);
+      setCurrentPage(1);
+
+      toaster.create({
+        description: '키워드가 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : '키워드를 삭제하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleOpenBulkDeleteModal = () => {
@@ -180,18 +302,40 @@ export default function CommunityBlockedWordsPage() {
     setIsBulkDeleteModalOpen(false);
   };
 
-  const handleDeleteSelectedKeywords = () => {
+  const handleDeleteSelectedKeywords = async () => {
     if (selectedKeywordIds.length === 0) return;
 
-    setBlockedWords((prev) => prev.filter((item) => !selectedKeywordIds.includes(item.id)));
-    setSelectedKeywordIds([]);
-    setIsBulkDeleteModalOpen(false);
+    const previousBlockedWords = blockedWords;
 
-    toaster.create({
-      description: '선택한 키워드가 삭제되었습니다.',
-      type: 'success',
-      duration: 2000,
-    });
+    try {
+      for (const id of selectedKeywordIds) {
+        await deleteBlockedWord(id);
+      }
+
+      setBlockedWords((prev) => prev.filter((item) => !selectedKeywordIds.includes(item.id)));
+      setSelectedKeywordIds([]);
+      setIsBulkDeleteModalOpen(false);
+      setCurrentPage(1);
+      setIsPageSizeMenuOpen(false);
+
+      toaster.create({
+        description: '선택한 키워드가 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      setBlockedWords(previousBlockedWords);
+
+      const message = error instanceof Error
+        ? error.message
+        : '선택한 키워드를 삭제하지 못했습니다.';
+
+      toaster.create({
+        description: message,
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   return (
@@ -202,14 +346,12 @@ export default function CommunityBlockedWordsPage() {
             <Text fontSize="20px" fontWeight="600" lineHeight="1.2" color="#111827">
               금지 키워드 관리
             </Text>
-            
           </Box>
         }
         right={null}
       />
 
       <Flex direction="column" gap="16px">
-
         <Flex align="center" justify="space-between" gap="12px">
           <Box maxW="480px" w="100%">
             <AdminSearchField
@@ -220,39 +362,54 @@ export default function CommunityBlockedWordsPage() {
               onEnter={(value) => {
                 setAppliedSearchKeyword(value);
                 setSelectedKeywordIds([]);
+                setIsPageSizeMenuOpen(false);
+                setCurrentPage(1);
               }}
             />
           </Box>
 
           <Flex align="center" gap="8px">
-            <AdminButton
-              type="button"
-              variantStyle="outline"
-              size="sm"
-              onClick={handleOpenBulkDeleteModal}
-              disabled={selectedKeywordIds.length === 0}
-            >
-              <Flex align="center" gap="6px">
-                <Icon as={LuTrash2} boxSize="14px" />
-                <Text as="span">선택 항목 삭제</Text>
-              </Flex>
-            </AdminButton>
-
-            <AdminButton
-              type="button"
-              variantStyle="primary"
-              size="sm"
-              onClick={() => {
-                setCreateKeywordError('');
-                onOpen();
+            <AdminPageSizeSelect
+              value={pageSize}
+              options={PAGE_SIZE_OPTIONS}
+              isOpen={isPageSizeMenuOpen}
+              onToggle={() => setIsPageSizeMenuOpen((prev) => !prev)}
+              onSelect={(value) => {
+                setPageSize(value);
+                setCurrentPage(1);
+                setIsPageSizeMenuOpen(false);
               }}
-            >
-              <Flex align="center" gap="6px">
-                <Icon as={LuPlus} boxSize="14px" />
-                <Text as="span">키워드 등록</Text>
-              </Flex>
-            </AdminButton>
-          </Flex>
+            />
+
+  <AdminButton
+    type="button"
+    variantStyle="outline"
+    size="sm"
+    onClick={handleOpenBulkDeleteModal}
+    disabled={selectedKeywordIds.length === 0}
+  >
+    <Flex align="center" gap="6px">
+      <Icon as={LuTrash2} boxSize="14px" />
+      <Text as="span">선택 항목 삭제</Text>
+    </Flex>
+  </AdminButton>
+
+  <AdminButton
+    type="button"
+    variantStyle="primary"
+    size="sm"
+    onClick={() => {
+      setCreateKeywordError('');
+      setIsPageSizeMenuOpen(false);
+      onOpen();
+    }}
+  >
+    <Flex align="center" gap="6px">
+      <Icon as={LuPlus} boxSize="14px" />
+      <Text as="span">키워드 등록</Text>
+    </Flex>
+  </AdminButton>
+</Flex>
         </Flex>
 
         <AdminTable>
@@ -272,7 +429,6 @@ export default function CommunityBlockedWordsPage() {
                 <AdminTableColumnHeader>키워드</AdminTableColumnHeader>
                 <AdminTableColumnHeader w="140px">등록일</AdminTableColumnHeader>
                 <AdminTableColumnHeader w="140px">등록자</AdminTableColumnHeader>
-                
                 <AdminTableColumnHeader w="72px" textAlign="center">관리</AdminTableColumnHeader>
               </Table.Row>
             </AdminTableHead>
@@ -287,13 +443,15 @@ export default function CommunityBlockedWordsPage() {
                   </AdminTableCell>
                 </AdminTableRow>
               ) : (
-                filteredBlockedWords.map((item) => (
+                pagedBlockedWords.map((item) => (
                   <AdminTableRow key={item.id}>
                     <AdminTableCell textAlign="center" px="12px">
                       <Checkbox.Root
                         size="sm"
                         checked={selectedKeywordIds.includes(item.id)}
-                        onCheckedChange={(details) => handleToggleKeyword(item.id, details.checked === true)}
+                        onCheckedChange={(details) =>
+                          handleToggleKeyword(item.id, details.checked === true)
+                        }
                       >
                         <Checkbox.HiddenInput />
                         <Checkbox.Control />
@@ -310,7 +468,6 @@ export default function CommunityBlockedWordsPage() {
                     <AdminTableCell>
                       <AdminTableEllipsisText>{item.createdBy}</AdminTableEllipsisText>
                     </AdminTableCell>
-                    
                     <AdminTableCell textAlign="center">
                       <IconButton
                         aria-label="키워드 삭제"
@@ -331,10 +488,13 @@ export default function CommunityBlockedWordsPage() {
         </AdminTable>
         <Flex justify="space-between" align="center" mt="4px">
           <Text fontSize="12px" fontWeight="600" color="#374151">
-            항목 수 : {filteredBlockedWords.length}
+            항목 수 : {totalCount}
           </Text>
 
-          <AdminTablePagination items={paginationItems} />
+          <AdminTablePagination
+            items={paginationItems}
+            onItemClick={handlePaginationItemClick}
+          />
         </Flex>
       </Flex>
 
