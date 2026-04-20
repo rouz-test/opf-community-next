@@ -71,8 +71,8 @@
   },
   {
     "id": "tag_1776318282467",
-    "name": "테스트5",
-    "slug": "테스트5",
+    "name": "테스트5수정",
+    "slug": "테스트5수정",
     "status": "active",
     "isDefault": false,
     "sortOrder": 6,
@@ -81,6 +81,6 @@
       "bgColor": "#FFFAFA"
     },
     "createdAt": "2026-04-16T05:44:42.467Z",
-    "updatedAt": "2026-04-16T05:44:42.467Z"
+    "updatedAt": "2026-04-17T03:19:35.941Z"
   }
 ]

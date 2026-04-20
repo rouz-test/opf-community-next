@@ -5,7 +5,19 @@
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '@chakra-ui/react';
 
-type AdminBadgeTone = 'orange' | 'gray' | 'black' | 'yellow' | 'blue' | 'pink' | 'purple';
+type AdminBadgeTone =
+  | 'orange'
+  | 'gray'
+  | 'black'
+  | 'yellow'
+  | 'blue'
+  | 'pink'
+  | 'purple'
+  | 'graySolid'
+  | 'blueSolid'
+  | 'yellowSolid'
+  | 'purpleSolid'
+  | 'orangeSolid';
 
 type AdminBadgeProps = BoxProps & {
   children: ReactNode;
@@ -48,6 +60,31 @@ const toneStyles: Record<AdminBadgeTone, BoxProps> = {
     bg: '#EDE9FE',
     color: '#7C3AED',
     borderColor: '#DDD6FE',
+  },
+  graySolid: {
+    bg: '#6B7280',
+    color: '#FFFFFF',
+    borderColor: '#6B7280',
+  },
+  blueSolid: {
+    bg: '#6B8AF7',
+    color: '#FFFFFF',
+    borderColor: '#6B8AF7',
+  },
+  yellowSolid: {
+    bg: '#D6A04C',
+    color: '#FFFFFF',
+    borderColor: '#D6A04C',
+  },
+  purpleSolid: {
+    bg: '#9A84E8',
+    color: '#FFFFFF',
+    borderColor: '#9A84E8',
+  },
+  orangeSolid: {
+    bg: '#E6A86A',
+    color: '#FFFFFF',
+    borderColor: '#E6A86A',
   },
 };
 

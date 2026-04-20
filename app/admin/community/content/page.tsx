@@ -14,6 +14,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import contentsData from '@/data/mock/contents.json';
 import tagsData from '@/data/mock/tags.json';
 import usersData from '@/data/mock/users.json';
@@ -159,8 +160,6 @@ function getPublishedAtDisplay(content: Content) {
 function getContentStatusLabel(content: Content) {
   if (content.publicationStatus === 'draft') return '임시';
   if (content.publicationStatus === 'archived') return '보관';
-  if (content.flags.isNotice) return '공지';
-  if (content.flags.isPinned) return '고정';
   return '노출';
 }
 
@@ -192,22 +191,18 @@ function formatDateDisplay(value: string) {
 
 function getStatusTone(status: string) {
   if (status === '보관') {
-    return 'gray';
+    return 'graySolid';
   }
 
   if (status === '노출') {
-    return 'black';
-  }
-
-  if (status === '고정') {
-    return 'orange';
+    return 'blueSolid';
   }
 
   if (status === '임시') {
-    return 'yellow';
+    return 'yellowSolid';
   }
 
-  return 'gray';
+  return 'graySolid';
 }
 
 
@@ -228,6 +223,14 @@ export default function CommunityContentPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
+
+  const router = useRouter();
+  const handleNavigateToDetail = (contentId: string) => {
+    router.push(`/admin/community/content/${contentId}`);
+  };
+  const handleNavigateToCreate = () => {
+    router.push('/admin/community/content/create');
+  };
 
   const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     const input = ref.current;
@@ -630,7 +633,7 @@ export default function CommunityContentPage() {
             </Flex>
           </AdminButton>
 
-          <AdminButton type="button" variantStyle="primary" size="sm">
+          <AdminButton type="button" variantStyle="primary" size="sm" onClick={handleNavigateToCreate}>
             글 작성
           </AdminButton>
         </Flex>
@@ -672,21 +675,33 @@ export default function CommunityContentPage() {
                   <Checkbox.Root
                     size="sm"
                     checked={selectedRowKeys.includes(rowKey)}
+                    onClick={(e) => e.stopPropagation()}
                     onCheckedChange={(details) => handleToggleRow(rowKey, details.checked === true)}
                   >
                     <Checkbox.HiddenInput />
                     <Checkbox.Control />
                   </Checkbox.Root>
                 </AdminTableCell>
-                <AdminTableCell fontWeight="600" color="#374151">
+                <AdminTableCell
+                  fontWeight="600"
+                  color="#374151"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
                   {(currentPageSafe - 1) * pageSize + index + 1}
                 </AdminTableCell>
-                <AdminTableCell color="#4B5563">{row.type}</AdminTableCell>
-                <AdminTableCell>
+                <AdminTableCell
+                  color="#4B5563"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
+                  {row.type}
+                </AdminTableCell>
+                <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
                   <Flex align="center" gap="6px" minW="0" wrap="nowrap">
                     {row.isPromoted ? (
                       <AdminBadge
-                        tone="black"
+                        tone="purple"
                         h="24px"
                         px="10px"
                         fontSize="12px"
@@ -710,11 +725,11 @@ export default function CommunityContentPage() {
                     ) : null}
                   </Flex>
                 </AdminTableCell>
-                <AdminTableCell>
+                <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
                   <Flex align="center" gap="8px" minW="0">
                     {row.isNotice ? (
                       <AdminBadge
-                        tone="black"
+                        tone="orangeSolid"
                         rounded="md"
                         h="20px"
                         px="6px"
@@ -736,18 +751,39 @@ export default function CommunityContentPage() {
                     </AdminTableEllipsisText>
                   </Flex>
                 </AdminTableCell>
-                <AdminTableCell fontWeight="500" color="#4B5563">
+                <AdminTableCell
+                  fontWeight="500"
+                  color="#4B5563"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
                   <AdminTableEllipsisText flex="1" minW="0">
                     {row.author}
                   </AdminTableEllipsisText>
                 </AdminTableCell>
-                <AdminTableCell color="#6B7280">
+                <AdminTableCell
+                  color="#6B7280"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
                   <AdminTableEllipsisText flex="1" minW="0">
                     {row.publishedAt}
                   </AdminTableEllipsisText>
                 </AdminTableCell>
-                <AdminTableCell textAlign="center" fontWeight="500" color="#374151">{row.viewCount}</AdminTableCell>
-                <AdminTableCell textAlign="center">
+                <AdminTableCell
+                  textAlign="center"
+                  fontWeight="500"
+                  color="#374151"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
+                  {row.viewCount}
+                </AdminTableCell>
+                <AdminTableCell
+                  textAlign="center"
+                  cursor="pointer"
+                  onClick={() => handleNavigateToDetail(row.id)}
+                >
                   <AdminBadge
                     tone={getStatusTone(row.status)}
                     h="24px"
@@ -765,6 +801,7 @@ export default function CommunityContentPage() {
                     color="#9CA3AF"
                     bg="transparent"
                     _hover={{ bg: '#F9FAFB', color: '#6B7280' }}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVerticalIcon />
                   </IconButton>
