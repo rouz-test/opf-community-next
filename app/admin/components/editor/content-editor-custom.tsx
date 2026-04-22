@@ -2,13 +2,18 @@
 
 import {
   Box,
+  Button,
   ColorPicker,
+  Dialog,
+  FileUpload,
   Flex,
+  Icon,
   IconButton,
   Input,
   Menu,
   Popover,
   Portal,
+  Tabs,
   Text,
   parseColor,
 } from '@chakra-ui/react';
@@ -20,11 +25,15 @@ import {
   LuAlignLeft,
   LuAlignRight,
   LuHighlighter,
+  LuImage,
   LuLink,
   LuLink2,
   LuPalette,
   LuQuote,
   LuUnlink,
+  LuUpload,
+  LuMinus,
+  LuSquare,
 } from 'react-icons/lu';
 import { useEffect, useRef, useState } from 'react';
 
@@ -438,6 +447,150 @@ export function EditorLinkMenu({ editor }: EditorLinkMenuProps) {
 }
 
 // =============================
+// 이미지 URL 삽입 컨트롤
+// =============================
+export type EditorImageMenuProps = {
+  editor: Editor;
+};
+
+export function EditorImageMenu({ editor }: EditorImageMenuProps) {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timeout = window.setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [open]);
+
+  const applyImage = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+
+    editor.chain().focus().setImage({ src: trimmed }).run();
+    setOpen(false);
+    setInputValue('');
+  };
+
+  return (
+    <>
+      <IconButton
+        aria-label="이미지 삽입"
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+      >
+        <LuImage />
+      </IconButton>
+
+      <Dialog.Root open={open} onOpenChange={(details) => setOpen(details.open)}>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content maxW="lg">
+              <Dialog.Header>
+                <Dialog.Title>이미지 삽입</Dialog.Title>
+              </Dialog.Header>
+
+              <Dialog.Body>
+                <Tabs.Root defaultValue="url">
+                  <Tabs.List>
+                    <Tabs.Trigger value="url">
+                      <LuLink /> URL 삽입
+                    </Tabs.Trigger>
+                    <Tabs.Trigger value="upload">
+                      <LuUpload /> 파일 업로드
+                    </Tabs.Trigger>
+                  </Tabs.List>
+
+                  <Tabs.Content value="url">
+                    <Box display="flex" gap="2" mt="4">
+                      <Input
+                        ref={inputRef}
+                        size="sm"
+                        placeholder="https://example.com/image.jpg"
+                        value={inputValue}
+                        onChange={(event) => setInputValue(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            const trimmed = inputValue.trim();
+                            if (!trimmed) return;
+                            editor.chain().focus().setImage({ src: trimmed }).run();
+                            setOpen(false);
+                            setInputValue('');
+                          }
+                        }}
+                      />
+                      <Button size="sm" colorPalette="orange" onClick={applyImage}>
+                        삽입
+                      </Button>
+                    </Box>
+                  </Tabs.Content>
+
+                  <Tabs.Content value="upload">
+                    <Box mt="4">
+                      <FileUpload.Root
+                        maxW="xl"
+                        alignItems="stretch"
+                        maxFiles={1}
+                        accept="image/*"
+                        onFileAccept={(accepted) => {
+                          const uploaded = accepted.files ?? [];
+                          setFiles(uploaded);
+
+                          if (uploaded[0]) {
+                            const url = URL.createObjectURL(uploaded[0]);
+                            editor.chain().focus().setImage({ src: url }).run();
+                            setOpen(false);
+                          }
+                        }}
+                      >
+                        <FileUpload.HiddenInput />
+                        <FileUpload.Dropzone>
+                          <Icon size="md" color="fg.muted">
+                            <LuUpload />
+                          </Icon>
+                          <FileUpload.DropzoneContent>
+                            <Box>파일을 드래그해서 놓거나 선택해 주세요.</Box>
+                            <Box color="fg.muted">png, jpg, jpeg, webp 파일 1개</Box>
+                          </FileUpload.DropzoneContent>
+                        </FileUpload.Dropzone>
+
+                        <FileUpload.List files={files} />
+                      </FileUpload.Root>
+                    </Box>
+                  </Tabs.Content>
+                </Tabs.Root>
+              </Dialog.Body>
+
+              <Dialog.Footer mt="4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    setInputValue('');
+                    setFiles([]);
+                  }}
+                >
+                  닫기
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </>
+  );
+}
+
+// =============================
 // 인용구 스타일 컨트롤
 // =============================
 export type EditorQuoteMenuProps = {
@@ -469,7 +622,7 @@ export function EditorQuoteMenu({ editor }: EditorQuoteMenuProps) {
               }
               chain.updateAttributes('blockquote', { quoteStyle: 'line' }).run();
             }}>
-              <LuQuote />
+              <LuMinus />
               버티컬 라인
               {currentStyle === 'line' ? ' ✓' : ''}
             </Menu.Item>
@@ -491,7 +644,7 @@ export function EditorQuoteMenu({ editor }: EditorQuoteMenuProps) {
               }
               chain.updateAttributes('blockquote', { quoteStyle: 'frame' }).run();
             }}>
-              <LuQuote />
+              <LuSquare />
               프레임형
               {currentStyle === 'frame' ? ' ✓' : ''}
             </Menu.Item>

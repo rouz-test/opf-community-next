@@ -17,11 +17,13 @@ import {
   contentEditorCustomStyles,
   EditorAlignMenu,
   EditorHighlightColorControl,
+  EditorImageMenu,
   EditorLinkMenu,
   EditorQuoteMenu,
   EditorTextColorControl,
   StyledBlockquote,
 } from '@/app/admin/components/editor/content-editor-custom';
+
 import { Control, RichTextEditor } from '@/app/admin/components/editor/rich-text-editor';
 
 type ContentEditorProps = {
@@ -132,6 +134,7 @@ export default function ContentEditor({
           </RichTextEditor.ControlGroup>
 
           <RichTextEditor.ControlGroup>
+            <EditorImageMenu editor={editor} />
             <EditorLinkMenu editor={editor} />
           </RichTextEditor.ControlGroup>
         </RichTextEditor.Toolbar>
