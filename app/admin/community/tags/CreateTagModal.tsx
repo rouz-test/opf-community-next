@@ -110,7 +110,7 @@ function ColorFieldPicker({ label, value, fallback, onChange }: ColorFieldPicker
         <ColorPicker.Positioner>
           <ColorPicker.Content>
             <ColorPicker.Area />
-            <ColorPicker.Sliders />
+            <ColorPicker.ChannelSlider channel="hue" />
           </ColorPicker.Content>
         </ColorPicker.Positioner>
       </Flex>

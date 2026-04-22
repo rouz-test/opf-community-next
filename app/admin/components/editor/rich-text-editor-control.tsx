@@ -39,8 +39,8 @@ import {
   LuRotateCcw,
   LuRotateCw,
   LuStrikethrough,
-  LuSubscript,
-  LuSuperscript,
+  //LuSubscript,
+  //LuSuperscript,
   LuType,
   LuUnderline,
 } from "react-icons/lu"
@@ -387,19 +387,19 @@ export const Code = createBooleanControl({
   getVariant: (editor) => (editor.isActive("code") ? "subtle" : "ghost"),
 })
 
-export const Subscript = createBooleanControl({
-  label: "Subscript",
-  icon: LuSubscript,
-  command: (editor) => editor.chain().focus().toggleSubscript().run(),
-  getVariant: (editor) => (editor.isActive("subscript") ? "subtle" : "ghost"),
-})
+// export const Subscript = createBooleanControl({
+//   label: "Subscript",
+//   icon: LuSubscript,
+//   command: (editor) => editor.chain().focus().toggleSubscript().run(),
+//   getVariant: (editor) => (editor.isActive("subscript") ? "subtle" : "ghost"),
+// })
 
-export const Superscript = createBooleanControl({
-  label: "Superscript",
-  icon: LuSuperscript,
-  command: (editor) => editor.chain().focus().toggleSuperscript().run(),
-  getVariant: (editor) => (editor.isActive("superscript") ? "subtle" : "ghost"),
-})
+// export const Superscript = createBooleanControl({
+//   label: "Superscript",
+//   icon: LuSuperscript,
+//   command: (editor) => editor.chain().focus().toggleSuperscript().run(),
+//   getVariant: (editor) => (editor.isActive("superscript") ? "subtle" : "ghost"),
+// })
 
 export const H1 = createBooleanControl({
   label: "H1",

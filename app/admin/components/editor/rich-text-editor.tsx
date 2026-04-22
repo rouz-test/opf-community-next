@@ -1,6 +1,6 @@
 "use client"
 
-import type { BoxProps, StackProps, SystemStyleObject } from "@chakra-ui/react"
+import type { BoxProps, HTMLChakraProps, StackProps, SystemStyleObject } from "@chakra-ui/react"
 import { Box, HStack, StackSeparator, defineStyle } from "@chakra-ui/react"
 import { Editor, EditorContent } from "@tiptap/react"
 import {
@@ -13,6 +13,8 @@ const proseMirrorBaseCss = defineStyle({
   display: "flex",
   flexDirection: "column",
   borderWidth: "1px",
+  borderColor: "#E5E7EB",
+  bg: "white",
   rounded: "l2",
   lineHeight: "1.5",
 
@@ -121,7 +123,13 @@ const proseMirrorBaseCss = defineStyle({
         marginTop: "1",
       },
     },
-    "& hr": { my: "4" },
+    "& hr": {
+      my: "4",
+      border: "0",
+      borderTopWidth: "1px",
+      borderTopStyle: "solid",
+      borderTopColor: "#E5E7EB",
+    },
     "& a": { color: "blue.fg", textDecoration: "underline" },
     "& em": { fontStyle: "italic" },
     "& strong": { fontWeight: "bold" },
@@ -156,15 +164,16 @@ export interface RichTextEditorProps extends BoxProps {
 export const RichTextEditorRoot = React.forwardRef<
   HTMLDivElement,
   RichTextEditorProps
->(function RichTextEditorRoot(props, ref) {
-  const { editor, children, css, disabled, ...rest } = props
-  const contextValue = React.useMemo(() => ({ editor }), [editor])
+  >(function RichTextEditorRoot(props, ref) {
+    const { editor, children, css, disabled, style, ...rest } = props
+    const contextValue = React.useMemo(() => ({ editor }), [editor])
   return (
     <RichTextEditorContext.Provider value={contextValue}>
       <Box
         ref={ref}
         data-disabled={disabled || undefined}
         css={[proseMirrorBaseCss, css]}
+        style={style}
         {...rest}
       >
         {children}
@@ -185,24 +194,27 @@ const toolbarStylesMap: Record<
   SystemStyleObject
 > = {
   sticky: {
-    bg: "bg",
+    bg: "white",
     position: "sticky",
     top: "var(--sticky-offset, 0px)",
     zIndex: "1",
+    borderBottomWidth: "1px",
+    borderBottomColor: "#E5E7EB",
     py: "1.5",
     px: "3",
   },
   fixed: {
-    bg: "bg",
+    bg: "white",
     roundedTop: "l2",
     borderBottomWidth: "1px",
+    borderBottomColor: "#E5E7EB",
     py: "1.5",
     px: "3",
   },
   floating: {
     shadow: "md",
     roundedTop: "l2",
-    bg: "bg.panel",
+    bg: "white",
     px: "1.5",
     py: "1.5",
   },
@@ -216,17 +228,27 @@ export const RichTextEditorToolbar = React.forwardRef<
   const variantStyles = toolbarStylesMap[variant]
 
   return (
-    <HStack
+    <Box
       ref={ref}
-      flexWrap="wrap"
-      separator={<StackSeparator h="5" alignSelf="center" />}
+      overflowX="auto"
+      overflowY="hidden"
+      whiteSpace="nowrap"
       {...rest}
       style={{
         ["--sticky-offset" as string]: stickyOffset,
         ...rest.style,
       }}
       css={[variantStyles, rest.css]}
-    />
+    >
+      <HStack
+        display="inline-flex"
+        flexWrap="nowrap"
+        gap="1"
+        separator={<StackSeparator h="5" alignSelf="center" borderColor="#E5E7EB" />}
+      >
+        {props.children}
+      </HStack>
+    </Box>
   )
 })
 
@@ -234,19 +256,33 @@ export const RichTextEditorFooter = React.forwardRef<
   HTMLDivElement,
   StackProps
 >(function RichTextEditorFooter(props, ref) {
-  return <HStack ref={ref} gap="1" borderTopWidth="1px" p="3" {...props} />
+  return <HStack ref={ref} gap="1" borderTopWidth="1px" borderTopColor="#E5E7EB" p="3" {...props} />
 })
 
-export interface RichTextEditorContentProps
-  extends Omit<React.ComponentProps<typeof EditorContent>, "editor"> {}
+export interface RichTextEditorContentProps extends HTMLChakraProps<"div"> {
+  editorContentProps?: Omit<React.ComponentProps<typeof EditorContent>, "editor">
+}
 
 export const RichTextEditorContent = React.forwardRef<
   HTMLDivElement,
   RichTextEditorContentProps
 >(function RichTextEditorContent(props, ref) {
   const { editor } = useRichTextEditorContext()
+  const { editorContentProps, ...boxProps } = props
+
   if (!editor) return null
-  return <EditorContent editor={editor} {...props} innerRef={ref} />
+
+  return (
+    <Box
+      ref={ref}
+      minH="var(--content-min-height)"
+      px="var(--content-padding-x)"
+      py="var(--content-padding-y)"
+      {...boxProps}
+    >
+      <EditorContent editor={editor} {...editorContentProps} />
+    </Box>
+  )
 })
 
 export interface RichTextEditorControlGroupProps extends StackProps {}
@@ -255,7 +291,7 @@ export const RichTextEditorControlGroup = React.forwardRef<
   HTMLDivElement,
   RichTextEditorControlGroupProps
 >(function RichTextEditorButtonGroup(props, ref) {
-  return <HStack ref={ref} gap="1" {...props} />
+  return <HStack ref={ref} gap="1" flexShrink={0} {...props} />
 })
 
 export const RichTextEditor = {
@@ -272,6 +308,6 @@ export {
   createBooleanControl,
   createSelectControl,
   createSwatchControl,
-} from "compositions/ui/rich-text-editor-control"
+} from "./rich-text-editor-control"
 
-export { useRichTextEditorContext } from "compositions/ui/rich-text-editor-context"
+export { useRichTextEditorContext } from "./rich-text-editor-context"

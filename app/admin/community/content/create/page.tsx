@@ -1,14 +1,12 @@
 'use client';
 
 import { Box, Button, Flex, Grid, Input, Text } from '@chakra-ui/react';
-import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminSwitch from '@/app/admin/components/ui/switch';
-import { RichTextEditor } from '@/app/admin/components/ui/rich-text-editor';
+import ContentEditor from '@/app/admin/components/editor/content-editor';
 import tagsData from '@/data/mock/tags.json';
 import type { Tag } from '@/types/tag';
 
@@ -31,6 +29,7 @@ function withAlpha(hex: string, alphaHex: string = '66') {
 
 export default function CommunityContentCreatePage() {
   const [title, setTitle] = useState('');
+  const [content, setContent] = useState('<p></p>');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialSelectedTagIds);
   const [isNotice, setIsNotice] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
@@ -38,13 +37,6 @@ export default function CommunityContentCreatePage() {
 
   const isWarning = title.length >= 40 && title.length < 50;
   const isError = title.length >= 50;
-
-  const editorExtensions = useMemo(() => [StarterKit], []);
-  const editor = useEditor({
-    extensions: editorExtensions,
-    content: '<p></p>',
-    immediatelyRender: false,
-  });
 
   const handleToggleTag = (tagId: string) => {
     setSelectedTagIds((prev) =>
@@ -57,7 +49,7 @@ export default function CommunityContentCreatePage() {
   const submitPayload = {
     title: title.trim() || '제목 없음',
     tagIds: resolvedTagIds,
-    body: editor?.getJSON() ?? { type: 'doc', content: [] },
+    body: content,
     flags: {
       isNotice,
       isPinned,
@@ -119,12 +111,7 @@ export default function CommunityContentCreatePage() {
 
             <Box h="2px" bg="#F59E42" />
 
-            <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="12px" overflow="hidden">
-              <RichTextEditor.Root editor={editor}>
-                <RichTextEditor.Toolbar />
-                <RichTextEditor.Content minH="500px" px="18px" py="18px" />
-              </RichTextEditor.Root>
-            </Box>
+            <ContentEditor value={content} onChange={setContent} minHeight="500px" />
           </Flex>
         </Box>
 
@@ -231,6 +218,7 @@ export default function CommunityContentCreatePage() {
                 {
                   title: title.trim() || '(비어 있음)',
                   tagIds: resolvedTagIds,
+                  content,
                   flags: {
                     isNotice,
                     isPinned,
