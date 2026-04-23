@@ -18,9 +18,11 @@ import {
   EditorAlignMenu,
   EditorHighlightColorControl,
   EditorImageMenu,
+  EditorLinkBubbleMenu,
   EditorLinkMenu,
   EditorQuoteMenu,
   EditorTextColorControl,
+  EditorYoutubeMenu,
   StyledBlockquote,
 } from '@/app/admin/components/editor/content-editor-custom';
 
@@ -136,9 +138,11 @@ export default function ContentEditor({
           <RichTextEditor.ControlGroup>
             <EditorImageMenu editor={editor} />
             <EditorLinkMenu editor={editor} />
+            <EditorYoutubeMenu editor={editor} />
           </RichTextEditor.ControlGroup>
         </RichTextEditor.Toolbar>
 
+        <EditorLinkBubbleMenu editor={editor} />
         <RichTextEditor.Content />
       </RichTextEditor.Root>
     </Box>

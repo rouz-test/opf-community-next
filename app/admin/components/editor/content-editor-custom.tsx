@@ -4,20 +4,19 @@ import {
   Box,
   Button,
   ColorPicker,
-  Dialog,
-  FileUpload,
   Flex,
-  Icon,
   IconButton,
   Input,
+  Link,
   Menu,
   Popover,
   Portal,
-  Tabs,
   Text,
+  useBreakpointValue,
   parseColor,
 } from '@chakra-ui/react';
 import type { Editor } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import Blockquote from '@tiptap/extension-blockquote';
 import {
   LuAlignCenter,
@@ -26,16 +25,15 @@ import {
   LuAlignRight,
   LuHighlighter,
   LuImage,
-  LuLink,
-  LuLink2,
   LuPalette,
   LuQuote,
-  LuUnlink,
-  LuUpload,
   LuMinus,
   LuSquare,
+  LuYoutube,
+  LuLink,
+  LuUnlink,
 } from 'react-icons/lu';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // =============================
 // 공통 유틸 함수
@@ -321,18 +319,17 @@ export type EditorLinkMenuProps = {
 };
 
 export function EditorLinkMenu({ editor }: EditorLinkMenuProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [inputValue, setInputValue] = useState(editor.getAttributes('link')?.href || '');
-  const shouldApplyOnCloseRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!menuOpen && !popoverOpen) {
+    if (!popoverOpen) {
       setInputValue(editor.getAttributes('link')?.href || '');
     }
-  }, [editor, menuOpen, popoverOpen]);
+  }, [editor, popoverOpen]);
 
   useEffect(() => {
     if (!popoverOpen) return;
@@ -350,72 +347,43 @@ export function EditorLinkMenu({ editor }: EditorLinkMenuProps) {
     if (!trimmed) return;
     const href = /^(https?:)?\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
     editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
+    setPopoverOpen(false);
   };
 
   return (
     <Popover.Root
       open={popoverOpen}
       onOpenChange={(details) => {
-        if (!details.open && shouldApplyOnCloseRef.current) {
-          applyLink();
-        }
-        if (!details.open) {
-          shouldApplyOnCloseRef.current = false;
-        }
         setPopoverOpen(details.open);
       }}
-      positioning={{
-        placement: 'bottom-start',
-        getAnchorRect: () => triggerRef.current?.getBoundingClientRect() ?? new DOMRect(),
-      }}
+      positioning={
+        isMobile
+          ? { placement: 'bottom', strategy: 'fixed' }
+          : {
+              placement: 'bottom-start',
+              getAnchorRect: () => triggerRef.current?.getBoundingClientRect() ?? new DOMRect(),
+            }
+      }
       lazyMount
     >
-      <Menu.Root
-        open={menuOpen}
-        onOpenChange={(details) => setMenuOpen(details.open)}
-        positioning={{ placement: 'bottom-start' }}
-      >
-        <Menu.Trigger asChild>
-          <IconButton
+        <Popover.Trigger asChild>
+        <IconButton
             ref={triggerRef}
-            aria-label="링크 메뉴"
+            aria-label="링크 삽입"
             variant={editor.isActive('link') ? 'subtle' : 'ghost'}
             size="sm"
-          >
-            <LuLink2 />
-          </IconButton>
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content minW="140px">
-              <Menu.Item
-                value="link"
-                onClick={() => {
-                  shouldApplyOnCloseRef.current = true;
-                  setMenuOpen(false);
-                  setPopoverOpen(true);
-                }}
-              >
-                <LuLink />
-                링크 추가
-              </Menu.Item>
-              <Menu.Item
-                value="unlink"
-                onClick={() => {
-                  editor.chain().focus().extendMarkRange('link').unsetLink().run();
-                  setMenuOpen(false);
-                }}
-              >
-                <LuUnlink />
-                링크 제거
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
+        >
+            <LuLink />
+        </IconButton>
+        </Popover.Trigger>
 
       <Popover.Positioner>
-        <Popover.Content maxW="280px">
+        <Popover.Content
+          maxW="280px"
+          w={isMobile ? 'calc(100vw - 32px)' : undefined}
+          left={isMobile ? '50% !important' : undefined}
+          transform={isMobile ? 'translateX(-50%)' : undefined}
+        >
           <Popover.Body>
             <Flex direction="column" gap="3">
               <Text fontSize="12px" fontWeight="600" color="#4B5563">
@@ -425,19 +393,29 @@ export function EditorLinkMenu({ editor }: EditorLinkMenuProps) {
                 ref={inputRef}
                 size="sm"
                 placeholder="https://example.com"
+                borderColor="#D1D5DB"
+                outline="none"
+                _focus={{
+                  borderColor: '#D1D5DB',
+                  boxShadow: '0 0 0 4px rgba(107, 114, 128, 0.12)',
+                  outline: 'none',
+                }}
+                _focusVisible={{
+                  borderColor: '#D1D5DB',
+                  boxShadow: '0 0 0 4px rgba(107, 114, 128, 0.12)',
+                  outline: 'none',
+                }}
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
-                    const trimmed = inputValue.trim();
-                    if (!trimmed) return;
-                    const href = /^(https?:)?\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-                    editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
-                    shouldApplyOnCloseRef.current = false;
-                    setPopoverOpen(false);
+                    applyLink();
                   }
                 }}
               />
+              <Button size="sm" colorPalette="orange" onClick={applyLink}>
+                링크 삽입
+              </Button>
             </Flex>
           </Popover.Body>
         </Popover.Content>
@@ -447,20 +425,67 @@ export function EditorLinkMenu({ editor }: EditorLinkMenuProps) {
 }
 
 // =============================
-// 이미지 URL 삽입 컨트롤
+// 이미지 첨부 컨트롤
 // =============================
 export type EditorImageMenuProps = {
   editor: Editor;
 };
 
 export function EditorImageMenu({ editor }: EditorImageMenuProps) {
-  const [open, setOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleOpenFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    editor.chain().focus().setImage({ src: objectUrl }).run();
+
+    event.target.value = '';
+  };
+
+  return (
+    <>
+      <IconButton
+        aria-label="이미지 첨부"
+        variant="ghost"
+        size="sm"
+        onClick={handleOpenFilePicker}
+      >
+        <LuImage />
+      </IconButton>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+    </>
+  );
+}
+
+// =============================
+// 유튜브 임베드 컨트롤
+// =============================
+export type EditorYoutubeMenuProps = {
+  editor: Editor;
+};
+
+export function EditorYoutubeMenu({ editor }: EditorYoutubeMenuProps) {
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!popoverOpen) return;
 
     const timeout = window.setTimeout(() => {
       inputRef.current?.focus();
@@ -468,125 +493,112 @@ export function EditorImageMenu({ editor }: EditorImageMenuProps) {
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, [open]);
+  }, [popoverOpen]);
 
-  const applyImage = () => {
+  const applyYoutube = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
-    editor.chain().focus().setImage({ src: trimmed }).run();
-    setOpen(false);
+    editor
+      .chain()
+      .focus()
+      .setYoutubeVideo({
+        src: trimmed,
+        width: 640,
+        height: 360,
+      })
+      .run();
+
+    setPopoverOpen(false);
     setInputValue('');
   };
 
   return (
-    <>
-      <IconButton
-        aria-label="이미지 삽입"
-        variant="ghost"
-        size="sm"
-        onClick={() => setOpen(true)}
-      >
-        <LuImage />
-      </IconButton>
+    <Popover.Root
+      open={popoverOpen}
+      onOpenChange={(details) => {
+        setPopoverOpen(details.open);
+        if (!details.open) {
+          setInputValue('');
+        }
+      }}
+      positioning={
+        isMobile
+          ? { placement: 'bottom', strategy: 'fixed' }
+          : {
+              placement: 'bottom-start',
+              getAnchorRect: () => triggerRef.current?.getBoundingClientRect() ?? new DOMRect(),
+            }
+      }
+      lazyMount
+    >
+      <Popover.Trigger asChild>
+        <IconButton
+          ref={triggerRef}
+          aria-label="유튜브 삽입"
+          variant="ghost"
+          size="sm"
+        >
+          <LuYoutube />
+        </IconButton>
+      </Popover.Trigger>
 
-      <Dialog.Root open={open} onOpenChange={(details) => setOpen(details.open)}>
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content maxW="lg">
-              <Dialog.Header>
-                <Dialog.Title>이미지 삽입</Dialog.Title>
-              </Dialog.Header>
-
-              <Dialog.Body>
-                <Tabs.Root defaultValue="url">
-                  <Tabs.List>
-                    <Tabs.Trigger value="url">
-                      <LuLink /> URL 삽입
-                    </Tabs.Trigger>
-                    <Tabs.Trigger value="upload">
-                      <LuUpload /> 파일 업로드
-                    </Tabs.Trigger>
-                  </Tabs.List>
-
-                  <Tabs.Content value="url">
-                    <Box display="flex" gap="2" mt="4">
-                      <Input
-                        ref={inputRef}
-                        size="sm"
-                        placeholder="https://example.com/image.jpg"
-                        value={inputValue}
-                        onChange={(event) => setInputValue(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            const trimmed = inputValue.trim();
-                            if (!trimmed) return;
-                            editor.chain().focus().setImage({ src: trimmed }).run();
-                            setOpen(false);
-                            setInputValue('');
-                          }
-                        }}
-                      />
-                      <Button size="sm" colorPalette="orange" onClick={applyImage}>
-                        삽입
-                      </Button>
-                    </Box>
-                  </Tabs.Content>
-
-                  <Tabs.Content value="upload">
-                    <Box mt="4">
-                      <FileUpload.Root
-                        maxW="xl"
-                        alignItems="stretch"
-                        maxFiles={1}
-                        accept="image/*"
-                        onFileAccept={(accepted) => {
-                          const uploaded = accepted.files ?? [];
-                          setFiles(uploaded);
-
-                          if (uploaded[0]) {
-                            const url = URL.createObjectURL(uploaded[0]);
-                            editor.chain().focus().setImage({ src: url }).run();
-                            setOpen(false);
-                          }
-                        }}
-                      >
-                        <FileUpload.HiddenInput />
-                        <FileUpload.Dropzone>
-                          <Icon size="md" color="fg.muted">
-                            <LuUpload />
-                          </Icon>
-                          <FileUpload.DropzoneContent>
-                            <Box>파일을 드래그해서 놓거나 선택해 주세요.</Box>
-                            <Box color="fg.muted">png, jpg, jpeg, webp 파일 1개</Box>
-                          </FileUpload.DropzoneContent>
-                        </FileUpload.Dropzone>
-
-                        <FileUpload.List files={files} />
-                      </FileUpload.Root>
-                    </Box>
-                  </Tabs.Content>
-                </Tabs.Root>
-              </Dialog.Body>
-
-              <Dialog.Footer mt="4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setOpen(false);
+      <Popover.Positioner>
+        <Popover.Content
+          maxW="320px"
+          w={isMobile ? 'calc(100vw - 32px)' : undefined}
+          left={isMobile ? '50% !important' : undefined}
+          transform={isMobile ? 'translateX(-50%)' : undefined}
+        >
+          <Popover.Body>
+            <Flex direction="column" gap="3">
+              <Text fontSize="12px" fontWeight="600" color="#4B5563">
+                유튜브 링크 입력
+              </Text>
+              <Input
+                ref={inputRef}
+                size="sm"
+                placeholder="https://www.youtube.com/watch?v=..."
+                borderColor="#D1D5DB"
+                outline="none"
+                _focus={{
+                  borderColor: '#D1D5DB',
+                  boxShadow: '0 0 0 4px rgba(107, 114, 128, 0.12)',
+                  outline: 'none',
+                }}
+                _focusVisible={{
+                  borderColor: '#D1D5DB',
+                  boxShadow: '0 0 0 4px rgba(107, 114, 128, 0.12)',
+                  outline: 'none',
+                }}
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    const trimmed = inputValue.trim();
+                    if (!trimmed) return;
+                    editor
+                      .chain()
+                      .focus()
+                      .setYoutubeVideo({
+                        src: trimmed,
+                        width: 640,
+                        height: 360,
+                      })
+                      .run();
+                    setPopoverOpen(false);
                     setInputValue('');
-                    setFiles([]);
-                  }}
-                >
-                  닫기
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-    </>
+                  }
+                }}
+              />
+              <Button size="sm" colorPalette="orange" onClick={applyYoutube}>
+                유튜브 삽입
+              </Button>
+            </Flex>
+          </Popover.Body>
+        </Popover.Content>
+      </Popover.Positioner>
+    </Popover.Root>
   );
 }
 
@@ -659,5 +671,101 @@ export function EditorQuoteMenu({ editor }: EditorQuoteMenuProps) {
         </Menu.Positioner>
       </Portal>
     </Menu.Root>
+  );
+}
+// =============================
+// 링크 버블 메뉴
+// =============================
+export type EditorLinkBubbleMenuProps = {
+  editor: Editor;
+};
+
+export function EditorLinkBubbleMenu({ editor }: EditorLinkBubbleMenuProps) {
+  const currentHref = editor.getAttributes('link')?.href || '';
+
+  const shouldShowLinkBubble = useCallback(({ editor }: { editor: Editor }) => {
+    const { selection, schema } = editor.state;
+    const linkMark = schema.marks.link;
+    if (!linkMark) return false;
+
+    if (!selection.empty) {
+      let hasLink = false;
+
+      editor.state.doc.nodesBetween(selection.from, selection.to, (node) => {
+        if (hasLink) return false;
+        if (!node.isText) return;
+
+        hasLink = node.marks.some((mark) => mark.type === linkMark);
+      });
+
+      return hasLink;
+    }
+
+    return selection.$from.marks().some((mark) => mark.type === linkMark);
+  }, []);
+
+  const bubbleMenuOptions = useMemo(
+    () => ({
+      placement: 'bottom-start' as const,
+    }),
+    []
+  );
+
+  const removeLink = () => {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+  };
+
+  return (
+    <BubbleMenu
+      editor={editor}
+      shouldShow={shouldShowLinkBubble}
+      options={bubbleMenuOptions}
+    >
+      <Box
+        onMouseDown={(event) => event.preventDefault()}
+        bg="white"
+        border="1px solid #E5E7EB"
+        borderRadius="14px"
+        boxShadow="0 8px 24px rgba(15, 23, 42, 0.12)"
+        px="3"
+        py="2.5"
+        minW="auto"
+      >
+        <Flex align="center" gap="3">
+          <Link
+            href={currentHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            color="#2563EB"
+            fontWeight="500"
+            textDecoration="none"
+            maxW="320px"
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
+            _hover={{ textDecoration: 'underline' }}
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            {currentHref}
+          </Link>
+
+          <Box color="#D1D5DB">|</Box>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            color="#374151"
+            px="1"
+            minW="auto"
+            h="auto"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={removeLink}
+          >
+            
+            <LuUnlink size={14} />
+          </Button>
+        </Flex>
+      </Box>
+    </BubbleMenu>
   );
 }
