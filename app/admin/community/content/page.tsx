@@ -15,11 +15,9 @@ import {
 } from '@chakra-ui/react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import contentsData from '@/data/mock/contents.json';
+import contentsData from '@/data/mock/community-contents.json';
 import tagsData from '@/data/mock/tags.json';
-import usersData from '@/data/mock/users.json';
-import type { Content, TiptapNode } from '@/types/content';
-import type { User } from '@/types/user';
+import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import { resolveTags } from '@/lib/tags';
 import type { Tag } from '@/types/tag';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
@@ -106,15 +104,13 @@ function getPaginationItems(
   return items;
 }
 
-const contents = contentsData as Content[];
+const contents = contentsData as CommunityContent[];
 const tags = tagsData as Tag[];
-const users = usersData as User[];
-const userMap = new Map(users.map((user) => [user.id, user]));
 const tagOptions = tags
   .filter((tag) => tag.status !== 'inactive')
   .map((tag) => tag.name);
 
-function extractTextFromTiptapNodes(nodes?: TiptapNode[]): string {
+function extractTextFromTiptapNodes(nodes?: CommunityContentBody[]): string {
   if (!nodes?.length) return '';
 
   return nodes
@@ -128,24 +124,26 @@ function extractTextFromTiptapNodes(nodes?: TiptapNode[]): string {
     .trim();
 }
 
-function getContentTypeLabel(isAnonymous: boolean) {
-  return isAnonymous ? '익명' : '실명';
-}
-
-function getAuthorDisplay(content: Content) {
-  const author = userMap.get(content.authorId);
-
-  if (!author) {
-    return content.authorId;
+function getContentTypeLabel(content: CommunityContent) {
+  if (content.author.type === 'admin') {
+    return '관리자';
   }
 
-  return content.isAnonymous ? author.profile.email : author.profile.name;
+  return content.author.visibility === 'anonymous' ? '익명' : '실명';
 }
 
-function getPublishedAtDisplay(content: Content) {
-  if (!content.timestamps.publishedAt) return '-';
+function getAuthorDisplay(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return content.author.identifierValue || content.author.id;
+  }
 
-  const publishedAt = new Date(content.timestamps.publishedAt);
+  return content.author.displayName || content.author.identifierValue || content.author.id;
+}
+
+function getPublishedAtDisplay(content: CommunityContent) {
+  if (!content.publishedAt) return '-';
+
+  const publishedAt = new Date(content.publishedAt);
   if (Number.isNaN(publishedAt.getTime())) return '-';
 
   const yyyy = publishedAt.getFullYear();
@@ -157,23 +155,23 @@ function getPublishedAtDisplay(content: Content) {
   return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
 }
 
-function getContentStatusLabel(content: Content) {
-  if (content.publicationStatus === 'draft') return '임시';
-  if (content.publicationStatus === 'archived') return '보관';
+function getContentStatusLabel(content: CommunityContent) {
+  if (content.status === 'draft') return '임시';
+  if (content.status === 'archived') return '보관';
   return '노출';
 }
 
-function getContentReferenceDate(content: Content) {
-  const candidate = content.timestamps.publishedAt ?? content.timestamps.createdAt;
+function getContentReferenceDate(content: CommunityContent) {
+  const candidate = content.publishedAt ?? content.createdAt;
   const parsed = new Date(candidate);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 const contentRows = contents.map((content) => ({
   id: content.id,
-  type: getContentTypeLabel(content.isAnonymous),
+  type: getContentTypeLabel(content),
   title: content.title,
-  bodyText: extractTextFromTiptapNodes(content.body.content),
+  bodyText: extractTextFromTiptapNodes(content.content.content),
   author: getAuthorDisplay(content),
   publishedAt: getPublishedAtDisplay(content),
   referenceDate: getContentReferenceDate(content),

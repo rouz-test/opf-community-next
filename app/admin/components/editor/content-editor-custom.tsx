@@ -60,6 +60,18 @@ import {
 // =============================
 const DEFAULT_TEXT_COLOR = '#111827';
 const DEFAULT_HIGHLIGHT_COLOR = '#FEF08A';
+const FONT_FAMILY_OPTIONS = [
+  { label: '기본', value: 'default' },
+  { label: '명조', value: 'serif' },
+  { label: '고정폭', value: 'monospace' },
+  { label: '필기체', value: 'cursive' },
+] as const;
+const FONT_SIZE_OPTIONS = [
+  { label: '12px', value: '12px' },
+  { label: '14px', value: '14px' },
+  { label: '16px', value: '16px' },
+  { label: '18px', value: '18px' },
+] as const;
 const IMAGE_WIDTH_OPTIONS = [
   { label: '25%', value: '25%' },
   { label: '50%', value: '50%' },
@@ -587,6 +599,95 @@ export function EditorAlignMenu({ editor }: EditorAlignMenuProps) {
               <LuAlignJustify />
               양쪽 정렬
             </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
+}
+
+// =============================
+// 폰트 패밀리 메뉴 컨트롤
+// =============================
+export type EditorFontFamilyMenuProps = {
+  editor: Editor;
+};
+
+export function EditorFontFamilyMenu({ editor }: EditorFontFamilyMenuProps) {
+  const currentFontFamily = editor.getAttributes('textStyle')?.fontFamily || 'default';
+  const currentOption =
+    FONT_FAMILY_OPTIONS.find((option) => option.value === currentFontFamily) ||
+    FONT_FAMILY_OPTIONS[0];
+
+  return (
+    <Menu.Root positioning={{ placement: 'bottom-start' }}>
+      <Menu.Trigger asChild>
+        <Button variant="ghost" size="sm" minW="84px" justifyContent="space-between">
+          {currentOption.label}
+        </Button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="150px">
+            {FONT_FAMILY_OPTIONS.map((option) => (
+              <Menu.Item
+                key={option.value}
+                value={option.value}
+                onClick={() => {
+                  if (option.value === 'default') {
+                    editor.chain().focus().unsetFontFamily().run();
+                    return;
+                  }
+
+                  editor.chain().focus().setFontFamily(option.value).run();
+                }}
+              >
+                {option.label}
+                {currentOption.value === option.value ? ' ✓' : ''}
+              </Menu.Item>
+            ))}
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
+}
+
+// =============================
+// 폰트 크기 메뉴 컨트롤
+// =============================
+export type EditorFontSizeMenuProps = {
+  editor: Editor;
+};
+
+export function EditorFontSizeMenu({ editor }: EditorFontSizeMenuProps) {
+  const currentFontSize = editor.getAttributes('textStyle')?.fontSize || '14px';
+  const currentOption =
+    FONT_SIZE_OPTIONS.find((option) => option.value === currentFontSize) ||
+    FONT_SIZE_OPTIONS[1];
+
+  return (
+    <Menu.Root positioning={{ placement: 'bottom-start' }}>
+      <Menu.Trigger asChild>
+        <Button variant="ghost" size="sm" minW="72px" justifyContent="space-between">
+          {currentOption.label}
+        </Button>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="120px">
+            {FONT_SIZE_OPTIONS.map((option) => (
+              <Menu.Item
+                key={option.value}
+                value={option.value}
+                onClick={() => {
+                  editor.chain().focus().setFontSize(option.value).run();
+                }}
+              >
+                {option.label}
+                {currentOption.value === option.value ? ' ✓' : ''}
+              </Menu.Item>
+            ))}
           </Menu.Content>
         </Menu.Positioner>
       </Portal>

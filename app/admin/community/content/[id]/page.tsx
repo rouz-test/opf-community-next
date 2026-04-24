@@ -1,66 +1,136 @@
 'use client';
 
-import { Box, Button, Flex, Image, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Image, Link as ChakraLink, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, BadgeCheck, Eye, Heart, MessageSquare, Bookmark, Megaphone } from 'lucide-react';
+import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
-import contentsData from '@/data/mock/contents.json';
 import tagsData from '@/data/mock/tags.json';
-import usersData from '@/data/mock/users.json';
 import { resolveTags } from '@/lib/tags';
-import type { Content, TiptapNode } from '@/types/content';
+import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
-import type { User } from '@/types/user';
 
-const contents = contentsData as Content[];
 const tags = tagsData as Tag[];
-const users = usersData as User[];
+const DEFAULT_BODY_TEXT_COLOR = '#374151';
+const DEFAULT_BLOCKQUOTE_TEXT_COLOR = '#111827';
 
-const userMap = new Map(users.map((user) => [user.id, user]));
-
-function extractTextFromTiptapNodes(nodes?: TiptapNode[]): string {
-  if (!nodes?.length) return '';
-
-  return nodes
-    .map((node) => {
-      const currentText = node.text ?? '';
-      const childText = extractTextFromTiptapNodes(node.content);
-      return [currentText, childText].filter(Boolean).join(' ');
-    })
-    .filter(Boolean)
-    .join(' ')
-    .trim();
+function normalizeFontFamily(fontFamily: string) {
+  if (fontFamily === 'mono') return 'monospace';
+  return fontFamily;
 }
 
-function getAuthorDisplay(content: Content) {
-  const author = userMap.get(content.authorId);
+function getYoutubeEmbedUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, '');
 
-  if (!author) {
-    return content.authorId;
+    if (hostname === 'youtu.be') {
+      const videoId = parsedUrl.pathname.replace('/', '');
+      if (!videoId) return '';
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+      if (parsedUrl.pathname === '/watch') {
+        const videoId = parsedUrl.searchParams.get('v');
+        if (!videoId) return '';
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      if (parsedUrl.pathname.startsWith('/embed/')) {
+        return url;
+      }
+
+      if (parsedUrl.pathname.startsWith('/shorts/')) {
+        const videoId = parsedUrl.pathname.split('/')[2];
+        if (!videoId) return '';
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  } catch {
+    return '';
   }
 
-  return content.isAnonymous ? author.profile.email : author.profile.name;
+  return '';
 }
 
-function getAuthorRealName(content: Content) {
-  const author = userMap.get(content.authorId);
-  return author?.profile.name ?? content.authorId;
+function getQuoteStyle(node: CommunityContentBody) {
+  return typeof node.attrs?.quoteStyle === 'string' ? node.attrs.quoteStyle : 'line';
 }
 
-function getAuthorInitial(content: Content) {
-  const author = userMap.get(content.authorId);
-  const base = content.isAnonymous ? author?.profile.email ?? content.authorId : author?.profile.name ?? content.authorId;
+function getQuoteContainerStyles(node: CommunityContentBody) {
+  const quoteStyle = getQuoteStyle(node);
+
+  if (quoteStyle === 'quote') {
+    return {
+      textAlign: 'center' as const,
+      px: '24px',
+      py: '28px',
+      _before: {
+        content: '"❝"',
+        display: 'block',
+        fontSize: '48px',
+        fontWeight: '700',
+        lineHeight: '1',
+        mb: '8px',
+      },
+      _after: {
+        content: '"❞"',
+        display: 'block',
+        fontSize: '48px',
+        fontWeight: '700',
+        lineHeight: '1',
+        mt: '8px',
+      },
+    };
+  }
+
+  if (quoteStyle === 'frame') {
+    return {
+      borderWidth: '1px',
+      borderColor: '#D1D5DB',
+      borderRadius: '12px',
+      px: '18px',
+      py: '14px',
+    };
+  }
+
+  return {
+    borderLeft: '4px solid',
+    borderColor: '#D1D5DB',
+    pl: '12px',
+  };
+}
+
+function getAuthorDisplay(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return content.author.displayName || '익명';
+  }
+
+  return content.author.displayName || content.author.identifierValue || content.author.id;
+}
+
+function getAuthorRealName(content: CommunityContent) {
+  return content.author.identifierValue || content.author.id;
+}
+
+function getAuthorInitial(content: CommunityContent) {
+  const base =
+    content.author.visibility === 'anonymous'
+      ? content.author.identifierValue || content.author.id
+      : content.author.displayName || content.author.identifierValue || content.author.id;
+
   return base.slice(0, 1).toUpperCase();
 }
 
-function getPublishedAtDisplay(content: Content) {
-  if (!content.timestamps.publishedAt) return '-';
+function getPublishedAtDisplay(content: CommunityContent) {
+  if (!content.publishedAt) return '-';
 
-  const publishedAt = new Date(content.timestamps.publishedAt);
+  const publishedAt = new Date(content.publishedAt);
   if (Number.isNaN(publishedAt.getTime())) return '-';
 
   return publishedAt.toLocaleString('ko-KR', {
@@ -72,34 +142,155 @@ function getPublishedAtDisplay(content: Content) {
   });
 }
 
-function getStatusLabel(content: Content) {
-  if (content.publicationStatus === 'draft') return '임시';
-  if (content.publicationStatus === 'archived') return '보관';
+function getStatusLabel(content: CommunityContent) {
+  if (content.status === 'draft') return '임시';
+  if (content.status === 'archived') return '보관';
   if (content.flags.isNotice) return '공지';
   if (content.flags.isPinned) return '고정';
   return '노출';
 }
 
-function getNodeText(node?: TiptapNode): string {
-  if (!node) return '';
+function getTextNodeStyles(node: CommunityContentBody) {
+  const styles: CSSProperties = {};
+  const textDecorations = new Set<string>();
 
-  const currentText = node.text ?? '';
-  const childText = extractTextFromTiptapNodes(node.content);
+  for (const mark of node.marks ?? []) {
+    if (mark.type === 'bold') styles.fontWeight = 700;
+    if (mark.type === 'italic') styles.fontStyle = 'italic';
+    if (mark.type === 'underline') textDecorations.add('underline');
+    if (mark.type === 'strike') textDecorations.add('line-through');
+    if (mark.type === 'textStyle' && typeof mark.attrs?.color === 'string') {
+      styles.color = mark.attrs.color;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontFamily === 'string') {
+      styles.fontFamily = normalizeFontFamily(mark.attrs.fontFamily);
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontSize === 'string') {
+      styles.fontSize = mark.attrs.fontSize;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.lineHeight === 'string') {
+      styles.lineHeight = mark.attrs.lineHeight;
+    }
+    if (mark.type === 'highlight' && typeof mark.attrs?.color === 'string') {
+      styles.backgroundColor = mark.attrs.color;
+      styles.borderRadius = '4px';
+      styles.paddingInline = '2px';
+    }
+  }
 
-  return [currentText, childText].filter(Boolean).join(' ').trim();
+  if (textDecorations.size > 0) {
+    styles.textDecoration = Array.from(textDecorations).join(' ');
+  }
+
+  return styles;
 }
 
-function renderBodyNode(node: TiptapNode, index: number) {
-  if (node.type === 'paragraph') {
-    const paragraphText = extractTextFromTiptapNodes(node.content);
+function renderInlineContent(nodes?: CommunityContentBody[], keyPrefix = 'inline'): ReactNode {
+  if (!nodes?.length) return null;
 
-    if (!paragraphText) {
+  return nodes.map((node, index) => {
+    const key = `${keyPrefix}-${index}`;
+
+    if (node.type === 'text') {
+      const text = node.text ?? '';
+      const linkMark = node.marks?.find((mark) => mark.type === 'link');
+      const textStyles = getTextNodeStyles(node);
+
+      if (!text) {
+        return null;
+      }
+
+      if (typeof linkMark?.attrs?.href === 'string' && linkMark.attrs.href) {
+        return (
+          <ChakraLink
+            key={key}
+            href={linkMark.attrs.href}
+            color="#2563EB"
+            textDecoration="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={textStyles}
+          >
+            {text}
+          </ChakraLink>
+        );
+      }
+
+      return (
+        <Text key={key} as="span" style={textStyles}>
+          {text}
+        </Text>
+      );
+    }
+
+    if (node.type === 'hardBreak') {
+      return <br key={key} />;
+    }
+
+    if (node.content?.length) {
+      return <Fragment key={key}>{renderInlineContent(node.content, key)}</Fragment>;
+    }
+
+    return null;
+  });
+}
+
+function getBlockAlignment(node: CommunityContentBody) {
+  return typeof node.attrs?.textAlign === 'string' ? node.attrs.textAlign : 'left';
+}
+
+function getBlockLineHeight(node: CommunityContentBody, fallback: string) {
+  return typeof node.attrs?.lineHeight === 'string' ? node.attrs.lineHeight : fallback;
+}
+
+function getImageWidth(node: CommunityContentBody) {
+  return typeof node.attrs?.width === 'string' ? node.attrs.width : '100%';
+}
+
+function getImageAlignment(node: CommunityContentBody) {
+  const align = typeof node.attrs?.align === 'string' ? node.attrs.align : 'left';
+
+  if (align === 'center') {
+    return { ml: 'auto', mr: 'auto' } as const;
+  }
+
+  if (align === 'right') {
+    return { ml: 'auto', mr: '0' } as const;
+  }
+
+  return { ml: '0', mr: 'auto' } as const;
+}
+
+function getListItemBlockNode(node: CommunityContentBody) {
+  return node.content?.find((child) => child.type === 'paragraph' || child.type === 'heading') ?? null;
+}
+
+function getListItemAlignment(node: CommunityContentBody) {
+  const blockNode = getListItemBlockNode(node);
+  return blockNode ? getBlockAlignment(blockNode) : 'left';
+}
+
+function getListItemLineHeight(node: CommunityContentBody) {
+  const blockNode = getListItemBlockNode(node);
+  return blockNode ? getBlockLineHeight(blockNode, '1.9') : '1.9';
+}
+
+function renderBodyNode(node: CommunityContentBody, index: number) {
+  if (node.type === 'paragraph') {
+    if (!node.content?.length) {
       return null;
     }
 
     return (
-      <Text key={`paragraph-${index}`} fontSize="15px" lineHeight="1.95" color="#374151" whiteSpace="pre-wrap">
-        {paragraphText}
+      <Text
+        key={`paragraph-${index}`}
+        fontSize="15px"
+        lineHeight={getBlockLineHeight(node, '1.95')}
+        color={DEFAULT_BODY_TEXT_COLOR}
+        whiteSpace="pre-wrap"
+        textAlign={getBlockAlignment(node)}
+      >
+        {renderInlineContent(node.content, `paragraph-${index}`)}
       </Text>
     );
   }
@@ -107,6 +298,8 @@ function renderBodyNode(node: TiptapNode, index: number) {
   if (node.type === 'image') {
     const imageSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
     const imageAlt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '콘텐츠 이미지';
+    const imageWidth = getImageWidth(node);
+    const imageAlignment = getImageAlignment(node);
 
     if (!imageSrc) {
       return null;
@@ -120,49 +313,187 @@ function renderBodyNode(node: TiptapNode, index: number) {
         bg="#F3F4F6"
         borderWidth="1px"
         borderColor="#E5E7EB"
+        w={imageWidth}
+        maxW="100%"
+        {...imageAlignment}
       >
-        <Image src={imageSrc} alt={imageAlt} w="100%" maxH="520px" objectFit="cover" />
+        <Image src={imageSrc} alt={imageAlt} w="100%" maxH="520px" objectFit="contain" />
       </Box>
     );
   }
 
   if (node.type === 'heading') {
-    const headingText = getNodeText(node);
-
-    if (!headingText) {
+    if (!node.content?.length) {
       return null;
     }
 
     return (
-      <Text key={`heading-${index}`} fontSize="21px" fontWeight="700" lineHeight="1.6" color="#111827">
-        {headingText}
+      <Text
+        key={`heading-${index}`}
+        fontSize="21px"
+        fontWeight="700"
+        lineHeight={getBlockLineHeight(node, '1.6')}
+        color="#111827"
+        textAlign={getBlockAlignment(node)}
+      >
+        {renderInlineContent(node.content, `heading-${index}`)}
       </Text>
     );
   }
 
   if (node.type === 'bulletList') {
     const items = node.content ?? [];
-    const texts = items
-      .map((item) => extractTextFromTiptapNodes(item.content))
-      .filter(Boolean);
 
-    if (texts.length === 0) {
+    if (items.length === 0) {
       return null;
     }
 
     return (
       <Flex key={`bullet-list-${index}`} direction="column" gap="10px">
-        {texts.map((text, itemIndex) => (
-          <Flex key={`bullet-item-${index}-${itemIndex}`} align="flex-start" gap="8px">
-            <Text mt="2px" fontSize="14px" color="#F59E42">
-              •
+        {items.map((item, itemIndex) => (
+          <Box key={`bullet-item-${index}-${itemIndex}`} asChild color={DEFAULT_BODY_TEXT_COLOR}>
+            <ul
+              style={{
+                paddingLeft: '24px',
+                margin: '0',
+                listStyleType: 'disc',
+              }}
+            >
+              <li>
+            <Text
+              fontSize="15px"
+              lineHeight={getListItemLineHeight(item)}
+              color="inherit"
+              textAlign={getListItemAlignment(item)}
+            >
+              {renderInlineContent(item.content, `bullet-item-${index}-${itemIndex}`)}
             </Text>
-            <Text fontSize="15px" lineHeight="1.9" color="#374151">
-              {text}
-            </Text>
-          </Flex>
+              </li>
+            </ul>
+          </Box>
         ))}
       </Flex>
+    );
+  }
+
+  if (node.type === 'orderedList') {
+    const items = node.content ?? [];
+
+    if (items.length === 0) {
+      return null;
+    }
+
+    return (
+      <Flex key={`ordered-list-${index}`} direction="column" gap="10px">
+        {items.map((item, itemIndex) => (
+          <Box key={`ordered-item-${index}-${itemIndex}`} asChild color={DEFAULT_BODY_TEXT_COLOR}>
+            <ol
+              start={itemIndex + 1}
+              style={{
+                paddingLeft: '28px',
+                margin: '0',
+                listStyleType: 'decimal',
+              }}
+            >
+              <li>
+            <Text
+              fontSize="15px"
+              lineHeight={getListItemLineHeight(item)}
+              color="inherit"
+              textAlign={getListItemAlignment(item)}
+            >
+              {renderInlineContent(item.content, `ordered-item-${index}-${itemIndex}`)}
+            </Text>
+              </li>
+            </ol>
+          </Box>
+        ))}
+      </Flex>
+    );
+  }
+
+  if (node.type === 'blockquote') {
+    if (!node.content?.length) {
+      return null;
+    }
+
+    return (
+      <Box
+        key={`blockquote-${index}`}
+        {...getQuoteContainerStyles(node)}
+      >
+        <Text
+          fontSize="15px"
+          lineHeight={getBlockLineHeight(node, '1.95')}
+          color={DEFAULT_BLOCKQUOTE_TEXT_COLOR}
+          whiteSpace="pre-wrap"
+          textAlign={getQuoteStyle(node) === 'quote' ? 'center' : getBlockAlignment(node)}
+        >
+          {renderInlineContent(node.content, `blockquote-${index}`)}
+        </Text>
+      </Box>
+    );
+  }
+
+  if (node.type === 'youtube') {
+    const rawSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+    const src = getYoutubeEmbedUrl(rawSrc);
+    const width = typeof node.attrs?.width === 'number' ? node.attrs.width : 640;
+    const height = typeof node.attrs?.height === 'number' ? node.attrs.height : 360;
+
+    if (!src) {
+      return (
+        <Box
+          key={`youtube-${index}`}
+          borderWidth="1px"
+          borderColor="#E5E7EB"
+          borderRadius="16px"
+          px="20px"
+          py="18px"
+          bg="#F9FAFB"
+        >
+          <Text fontSize="14px" color="#6B7280">
+            유튜브 링크를 임베드 형식으로 변환하지 못했습니다.
+          </Text>
+          {rawSrc ? (
+            <ChakraLink href={rawSrc} target="_blank" rel="noopener noreferrer" color="#2563EB" textDecoration="underline">
+              {rawSrc}
+            </ChakraLink>
+          ) : null}
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        key={`youtube-${index}`}
+        borderRadius="16px"
+        overflow="hidden"
+        borderWidth="1px"
+        borderColor="#E5E7EB"
+        bg="#111827"
+      >
+        <Box
+          asChild
+          display="block"
+          lineHeight="0"
+        >
+          <iframe
+          src={src}
+          title={`youtube-${index}`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{
+            display: 'block',
+            width: '100%',
+            maxWidth: `${width}px`,
+            height: `${height}px`,
+            margin: '0 auto',
+            border: 'none',
+          }}
+          />
+        </Box>
+      </Box>
     );
   }
 
@@ -172,8 +503,71 @@ function renderBodyNode(node: TiptapNode, index: number) {
 export default function CommunityContentDetailPage() {
   const params = useParams<{ id: string }>();
   const contentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const [content, setContent] = useState<CommunityContent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const content = contents.find((item) => item.id === contentId);
+  useEffect(() => {
+    if (!contentId) {
+      setContent(null);
+      setLoadError('요청하신 콘텐츠를 찾을 수 없습니다.');
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadContent = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+
+        const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(errorData?.message || '콘텐츠 상세 정보를 불러오지 못했습니다.');
+        }
+
+        const nextContent = (await response.json()) as CommunityContent;
+
+        if (!isCancelled) {
+          setContent(nextContent);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setContent(null);
+          setLoadError(error instanceof Error ? error.message : '콘텐츠 상세 정보를 불러오지 못했습니다.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadContent();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [contentId]);
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <PageHeader left={null} right={null} />
+
+        <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="16px" bg="#FFFFFF" px="24px" py="32px">
+          <Text fontSize="14px" color="#6B7280">
+            콘텐츠를 불러오는 중입니다.
+          </Text>
+        </Box>
+      </PageContainer>
+    );
+  }
 
   if (!content) {
     return (
@@ -185,7 +579,7 @@ export default function CommunityContentDetailPage() {
                 콘텐츠 상세
               </Text>
               <Text fontSize="13px" color="#9CA3AF">
-                요청하신 콘텐츠를 찾을 수 없습니다.
+                {loadError || '요청하신 콘텐츠를 찾을 수 없습니다.'}
               </Text>
             </Flex>
           }
@@ -194,7 +588,7 @@ export default function CommunityContentDetailPage() {
 
         <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="16px" bg="#FFFFFF" px="24px" py="32px">
           <Text fontSize="14px" color="#6B7280">
-            존재하지 않거나 삭제된 콘텐츠입니다.
+            {loadError || '존재하지 않거나 삭제된 콘텐츠입니다.'}
           </Text>
         </Box>
       </PageContainer>
@@ -291,17 +685,17 @@ export default function CommunityContentDetailPage() {
                 <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
                   {authorDisplay}
                 </Text>
-                {!content.isAnonymous ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+                {content.author.visibility !== 'anonymous' ? <BadgeCheck size={16} color="#3B82F6" /> : null}
               </Flex>
               <Text mt="2px" fontSize="13px" color="#6B7280">
-                {content.isAnonymous ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}
+                {content.author.visibility === 'anonymous' ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}
               </Text>
             </Box>
           </Flex>
 
           <Flex direction="column" gap="18px" mt="22px">
-            {content.body.content?.length ? (
-              content.body.content.map((node, index) => renderBodyNode(node, index))
+            {content.content.content?.length ? (
+              content.content.content.map((node, index) => renderBodyNode(node, index))
             ) : (
               <Text fontSize="14px" lineHeight="1.8" color="#6B7280">
                 본문 내용이 없습니다.

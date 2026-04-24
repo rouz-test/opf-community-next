@@ -9,12 +9,14 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Youtube from '@tiptap/extension-youtube';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
 import {
   contentEditorCustomStyles,
   EditorAlignMenu,
+  EditorFontFamilyMenu,
+  EditorFontSizeMenu,
   EditorHighlightColorControl,
   EditorImageMenu,
   type EditorImageUploadHandler,
@@ -32,7 +34,7 @@ import {
 
 import { Control, RichTextEditor } from '@/app/admin/components/editor/rich-text-editor';
 
-type ContentEditorJsonValue = {
+export type ContentEditorJsonValue = {
   type?: string;
   attrs?: Record<string, unknown>;
   content?: ContentEditorJsonValue[];
@@ -90,23 +92,28 @@ export default function ContentEditor({
   placeholder = '내용을 작성해 주세요.',
   onImageUpload,
 }: ContentEditorProps) {
-  const temporaryObjectUrlsRef = useRef<Set<string>>(new Set());
-
-  const revokeUnusedTemporaryUrls = useCallback((html: string) => {
-    temporaryObjectUrlsRef.current.forEach((url) => {
-      if (!html.includes(url)) {
-        URL.revokeObjectURL(url);
-        temporaryObjectUrlsRef.current.delete(url);
-      }
-    });
-  }, []);
-
   const defaultImageUpload = useCallback(async (file: File): Promise<EditorImageUploadResult> => {
-    const objectUrl = URL.createObjectURL(file);
-    temporaryObjectUrlsRef.current.add(objectUrl);
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error('이미지 데이터를 읽지 못했습니다.'));
+      };
+
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('이미지 업로드에 실패했습니다.'));
+      };
+
+      reader.readAsDataURL(file);
+    });
 
     return {
-      url: objectUrl,
+      url: dataUrl,
       alt: file.name,
     };
   }, []);
@@ -150,15 +157,11 @@ export default function ContentEditor({
     shouldRerenderOnTransaction: false,
     immediatelyRender: false,
     onUpdate({ editor }) {
-      const html = editor.getHTML();
-
       if (format === 'json') {
         (onChange as ContentEditorJsonProps['onChange'])(editor.getJSON());
       } else {
-        (onChange as ContentEditorSharedProps['onChange'])(html);
+        (onChange as ContentEditorSharedProps['onChange'])(editor.getHTML());
       }
-
-      revokeUnusedTemporaryUrls(html);
     },
     editorProps: {
       attributes: {
@@ -177,8 +180,6 @@ export default function ContentEditor({
       if (JSON.stringify(currentValue) !== JSON.stringify(nextValue)) {
         editor.commands.setContent(nextValue, { emitUpdate: false });
       }
-
-      revokeUnusedTemporaryUrls(editor.getHTML());
       return;
     }
 
@@ -187,20 +188,7 @@ export default function ContentEditor({
     if (value !== currentValue) {
       editor.commands.setContent(value || '<p></p>', { emitUpdate: false });
     }
-
-    revokeUnusedTemporaryUrls(editor.getHTML());
-  }, [editor, format, revokeUnusedTemporaryUrls, value]);
-
-  useEffect(() => {
-    const temporaryObjectUrls = temporaryObjectUrlsRef.current;
-
-    return () => {
-      temporaryObjectUrls.forEach((url) => {
-        URL.revokeObjectURL(url);
-      });
-      temporaryObjectUrls.clear();
-    };
-  }, []);
+  }, [editor, format, value]);
 
   if (!editor) return null;
 
@@ -214,10 +202,10 @@ export default function ContentEditor({
         <RichTextEditor.Toolbar>
           <RichTextEditor.ControlGroup>
             <EditorRerenderBoundary editor={editor}>
-              <Control.FontFamily />
+              <EditorFontFamilyMenu editor={editor} />
             </EditorRerenderBoundary>
             <EditorRerenderBoundary editor={editor}>
-              <Control.FontSize />
+              <EditorFontSizeMenu editor={editor} />
             </EditorRerenderBoundary>
           </RichTextEditor.ControlGroup>
 
