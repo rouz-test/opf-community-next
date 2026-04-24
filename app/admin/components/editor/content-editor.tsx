@@ -55,6 +55,7 @@ type ContentEditorSharedProps = {
   value: string;
   onChange: (value: string) => void;
   minHeight?: string;
+  maxHeight?: string;
   placeholder?: string;
   onImageUpload?: EditorImageUploadHandler;
 };
@@ -64,6 +65,7 @@ type ContentEditorJsonProps = {
   value: ContentEditorJsonValue;
   onChange: (value: ContentEditorJsonValue) => void;
   minHeight?: string;
+  maxHeight?: string;
   placeholder?: string;
   onImageUpload?: EditorImageUploadHandler;
 };
@@ -89,6 +91,7 @@ export default function ContentEditor({
   onChange,
   format = 'html',
   minHeight = '500px',
+  maxHeight = minHeight,
   placeholder = '내용을 작성해 주세요.',
   onImageUpload,
 }: ContentEditorProps) {
@@ -196,7 +199,10 @@ export default function ContentEditor({
     <Box>
       <RichTextEditor.Root
         editor={editor}
-        style={{ ['--content-min-height' as string]: minHeight }}
+        style={{
+          ['--content-min-height' as string]: minHeight,
+          ['--content-max-height' as string]: maxHeight,
+        }}
         css={contentEditorCustomStyles}
       >
         <RichTextEditor.Toolbar>
@@ -275,7 +281,7 @@ export default function ContentEditor({
           <EditorImageBubbleMenu editor={editor} />
           <EditorLinkBubbleMenu editor={editor} />
         </EditorRerenderBoundary>
-        <RichTextEditor.Content />
+        <RichTextEditor.Content maxH="var(--content-max-height)" overflowY="auto" />
       </RichTextEditor.Root>
     </Box>
   );

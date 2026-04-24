@@ -1,6 +1,6 @@
 'use client';
 import { LuTrash2, LuArchive, LuCalendar } from 'react-icons/lu';
-import { ChevronDownIcon, MoreVerticalIcon, SearchIcon } from '@/app/admin/components/ui/icons';
+import { ChevronDownIcon, SearchIcon } from '@/app/admin/components/ui/icons';
 import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import {
   Box,
@@ -13,9 +13,8 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import contentsData from '@/data/mock/community-contents.json';
 import tagsData from '@/data/mock/tags.json';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import { resolveTags } from '@/lib/tags';
@@ -23,9 +22,9 @@ import type { Tag } from '@/types/tag';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
+import BaseModal from '@/app/admin/components/modal/base-modal';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminBadge from '@/app/admin/components/ui/badge';
-import AdminSwitch from '@/app/admin/components/ui/switch';
 import AdminSearchField from '@/app/admin/components/ui/search-field';
 import AdminTable, {
   AdminTableBody,
@@ -39,6 +38,7 @@ import AdminTable, {
 import AdminTablePagination, {
   type AdminTablePaginationItem,
 } from '@/app/admin/components/ui/table/admin-table-pagination';
+import ContentActionMenu from '@/app/admin/components/content-action-menu';
 
 const DEFAULT_PAGE_SIZE = 13;
 const PAGE_SIZE_OPTIONS = [13, 30, 50] as const;
@@ -65,7 +65,7 @@ function getPaginationItems(
 
   const halfWindow = Math.floor(PAGE_WINDOW / 2);
   let startPage = Math.max(1, currentPage - halfWindow);
-  let endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
+  const endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
 
   if (endPage - startPage + 1 < PAGE_WINDOW) {
     startPage = Math.max(1, endPage - PAGE_WINDOW + 1);
@@ -104,7 +104,6 @@ function getPaginationItems(
   return items;
 }
 
-const contents = contentsData as CommunityContent[];
 const tags = tagsData as Tag[];
 const tagOptions = tags
   .filter((tag) => tag.status !== 'inactive')
@@ -167,21 +166,6 @@ function getContentReferenceDate(content: CommunityContent) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-const contentRows = contents.map((content) => ({
-  id: content.id,
-  type: getContentTypeLabel(content),
-  title: content.title,
-  bodyText: extractTextFromTiptapNodes(content.content.content),
-  author: getAuthorDisplay(content),
-  publishedAt: getPublishedAtDisplay(content),
-  referenceDate: getContentReferenceDate(content),
-  viewCount: content.stats.viewCount,
-  status: getContentStatusLabel(content),
-  isPromoted: content.flags.isPromoted,
-  isNotice: content.flags.isNotice,
-  tags: resolveTags(content.tagIds, tags),
-}));
-
 function formatDateDisplay(value: string) {
   if (!value) return 'YYYY.MM.DD';
   return value.replaceAll('-', '.');
@@ -206,10 +190,13 @@ function getStatusTone(status: string) {
 
 
 export default function CommunityContentPage() {
-  const [isPromotedOnly, setIsPromotedOnly] = useState(false);
+  const [contents, setContents] = useState<CommunityContent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMutating, setIsMutating] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [deleteTargetIds, setDeleteTargetIds] = useState<string[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -218,11 +205,75 @@ export default function CommunityContentPage() {
   const [appliedEndDate, setAppliedEndDate] = useState('');
   const startDateInputRef = useRef<HTMLInputElement | null>(null);
   const endDateInputRef = useRef<HTMLInputElement | null>(null);
+  const tagFilterRef = useRef<HTMLDivElement | null>(null);
+  const flagFilterRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
 
+  type FlagFilter = 'promoted' | 'notice' | 'pinned';
+  const [flagFilter, setFlagFilter] = useState<FlagFilter[]>([]);
+  const [isFlagFilterOpen, setIsFlagFilterOpen] = useState(false);
+
   const router = useRouter();
+
+  const loadContents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/mock/community-contents', {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(errorData?.message || '콘텐츠 목록을 불러오지 못했습니다.');
+      }
+
+      const data = (await response.json()) as { items?: CommunityContent[] };
+      setContents(Array.isArray(data.items) ? data.items : []);
+    } catch (error) {
+      console.error('failed to load community contents:', error);
+      window.alert(error instanceof Error ? error.message : '콘텐츠 목록을 불러오지 못했습니다.');
+      setContents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadContents();
+  }, [loadContents]);
+
+  useEffect(() => {
+    if (!isTagFilterOpen && !isFlagFilterOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Node)) return;
+      if (tagFilterRef.current?.contains(target)) return;
+      if (flagFilterRef.current?.contains(target)) return;
+
+      setIsTagFilterOpen(false);
+      setIsFlagFilterOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsTagFilterOpen(false);
+        setIsFlagFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFlagFilterOpen, isTagFilterOpen]);
+
   const handleNavigateToDetail = (contentId: string) => {
     router.push(`/admin/community/content/${contentId}`);
   };
@@ -248,6 +299,103 @@ export default function CommunityContentPage() {
     setCurrentPage(1);
     setIsPageSizeMenuOpen(false);
   };
+
+  const handleDeleteContents = useCallback(
+    async (contentIds: string[]) => {
+      if (contentIds.length === 0) return;
+
+      try {
+        setIsMutating(true);
+
+        for (const contentId of contentIds) {
+          const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+            throw new Error(errorData?.message || '콘텐츠 삭제에 실패했습니다.');
+          }
+        }
+
+        setContents((prev) => prev.filter((content) => !contentIds.includes(content.id)));
+        setSelectedRowKeys((prev) => prev.filter((rowKey) => !contentIds.includes(rowKey)));
+      } catch (error) {
+        console.error('failed to delete contents:', error);
+        window.alert(error instanceof Error ? error.message : '콘텐츠 삭제에 실패했습니다.');
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    []
+  );
+
+  const handleOpenDeleteModal = useCallback((contentIds: string[]) => {
+    if (contentIds.length === 0) return;
+    setDeleteTargetIds(contentIds);
+  }, []);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    if (isMutating) return;
+    setDeleteTargetIds([]);
+  }, [isMutating]);
+
+  const handleConfirmDeleteContents = useCallback(async () => {
+    if (deleteTargetIds.length === 0) return;
+
+    await handleDeleteContents(deleteTargetIds);
+    setDeleteTargetIds([]);
+  }, [deleteTargetIds, handleDeleteContents]);
+
+  const handleUpdateContent = useCallback(
+    async (contentId: string, payload: Partial<CommunityContent>) => {
+      try {
+        setIsMutating(true);
+
+        const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(errorData?.message || '콘텐츠 상태 변경에 실패했습니다.');
+        }
+
+        const updatedContent = (await response.json()) as CommunityContent;
+        setContents((prev) => prev.map((content) => (content.id === updatedContent.id ? updatedContent : content)));
+      } catch (error) {
+        console.error('failed to update content:', error);
+        window.alert(error instanceof Error ? error.message : '콘텐츠 상태 변경에 실패했습니다.');
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    []
+  );
+
+  const contentRows = useMemo(
+    () =>
+      contents.map((content) => ({
+        id: content.id,
+        type: getContentTypeLabel(content),
+        title: content.title,
+        bodyText: extractTextFromTiptapNodes(content.content.content),
+        author: getAuthorDisplay(content),
+        publishedAt: getPublishedAtDisplay(content),
+        referenceDate: getContentReferenceDate(content),
+        viewCount: content.stats.viewCount,
+        status: getContentStatusLabel(content),
+        isPromoted: content.flags.isPromoted,
+        isNotice: content.flags.isNotice,
+        tags: resolveTags(content.tagIds, tags),
+        originalContent: content,
+      })),
+    [contents]
+  );
 
   const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
     if (item.type === 'first') {
@@ -277,52 +425,62 @@ export default function CommunityContentPage() {
 
   const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
 
-  const filteredRows = contentRows.filter((row) => {
-    const referenceDate = row.referenceDate;
-  
-    if (appliedStartDate) {
-      if (!referenceDate) return false;
-      const start = new Date(appliedStartDate);
-      start.setHours(0, 0, 0, 0);
-      if (referenceDate < start) return false;
-    }
-  
-    if (appliedEndDate) {
-      if (!referenceDate) return false;
-      const end = new Date(appliedEndDate);
-      end.setHours(23, 59, 59, 999);
-      if (referenceDate > end) return false;
-    }
-  
-    if (selectedTags.length > 0) {
-      const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
-      if (!hasSelectedTag) {
-        return false;
-      }
-    }
-  
-    if (isPromotedOnly && !row.isPromoted) {
-      return false;
-    }
-  
-    if (normalizedSearchKeyword) {
-      const searchTarget = [
-        row.title,
-        row.bodyText,
-        row.author,
-        row.type,
-        ...row.tags.map((tag) => tag.name),
-      ]
-        .join(' ')
-        .toLowerCase();
-  
-      if (!searchTarget.includes(normalizedSearchKeyword)) {
-        return false;
-      }
-    }
-  
-    return true;
-  });
+  const filteredRows = useMemo(
+    () =>
+      contentRows.filter((row) => {
+        const referenceDate = row.referenceDate;
+
+        if (appliedStartDate) {
+          if (!referenceDate) return false;
+          const start = new Date(appliedStartDate);
+          start.setHours(0, 0, 0, 0);
+          if (referenceDate < start) return false;
+        }
+
+        if (appliedEndDate) {
+          if (!referenceDate) return false;
+          const end = new Date(appliedEndDate);
+          end.setHours(23, 59, 59, 999);
+          if (referenceDate > end) return false;
+        }
+
+        if (selectedTags.length > 0) {
+          const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
+          if (!hasSelectedTag) {
+            return false;
+          }
+        }
+
+        if (flagFilter.length > 0) {
+          const matches = [];
+        
+          if (flagFilter.includes('promoted')) matches.push(row.isPromoted);
+          if (flagFilter.includes('notice')) matches.push(row.isNotice);
+          if (flagFilter.includes('pinned')) matches.push(row.originalContent.flags.isPinned);
+        
+          if (!matches.some(Boolean)) return false;
+        }
+        
+        if (normalizedSearchKeyword) {
+          const searchTarget = [
+            row.title,
+            row.bodyText,
+            row.author,
+            row.type,
+            ...row.tags.map((tag) => tag.name),
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          if (!searchTarget.includes(normalizedSearchKeyword)) {
+            return false;
+          }
+        }
+
+        return true;
+      }),
+    [appliedEndDate, appliedStartDate, contentRows, flagFilter, normalizedSearchKeyword, selectedTags]
+  );
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -494,7 +652,7 @@ export default function CommunityContentPage() {
                   </IconButton>
                 </Flex>
 
-                <Box position="relative">
+                <Box ref={tagFilterRef} position="relative">
                   <Button
                     type="button"
                     variant="outline"
@@ -507,7 +665,10 @@ export default function CommunityContentPage() {
                     fontSize="13px"
                     fontWeight="500"
                     _hover={{ bg: '#F9FAFB' }}
-                    onClick={() => setIsTagFilterOpen((prev) => !prev)}
+                    onClick={() => {
+                      setIsTagFilterOpen((prev) => !prev);
+                      setIsFlagFilterOpen(false);
+                    }}
                   >
                     <Flex align="center" gap="8px">
                       <Text as="span">{tagFilterLabel}</Text>
@@ -534,7 +695,6 @@ export default function CommunityContentPage() {
                         onValueChange={(values) => {
                           setSelectedTags([...values]);
                           setCurrentPage(1);
-                          setIsTagFilterOpen(false);
                         }}
                       >
                         <Flex direction="column" gap="2px">
@@ -565,20 +725,85 @@ export default function CommunityContentPage() {
                   ) : null}
                 </Box>
 
-                <Flex ml="auto" align="center" gap="8px">
-                  <Text fontSize="13px" fontWeight="500" color="#6B7280">
-                    홍보글만 보기
-                  </Text>
-                  <AdminSwitch
-                    size="sm"
-                    checked={isPromotedOnly}
-                    onCheckedChange={(checked) => {
-                      setIsPromotedOnly(checked);
-                      setIsPageSizeMenuOpen(false);
-                      setCurrentPage(1);
+                <Box ref={flagFilterRef} position="relative" ml="auto">
+                  <Button
+                    variant="outline"
+                    h="40px"
+                    px="16px"
+                    borderRadius="8px"
+                    borderColor="#E5E7EB"
+                    bg="#FFFFFF"
+                    color="#374151"
+                    fontSize="13px"
+                    fontWeight="500"
+                    _hover={{ bg: '#F9FAFB' }}
+                    onClick={() => {
+                      setIsFlagFilterOpen((prev) => !prev);
+                      setIsTagFilterOpen(false);
                     }}
-                  />
-                </Flex>
+                  >
+                    <Flex align="center" gap="8px">
+                      <Text>
+                       {flagFilter.length === 0
+                        ? '전체'
+                        : `선택 ${flagFilter.length}개`}
+                      </Text>
+                      <ChevronDownIcon />
+                    </Flex>
+                  </Button>
+
+                  {isFlagFilterOpen && (
+                    <Box
+                      position="absolute"
+                      top="calc(100% + 8px)"
+                      right="0"
+                      minW="160px"
+                      borderWidth="1px"
+                      borderColor="#E5E7EB"
+                      borderRadius="12px"
+                      bg="#FFFFFF"
+                      boxShadow="0 12px 32px rgba(17, 24, 39, 0.12)"
+                      p="6px"
+                      zIndex={20}
+                    >
+                      <CheckboxGroup
+                        value={flagFilter}
+                        onValueChange={(values) => {
+                          setFlagFilter(values as FlagFilter[]);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <Flex direction="column" gap="2px">
+                          {[
+                            { label: '홍보글', value: 'promoted' },
+                            { label: '공지글', value: 'notice' },
+                            { label: '고정글', value: 'pinned' },
+                          ].map((option) => (
+                            <Checkbox.Root
+                              key={option.value}
+                              value={option.value}
+                              size="sm"
+                              px="10px"
+                              py="8px"
+                              borderRadius="8px"
+                              _hover={{ bg: '#F9FAFB' }}
+                            >
+                              <Checkbox.HiddenInput />
+                              <Flex align="center" gap="8px">
+                                <Checkbox.Control />
+                                <Checkbox.Label>
+                                  <Text fontSize="13px" fontWeight="500" color="#374151">
+                                    {option.label}
+                                  </Text>
+                                </Checkbox.Label>
+                              </Flex>
+                            </Checkbox.Root>
+                          ))}
+                        </Flex>
+                      </CheckboxGroup>
+                    </Box>
+                  )}
+                </Box>
               </Flex>
 
             </Flex>
@@ -624,7 +849,15 @@ export default function CommunityContentPage() {
             </Flex>
           </AdminButton>
 
-          <AdminButton type="button" variantStyle="outline" size="sm">
+          <AdminButton
+            type="button"
+            variantStyle="outline"
+            size="sm"
+            disabled={selectedRowKeys.length === 0 || isMutating}
+            onClick={() => {
+              handleOpenDeleteModal(selectedRowKeys);
+            }}
+          >
             <Flex align="center" gap="6px">
               <Icon as={LuTrash2} boxSize="14px" />
               <Text as="span">선택 항목 삭제</Text>
@@ -636,7 +869,14 @@ export default function CommunityContentPage() {
           </AdminButton>
         </Flex>
       </Flex>
-
+      {isLoading ? (
+        <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="16px" bg="#FFFFFF" px="24px" py="32px">
+          <Text fontSize="14px" color="#6B7280">
+            콘텐츠 목록을 불러오는 중입니다.
+          </Text>
+        </Box>
+      ) : (
+      <>
       <AdminTable>
         <AdminTableRoot>
           <AdminTableHead>
@@ -674,6 +914,7 @@ export default function CommunityContentPage() {
                     size="sm"
                     checked={selectedRowKeys.includes(rowKey)}
                     onClick={(e) => e.stopPropagation()}
+                    disabled={isMutating}
                     onCheckedChange={(details) => handleToggleRow(rowKey, details.checked === true)}
                   >
                     <Checkbox.HiddenInput />
@@ -697,19 +938,6 @@ export default function CommunityContentPage() {
                 </AdminTableCell>
                 <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
                   <Flex align="center" gap="6px" minW="0" wrap="nowrap">
-                    {row.isPromoted ? (
-                      <AdminBadge
-                        tone="purple"
-                        h="24px"
-                        px="10px"
-                        fontSize="12px"
-                        fontWeight="500"
-                        flexShrink={0}
-                      >
-                        홍보
-                      </AdminBadge>
-                    ) : null}
-
                     {row.tags.slice(0, 1).map((tag) => (
                       <Box key={tag.id} flexShrink={0}>
                         <AdminTagBadge tag={tag} />
@@ -736,6 +964,32 @@ export default function CommunityContentPage() {
                         flexShrink={0}
                       >
                         공지
+                      </AdminBadge>
+                    ) : null}
+                    {row.originalContent.flags.isPinned ? (
+                      <AdminBadge
+                        tone="blueSolid"
+                        rounded="md"
+                        h="20px"
+                        px="6px"
+                        fontSize="10px"
+                        fontWeight="700"
+                        flexShrink={0}
+                      >
+                        고정
+                      </AdminBadge>
+                    ) : null}
+                    {row.isPromoted ? (
+                      <AdminBadge
+                        tone="purple"
+                        rounded="md"
+                        h="20px"
+                        px="6px"
+                        fontSize="10px"
+                        fontWeight="700"
+                        flexShrink={0}
+                      >
+                        홍보
                       </AdminBadge>
                     ) : null}
                     <AdminTableEllipsisText
@@ -793,16 +1047,35 @@ export default function CommunityContentPage() {
                   </AdminBadge>
                 </AdminTableCell>
                 <AdminTableCell textAlign="center">
-                  <IconButton
-                    aria-label="콘텐츠 액션"
-                    size="xs"
-                    color="#9CA3AF"
-                    bg="transparent"
-                    _hover={{ bg: '#F9FAFB', color: '#6B7280' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreVerticalIcon />
-                  </IconButton>
+                <ContentActionMenu
+                  content={row.originalContent}
+                  isSubmitting={isMutating}
+                  onArchiveToggle={() => {
+                    void handleUpdateContent(row.id, {
+                      status: row.originalContent.status === 'archived' ? 'published' : 'archived',
+                    });
+                  }}
+                  onPinnedToggle={() => {
+                    void handleUpdateContent(row.id, {
+                      flags: {
+                        ...row.originalContent.flags,
+                        isPinned: !row.originalContent.flags.isPinned,
+                      },
+                    });
+                  }}
+                  onNoticeToggle={() => {
+                    void handleUpdateContent(row.id, {
+                      flags: {
+                        ...row.originalContent.flags,
+                        isNotice: !row.originalContent.flags.isNotice,
+                      },
+                    });
+                  }}
+                  onEdit={() => router.push(`/admin/community/content/${row.id}/edit`)}
+                  onDelete={() => {
+                    handleOpenDeleteModal([row.id]);
+                  }}
+                />
                 </AdminTableCell>
               </AdminTableRow>
               );
@@ -821,6 +1094,49 @@ export default function CommunityContentPage() {
           onItemClick={handlePaginationItemClick}
         />
       </Flex>
+      </>
+      )}
+
+      <BaseModal
+        isOpen={deleteTargetIds.length > 0}
+        onClose={handleCloseDeleteModal}
+        title="콘텐츠 삭제"
+        footer={
+          <Flex gap="8px" w="100%">
+            <AdminButton
+              type="button"
+              variantStyle="outline"
+              size="md"
+              onClick={handleCloseDeleteModal}
+              disabled={isMutating}
+              flex={1}
+            >
+              취소
+            </AdminButton>
+            <AdminButton
+              type="button"
+              variantStyle="primary"
+              size="md"
+              onClick={() => {
+                void handleConfirmDeleteContents();
+              }}
+              disabled={isMutating}
+              flex={1}
+            >
+              삭제하기
+            </AdminButton>
+          </Flex>
+        }
+      >
+        <Flex direction="column" gap="8px">
+          <Text fontSize="14px" fontWeight="600" color="#111827">
+            선택한 콘텐츠를 삭제하시겠습니까?
+          </Text>
+          <Text fontSize="13px" color="#6B7280">
+            삭제 대상: {deleteTargetIds.length === 1 ? '1개' : `${deleteTargetIds.length}개`}
+          </Text>
+        </Flex>
+      </BaseModal>
     </PageContainer>
   );
 }

@@ -2,26 +2,78 @@
 
 import { Box, Button, Flex, Image, Link as ChakraLink, Text } from '@chakra-ui/react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, Eye, Heart, MessageSquare, Bookmark, Megaphone } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, BadgeCheck, Bookmark, Eye, Heart, Megaphone, MessageSquare } from 'lucide-react';
 import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
+import BaseModal from '@/app/admin/components/modal/base-modal';
+import AdminButton from '@/app/admin/components/ui/button';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import tagsData from '@/data/mock/tags.json';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
+import ContentActionMenu from '@/app/admin/components/content-action-menu';
+
+// ==============================
+// 상수 및 기본 설정
+// ==============================
 
 const tags = tagsData as Tag[];
 const DEFAULT_BODY_TEXT_COLOR = '#374151';
 const DEFAULT_BLOCKQUOTE_TEXT_COLOR = '#111827';
 
+
+// ==============================
+// Tiptap 텍스트 스타일 처리
+// ==============================
+
 function normalizeFontFamily(fontFamily: string) {
   if (fontFamily === 'mono') return 'monospace';
   return fontFamily;
 }
+
+function getTextNodeStyles(node: CommunityContentBody) {
+  const styles: CSSProperties = {};
+  const textDecorations = new Set<string>();
+
+  for (const mark of node.marks ?? []) {
+    if (mark.type === 'bold') styles.fontWeight = 700;
+    if (mark.type === 'italic') styles.fontStyle = 'italic';
+    if (mark.type === 'underline') textDecorations.add('underline');
+    if (mark.type === 'strike') textDecorations.add('line-through');
+    if (mark.type === 'textStyle' && typeof mark.attrs?.color === 'string') {
+      styles.color = mark.attrs.color;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontFamily === 'string') {
+      styles.fontFamily = normalizeFontFamily(mark.attrs.fontFamily);
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontSize === 'string') {
+      styles.fontSize = mark.attrs.fontSize;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.lineHeight === 'string') {
+      styles.lineHeight = mark.attrs.lineHeight;
+    }
+    if (mark.type === 'highlight' && typeof mark.attrs?.color === 'string') {
+      styles.backgroundColor = mark.attrs.color;
+      styles.borderRadius = '4px';
+      styles.paddingInline = '2px';
+    }
+  }
+
+  if (textDecorations.size > 0) {
+    styles.textDecoration = Array.from(textDecorations).join(' ');
+  }
+
+  return styles;
+}
+
+
+// ==============================
+// 이미지 및 미디어 처리
+// ==============================
 
 function getYoutubeEmbedUrl(url: string) {
   try {
@@ -57,6 +109,29 @@ function getYoutubeEmbedUrl(url: string) {
 
   return '';
 }
+
+function getImageWidth(node: CommunityContentBody) {
+  return typeof node.attrs?.width === 'string' ? node.attrs.width : '100%';
+}
+
+function getImageAlignment(node: CommunityContentBody) {
+  const align = typeof node.attrs?.align === 'string' ? node.attrs.align : 'left';
+
+  if (align === 'center') {
+    return { ml: 'auto', mr: 'auto' } as const;
+  }
+
+  if (align === 'right') {
+    return { ml: 'auto', mr: '0' } as const;
+  }
+
+  return { ml: '0', mr: 'auto' } as const;
+}
+
+
+// ==============================
+// 인용문 렌더링 스타일 처리
+// ==============================
 
 function getQuoteStyle(node: CommunityContentBody) {
   return typeof node.attrs?.quoteStyle === 'string' ? node.attrs.quoteStyle : 'line';
@@ -106,6 +181,10 @@ function getQuoteContainerStyles(node: CommunityContentBody) {
   };
 }
 
+// ==============================
+// 콘텐츠 메타 정보 표시 헬퍼
+// ==============================
+
 function getAuthorDisplay(content: CommunityContent) {
   if (content.author.visibility === 'anonymous') {
     return content.author.displayName || '익명';
@@ -150,40 +229,21 @@ function getStatusLabel(content: CommunityContent) {
   return '노출';
 }
 
-function getTextNodeStyles(node: CommunityContentBody) {
-  const styles: CSSProperties = {};
-  const textDecorations = new Set<string>();
-
-  for (const mark of node.marks ?? []) {
-    if (mark.type === 'bold') styles.fontWeight = 700;
-    if (mark.type === 'italic') styles.fontStyle = 'italic';
-    if (mark.type === 'underline') textDecorations.add('underline');
-    if (mark.type === 'strike') textDecorations.add('line-through');
-    if (mark.type === 'textStyle' && typeof mark.attrs?.color === 'string') {
-      styles.color = mark.attrs.color;
-    }
-    if (mark.type === 'textStyle' && typeof mark.attrs?.fontFamily === 'string') {
-      styles.fontFamily = normalizeFontFamily(mark.attrs.fontFamily);
-    }
-    if (mark.type === 'textStyle' && typeof mark.attrs?.fontSize === 'string') {
-      styles.fontSize = mark.attrs.fontSize;
-    }
-    if (mark.type === 'textStyle' && typeof mark.attrs?.lineHeight === 'string') {
-      styles.lineHeight = mark.attrs.lineHeight;
-    }
-    if (mark.type === 'highlight' && typeof mark.attrs?.color === 'string') {
-      styles.backgroundColor = mark.attrs.color;
-      styles.borderRadius = '4px';
-      styles.paddingInline = '2px';
-    }
+function getStatusBadgeStyle(content: CommunityContent) {
+  if (content.status === 'draft') {
+    return { bg: '#FEF3C7', color: '#92400E' };
   }
 
-  if (textDecorations.size > 0) {
-    styles.textDecoration = Array.from(textDecorations).join(' ');
+  if (content.status === 'archived') {
+    return { bg: '#F3F4F6', color: '#6B7280' };
   }
 
-  return styles;
+  return { bg: '#ECFDF5', color: '#047857' };
 }
+
+// ==============================
+// Tiptap 인라인 노드 렌더링
+// ==============================
 
 function renderInlineContent(nodes?: CommunityContentBody[], keyPrefix = 'inline'): ReactNode {
   if (!nodes?.length) return null;
@@ -235,30 +295,16 @@ function renderInlineContent(nodes?: CommunityContentBody[], keyPrefix = 'inline
   });
 }
 
+// ==============================
+// Tiptap 블록 노드 공통 헬퍼
+// ==============================
+
 function getBlockAlignment(node: CommunityContentBody) {
   return typeof node.attrs?.textAlign === 'string' ? node.attrs.textAlign : 'left';
 }
 
 function getBlockLineHeight(node: CommunityContentBody, fallback: string) {
   return typeof node.attrs?.lineHeight === 'string' ? node.attrs.lineHeight : fallback;
-}
-
-function getImageWidth(node: CommunityContentBody) {
-  return typeof node.attrs?.width === 'string' ? node.attrs.width : '100%';
-}
-
-function getImageAlignment(node: CommunityContentBody) {
-  const align = typeof node.attrs?.align === 'string' ? node.attrs.align : 'left';
-
-  if (align === 'center') {
-    return { ml: 'auto', mr: 'auto' } as const;
-  }
-
-  if (align === 'right') {
-    return { ml: 'auto', mr: '0' } as const;
-  }
-
-  return { ml: '0', mr: 'auto' } as const;
 }
 
 function getListItemBlockNode(node: CommunityContentBody) {
@@ -274,6 +320,10 @@ function getListItemLineHeight(node: CommunityContentBody) {
   const blockNode = getListItemBlockNode(node);
   return blockNode ? getBlockLineHeight(blockNode, '1.9') : '1.9';
 }
+
+// ==============================
+// Tiptap 블록 노드 렌더링
+// ==============================
 
 function renderBodyNode(node: CommunityContentBody, index: number) {
   if (node.type === 'paragraph') {
@@ -500,12 +550,19 @@ function renderBodyNode(node: CommunityContentBody, index: number) {
   return null;
 }
 
+// ==============================
+// 관리자 콘텐츠 상세 페이지
+// ==============================
+
 export default function CommunityContentDetailPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const contentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [content, setContent] = useState<CommunityContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   useEffect(() => {
     if (!contentId) {
@@ -554,6 +611,64 @@ export default function CommunityContentDetailPage() {
       isCancelled = true;
     };
   }, [contentId]);
+
+  // === Action handlers ===
+  const handlePatchContent = async (payload: Partial<CommunityContent>) => {
+    if (!contentId || !content || isSubmittingAction) return;
+
+    try {
+      setIsSubmittingAction(true);
+
+      const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(errorData?.message || '콘텐츠 정보를 수정하지 못했습니다.');
+      }
+
+      const nextContent = (await response.json()) as CommunityContent;
+      setContent(nextContent);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '콘텐츠 정보를 수정하지 못했습니다.');
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  const handleDeleteContent = async () => {
+    if (!contentId || isSubmittingAction) return;
+
+    try {
+      setIsSubmittingAction(true);
+
+      const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(errorData?.message || '콘텐츠를 삭제하지 못했습니다.');
+      }
+
+      setIsDeleteModalOpen(false);
+      router.push('/admin/community/content');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '콘텐츠를 삭제하지 못했습니다.');
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  const handleEditContent = () => {
+    if (!contentId) return;
+    router.push(`/admin/community/content/${contentId}/edit`);
+  };
 
   if (isLoading) {
     return (
@@ -608,7 +723,7 @@ export default function CommunityContentDetailPage() {
 
       <Flex direction="column" gap="16px" maxW="920px">
         <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" px="24px" py="20px">
-          <Flex align="center" justify="space-between" mb="10px">
+          <Flex align="center" justify="space-between" mb="10px" position="relative">
             <Button
               asChild
               variant="ghost"
@@ -627,29 +742,51 @@ export default function CommunityContentDetailPage() {
               </Link>
             </Button>
 
-            <Flex align="center" gap="8px">
-              {content.flags.isPromoted ? (
-                <Flex
-                  align="center"
-                  gap="5px"
-                  px="10px"
-                  py="4px"
-                  borderRadius="9999px"
-                  bg="#FEF2F2"
-                  color="#DC2626"
-                >
-                  <Megaphone size={14} />
-                  <Text fontSize="12px" fontWeight="700">
-                    홍보
-                  </Text>
-                </Flex>
-              ) : null}
-              <Box px="10px" py="4px" borderRadius="9999px" bg="#F3F4F6">
-                <Text fontSize="12px" fontWeight="700" color="#374151">
-                  {statusLabel}
+            <ContentActionMenu
+              content={content}
+              isSubmitting={isSubmittingAction}
+              onArchiveToggle={() =>
+                handlePatchContent({
+                  status: content.status === 'archived' ? 'published' : 'archived',
+                })
+              }
+              onPinnedToggle={() =>
+                handlePatchContent({
+                  flags: { ...content.flags, isPinned: !content.flags.isPinned },
+                })
+              }
+              onNoticeToggle={() =>
+                handlePatchContent({
+                  flags: { ...content.flags, isNotice: !content.flags.isNotice },
+                })
+              }
+              onEdit={handleEditContent}
+              onDelete={() => setIsDeleteModalOpen(true)}
+            />
+          </Flex>
+
+          <Flex align="center" gap="8px" mb="14px">
+            <Box px="10px" py="4px" borderRadius="9999px" {...getStatusBadgeStyle(content)}>
+              <Text fontSize="12px" fontWeight="700">
+                {statusLabel}
+              </Text>
+            </Box>
+            {content.flags.isPromoted ? (
+              <Flex
+                align="center"
+                gap="5px"
+                px="10px"
+                py="4px"
+                borderRadius="9999px"
+                bg="#FEF2F2"
+                color="#DC2626"
+              >
+                <Megaphone size={14} />
+                <Text fontSize="12px" fontWeight="700">
+                  홍보
                 </Text>
-              </Box>
-            </Flex>
+              </Flex>
+            ) : null}
           </Flex>
 
           <Text fontSize="28px" fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
@@ -725,6 +862,50 @@ export default function CommunityContentDetailPage() {
           </Flex>
         </Box>
       </Flex>
+
+      <BaseModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (isSubmittingAction) return;
+          setIsDeleteModalOpen(false);
+        }}
+        title="콘텐츠 삭제"
+        footer={
+          <Flex gap="8px" w="100%">
+            <AdminButton
+              type="button"
+              variantStyle="outline"
+              size="md"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isSubmittingAction}
+              flex={1}
+            >
+              취소
+            </AdminButton>
+            <AdminButton
+              type="button"
+              variantStyle="primary"
+              size="md"
+              onClick={() => {
+                void handleDeleteContent();
+              }}
+              disabled={isSubmittingAction}
+              flex={1}
+            >
+              삭제하기
+            </AdminButton>
+          </Flex>
+        }
+      >
+        <Flex direction="column" gap="8px">
+          <Text fontSize="14px" fontWeight="600" color="#111827">
+            이 콘텐츠를 삭제하시겠습니까?
+          </Text>
+          <Text fontSize="13px" color="#6B7280">
+            삭제 후에는 목록에서 확인할 수 없습니다.
+          </Text>
+        </Flex>
+      </BaseModal>
     </PageContainer>
   );
 }

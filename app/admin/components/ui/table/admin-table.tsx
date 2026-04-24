@@ -3,6 +3,7 @@
 import {
   Box,
   Flex,
+  Portal,
   Table,
   Text,
   type BoxProps,
@@ -82,10 +83,6 @@ export function AdminTableFooter({ left, right, ...rest }: AdminTableFooterProps
     </Flex>
   );
 }
-
-type AdminTablePrimitiveProps = {
-  children: ReactNode;
-};
 
 type AdminTableRootProps = {
   children: ReactNode;
@@ -188,6 +185,15 @@ export function AdminTableEllipsisText({
 }: AdminTableEllipsisTextProps) {
   const textRef = useRef<HTMLDivElement | null>(null);
   const [isTruncated, setIsTruncated] = useState(false);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+
+  const resolvedTooltipLabel =
+    typeof tooltipLabel === 'string'
+      ? tooltipLabel
+      : typeof children === 'string' || typeof children === 'number'
+      ? String(children)
+      : undefined;
 
   useEffect(() => {
     const element = textRef.current;
@@ -211,35 +217,84 @@ export function AdminTableEllipsisText({
       window.removeEventListener('resize', updateTruncated);
     };
   }, [children]);
-  const resolvedTooltipLabel =
-    typeof tooltipLabel === 'string'
-      ? tooltipLabel
-      : typeof children === 'string' || typeof children === 'number'
-      ? String(children)
-      : undefined;
+
+  const updateTooltipPosition = () => {
+    const element = textRef.current;
+    if (!element) return;
+
+    const rect = element.getBoundingClientRect();
+
+    setTooltipPosition({
+      top: rect.top,
+      left: rect.left + rect.width / 2,
+    });
+  };
 
   const textElement = (
     <Box
       ref={textRef}
+      whiteSpace="nowrap"
+      overflow="hidden"
+      textOverflow="ellipsis"
       minW="0"
       maxW="100%"
+      w="100%"
       display="block"
       title={isTruncated ? resolvedTooltipLabel : undefined}
+      onMouseEnter={() => {
+        if (!resolvedTooltipLabel || !isTruncated) return;
+        updateTooltipPosition();
+        setIsTooltipOpen(true);
+      }}
+      onMouseLeave={() => {
+        setIsTooltipOpen(false);
+      }}
+      onFocus={() => {
+        if (!resolvedTooltipLabel || !isTruncated) return;
+        updateTooltipPosition();
+        setIsTooltipOpen(true);
+      }}
+      onBlur={() => {
+        setIsTooltipOpen(false);
+      }}
+      {...rest}
     >
-      <Text
-        as="span"
-        whiteSpace="nowrap"
-        overflow="hidden"
-        textOverflow="ellipsis"
-        minW="0"
-        display="block"
-        maxW="100%"
-        {...rest}
-      >
-        {children}
-      </Text>
+      {children}
     </Box>
   );
 
-  return textElement;
+  if (!resolvedTooltipLabel) {
+    return textElement;
+  }
+
+  return (
+    <>
+      {textElement}
+      {isTooltipOpen && isTruncated ? (
+        <Portal>
+          <Box
+            position="fixed"
+            top={`${tooltipPosition.top - 8}px`}
+            left={`${tooltipPosition.left}px`}
+            transform="translate(-50%, -100%)"
+            zIndex="tooltip"
+            maxW="420px"
+            px="10px"
+            py="8px"
+            borderRadius="8px"
+            bg="rgba(17, 24, 39, 0.96)"
+            color="#FFFFFF"
+            fontSize="12px"
+            lineHeight="1.5"
+            boxShadow="0 10px 24px rgba(15, 23, 42, 0.22)"
+            whiteSpace="normal"
+            wordBreak="break-word"
+            pointerEvents="none"
+          >
+            {resolvedTooltipLabel}
+          </Box>
+        </Portal>
+      ) : null}
+    </>
+  );
 }
