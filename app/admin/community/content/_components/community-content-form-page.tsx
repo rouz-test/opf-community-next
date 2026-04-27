@@ -19,8 +19,9 @@ type CommunityContentFormPageProps = {
 };
 
 const allTags = tagsData as Tag[];
-const defaultTag = allTags.find((tag) => tag.isDefault) ?? null;
-const tags = allTags.filter((tag) => !tag.isDefault);
+const sortedTags = [...allTags].sort((a, b) => a.sortOrder - b.sortOrder);
+const defaultTag = sortedTags.find((tag) => tag.isDefault) ?? null;
+const tags = sortedTags.filter((tag) => !tag.isDefault);
 const defaultAuthor: CommunityContentAuthor = {
   type: 'admin',
   id: 'admin-1',

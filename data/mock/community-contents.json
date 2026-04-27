@@ -46,7 +46,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
-    "updatedAt": "2026-04-24T08:12:48.845Z",
+    "updatedAt": "2026-04-27T03:29:55.609Z",
     "publishedAt": "2026-04-24T08:12:48.845Z"
   },
   {
@@ -194,7 +194,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-24T08:07:32.424Z",
-    "updatedAt": "2026-04-24T08:10:14.455Z",
+    "updatedAt": "2026-04-27T03:29:57.143Z",
     "publishedAt": "2026-04-24T08:07:32.424Z"
   },
   {
@@ -631,7 +631,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:19:14.106Z",
-    "updatedAt": "2026-04-24T08:04:15.367Z",
+    "updatedAt": "2026-04-27T03:29:58.534Z",
     "publishedAt": "2026-04-23T08:19:14.106Z"
   },
   {
@@ -676,7 +676,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-04-23T08:05:34.843Z",
+    "updatedAt": "2026-04-27T03:29:59.716Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
@@ -702,7 +702,7 @@
       "tag_1776216676340",
       "tag_1776227420728"
     ],
-    "status": "archived",
+    "status": "published",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -724,53 +724,8 @@
       "replyCount": 34
     },
     "createdAt": "2026-04-23T10:00:00.000Z",
-    "updatedAt": "2026-04-24T08:03:25.300Z",
+    "updatedAt": "2026-04-27T03:30:00.889Z",
     "publishedAt": "2026-04-23T10:00:00.000Z"
-  },
-  {
-    "id": "content-2",
-    "title": "익명으로 작성된 콘텐츠입니다.",
-    "content": {
-      "type": "doc",
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "type": "text",
-              "text": "이 글은 익명으로 작성되었습니다."
-            }
-          ]
-        }
-      ]
-    },
-    "tagIds": [
-      "tag-3"
-    ],
-    "status": "published",
-    "author": {
-      "type": "user",
-      "id": "user-123",
-      "visibility": "anonymous",
-      "displayName": "익명",
-      "identifierType": "name",
-      "identifierValue": "홍길동"
-    },
-    "flags": {
-      "isPinned": false,
-      "isNotice": false,
-      "isPromoted": false
-    },
-    "stats": {
-      "viewCount": 80,
-      "likeCount": 80,
-      "saveCount": 24,
-      "commentCount": 130,
-      "replyCount": 42
-    },
-    "createdAt": "2026-04-23T11:00:00.000Z",
-    "updatedAt": "2026-04-23T11:00:00.000Z",
-    "publishedAt": "2026-04-23T11:00:00.000Z"
   },
   {
     "id": "content-3",
@@ -790,7 +745,7 @@
       ]
     },
     "tagIds": [],
-    "status": "draft",
+    "status": "published",
     "author": {
       "type": "user",
       "id": "user-999",
@@ -812,7 +767,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T12:00:00.000Z",
-    "updatedAt": "2026-04-23T12:00:00.000Z",
-    "publishedAt": null
+    "updatedAt": "2026-04-27T03:30:02.351Z",
+    "publishedAt": "2026-04-27T03:29:45.477Z"
   }
 ]

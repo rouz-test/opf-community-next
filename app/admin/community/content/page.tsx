@@ -39,6 +39,7 @@ import AdminTablePagination, {
   type AdminTablePaginationItem,
 } from '@/app/admin/components/ui/table/admin-table-pagination';
 import ContentActionMenu from '@/app/admin/components/content-action-menu';
+import { Tooltip } from '@/app/admin/components/editor/tooltip';
 
 const DEFAULT_PAGE_SIZE = 13;
 const PAGE_SIZE_OPTIONS = [13, 30, 50] as const;
@@ -104,10 +105,8 @@ function getPaginationItems(
   return items;
 }
 
-const tags = tagsData as Tag[];
-const tagOptions = tags
-  .filter((tag) => tag.status !== 'inactive')
-  .map((tag) => tag.name);
+const tags = [...(tagsData as Tag[])].sort((a, b) => a.sortOrder - b.sortOrder);
+const tagOptions = tags.map((tag) => tag.name);
 
 function extractTextFromTiptapNodes(nodes?: CommunityContentBody[]): string {
   if (!nodes?.length) return '';
@@ -196,6 +195,7 @@ export default function CommunityContentPage() {
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [archiveTargetIds, setArchiveTargetIds] = useState<string[]>([]);
   const [deleteTargetIds, setDeleteTargetIds] = useState<string[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
@@ -329,6 +329,73 @@ export default function CommunityContentPage() {
     },
     []
   );
+
+  const handleArchiveContents = useCallback(
+    async (contentIds: string[]) => {
+      if (contentIds.length === 0) return;
+
+      try {
+        setIsMutating(true);
+
+        const updatedContents: CommunityContent[] = [];
+
+        for (const contentId of contentIds) {
+          const targetContent = contents.find((content) => content.id === contentId);
+
+          if (!targetContent || targetContent.status === 'archived') {
+            continue;
+          }
+
+          const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: 'archived' }),
+          });
+
+          if (!response.ok) {
+            const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
+            throw new Error(errorData?.message || '콘텐츠 보관에 실패했습니다.');
+          }
+
+          updatedContents.push((await response.json()) as CommunityContent);
+        }
+
+        if (updatedContents.length > 0) {
+          const updatedMap = new Map(updatedContents.map((content) => [content.id, content]));
+          setContents((prev) =>
+            prev.map((content) => updatedMap.get(content.id) ?? content)
+          );
+        }
+
+        setSelectedRowKeys((prev) => prev.filter((rowKey) => !contentIds.includes(rowKey)));
+      } catch (error) {
+        console.error('failed to archive contents:', error);
+        window.alert(error instanceof Error ? error.message : '콘텐츠 보관에 실패했습니다.');
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [contents]
+  );
+
+  const handleOpenArchiveModal = useCallback((contentIds: string[]) => {
+    if (contentIds.length === 0) return;
+    setArchiveTargetIds(contentIds);
+  }, []);
+
+  const handleCloseArchiveModal = useCallback(() => {
+    if (isMutating) return;
+    setArchiveTargetIds([]);
+  }, [isMutating]);
+
+  const handleConfirmArchiveContents = useCallback(async () => {
+    if (archiveTargetIds.length === 0) return;
+
+    await handleArchiveContents(archiveTargetIds);
+    setArchiveTargetIds([]);
+  }, [archiveTargetIds, handleArchiveContents]);
 
   const handleOpenDeleteModal = useCallback((contentIds: string[]) => {
     if (contentIds.length === 0) return;
@@ -842,7 +909,15 @@ export default function CommunityContentPage() {
             }}
           />
 
-          <AdminButton type="button" variantStyle="outline" size="sm">
+          <AdminButton
+            type="button"
+            variantStyle="outline"
+            size="sm"
+            disabled={selectedRowKeys.length === 0 || isMutating}
+            onClick={() => {
+              handleOpenArchiveModal(selectedRowKeys);
+            }}
+          >
             <Flex align="center" gap="6px">
               <Icon as={LuArchive} boxSize="14px" />
               <Text as="span">선택 항목 보관</Text>
@@ -937,19 +1012,41 @@ export default function CommunityContentPage() {
                   {row.type}
                 </AdminTableCell>
                 <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
-                  <Flex align="center" gap="6px" minW="0" wrap="nowrap">
-                    {row.tags.slice(0, 1).map((tag) => (
-                      <Box key={tag.id} flexShrink={0}>
-                        <AdminTagBadge tag={tag} />
-                      </Box>
-                    ))}
-
-                    {row.tags.length > 1 ? (
-                      <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
-                        +{row.tags.length - 1}
-                      </Text>
-                    ) : null}
-                  </Flex>
+                  {row.tags.length > 1 ? (
+                    <Tooltip
+                      content={row.tags
+                        .slice(1)
+                        .map((tag) => tag.name)
+                        .join(', ')}
+                      positioning={{ placement: 'top' }}
+                      openDelay={150}
+                      closeDelay={50}
+                      contentProps={{
+                        maxW: '280px',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                        {row.tags.slice(0, 1).map((tag) => (
+                          <Box key={tag.id} flexShrink={0}>
+                            <AdminTagBadge tag={tag} />
+                          </Box>
+                        ))}
+                        <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
+                          +{row.tags.length - 1}
+                        </Text>
+                      </Flex>
+                    </Tooltip>
+                  ) : (
+                    <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                      {row.tags.slice(0, 1).map((tag) => (
+                        <Box key={tag.id} flexShrink={0}>
+                          <AdminTagBadge tag={tag} />
+                        </Box>
+                      ))}
+                    </Flex>
+                  )}
                 </AdminTableCell>
                 <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
                   <Flex align="center" gap="8px" minW="0">
@@ -1096,6 +1193,47 @@ export default function CommunityContentPage() {
       </Flex>
       </>
       )}
+
+      <BaseModal
+        isOpen={archiveTargetIds.length > 0}
+        onClose={handleCloseArchiveModal}
+        title="콘텐츠 보관"
+        footer={
+          <Flex gap="8px" w="100%">
+            <AdminButton
+              type="button"
+              variantStyle="outline"
+              size="md"
+              onClick={handleCloseArchiveModal}
+              disabled={isMutating}
+              flex={1}
+            >
+              취소
+            </AdminButton>
+            <AdminButton
+              type="button"
+              variantStyle="primary"
+              size="md"
+              onClick={() => {
+                void handleConfirmArchiveContents();
+              }}
+              disabled={isMutating}
+              flex={1}
+            >
+              보관하기
+            </AdminButton>
+          </Flex>
+        }
+      >
+        <Flex direction="column" gap="8px">
+          <Text fontSize="14px" fontWeight="600" color="#111827">
+            선택한 콘텐츠를 보관하시겠습니까?
+          </Text>
+          <Text fontSize="13px" color="#6B7280">
+            보관 대상: {archiveTargetIds.length === 1 ? '1개' : `${archiveTargetIds.length}개`}
+          </Text>
+        </Flex>
+      </BaseModal>
 
       <BaseModal
         isOpen={deleteTargetIds.length > 0}
