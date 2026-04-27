@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
+import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import type {
   CommunityContent,
@@ -107,14 +109,36 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const now = new Date().toISOString();
     const nextStatus = body.status ?? currentContent.status;
+    const nextTitle = body.title !== undefined ? body.title.trim() : currentContent.title;
+    const nextBody =
+      body.content !== undefined && isObject(body.content)
+        ? body.content
+        : currentContent.content;
+
+    if (nextStatus === 'published' || nextStatus === 'archived') {
+      const blockedWords = await readBlockedWordsFromStore();
+      const matchResult = findMatchedBlockedWords(
+        [nextTitle, extractTextFromContentBody(nextBody)]
+          .filter(Boolean)
+          .join(' '),
+        blockedWords,
+      );
+
+      if (matchResult.hasBlockedWords) {
+        return NextResponse.json(
+          {
+            message: '금지 키워드가 포함되어 발행할 수 없습니다.',
+            matchedKeywords: matchResult.matchedKeywords,
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const nextContent: CommunityContent = {
       ...currentContent,
-      title: body.title !== undefined ? body.title.trim() : currentContent.title,
-      content:
-        body.content !== undefined && isObject(body.content)
-          ? body.content
-          : currentContent.content,
+      title: nextTitle,
+      content: nextBody,
       tagIds: body.tagIds ?? currentContent.tagIds,
       status: nextStatus,
       author: body.author

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
+import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import type {
   CommunityContent,
@@ -107,6 +109,26 @@ export async function POST(request: NextRequest) {
         { message: '콘텐츠 옵션 정보가 올바르지 않습니다.' },
         { status: 400 },
       );
+    }
+
+    if (body.status === 'published' || body.status === 'archived') {
+      const blockedWords = await readBlockedWordsFromStore();
+      const matchResult = findMatchedBlockedWords(
+        [title, body.content && isObject(body.content) ? extractTextFromContentBody(body.content as CommunityContent['content']) : '']
+          .filter(Boolean)
+          .join(' '),
+        blockedWords,
+      );
+
+      if (matchResult.hasBlockedWords) {
+        return NextResponse.json(
+          {
+            message: '금지 키워드가 포함되어 발행할 수 없습니다.',
+            matchedKeywords: matchResult.matchedKeywords,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);

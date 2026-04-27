@@ -1,27 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
+import { writeJsonFile } from '@/lib/mock-file';
+import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import type { BlockedWord } from '@/types/blocked-word';
 
 const BLOCKED_WORDS_PATH = 'data/mock/blocked-words.json';
-
-async function readBlockedWordsSafely(): Promise<BlockedWord[]> {
-  try {
-    return await readJsonFile<BlockedWord[]>(BLOCKED_WORDS_PATH);
-  } catch (error) {
-    const isFileSystemError =
-      error instanceof Error &&
-      ('code' in error || error.message.includes('Unexpected end of JSON input'));
-
-    if (!isFileSystemError) {
-      throw error;
-    }
-
-    const emptyList: BlockedWord[] = [];
-    await writeJsonFile<BlockedWord[]>(BLOCKED_WORDS_PATH, emptyList);
-    return emptyList;
-  }
-}
 
 type CreateBlockedWordRequestBody = Partial<{
   keyword: string;
@@ -30,7 +13,7 @@ type CreateBlockedWordRequestBody = Partial<{
 
 export async function GET() {
   try {
-    const blockedWords = await readBlockedWordsSafely();
+    const blockedWords = await readBlockedWordsFromStore();
     return NextResponse.json(blockedWords, { status: 200 });
   } catch (error) {
     console.error('[GET /api/mock/blocked-words] failed:', error);
@@ -53,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const blockedWords = await readBlockedWordsSafely();
+    const blockedWords = await readBlockedWordsFromStore();
     const normalizedKeyword = keyword.toLowerCase();
     const hasDuplicate = blockedWords.some(
       (item) => item.keyword.trim().toLowerCase() === normalizedKeyword,

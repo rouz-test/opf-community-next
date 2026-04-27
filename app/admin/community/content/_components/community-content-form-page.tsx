@@ -5,12 +5,15 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import ContentEditor, { type ContentEditorJsonValue } from '@/app/admin/components/editor/content-editor';
+import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminSwitch from '@/app/admin/components/ui/switch';
 import { toaster } from '@/app/admin/components/ui/toaster';
 import tagsData from '@/data/mock/tags.json';
+import { getBlockedWords } from '@/lib/blocked-words';
+import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import type { CommunityContent, CommunityContentAuthor, CommunityContentBody, CommunityContentPayload } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
 
@@ -65,6 +68,9 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<'draft' | 'publish' | null>(null);
+  const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
+  const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
+  const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
 
   const isWarning = title.length >= 40 && title.length < 50;
   const isError = title.length >= 50;
@@ -152,11 +158,34 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
     });
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new Error(errorData?.message || '콘텐츠 저장에 실패했습니다.');
+      const errorData = (await response.json().catch(() => null)) as
+        | { message?: string; matchedKeywords?: string[] }
+        | null;
+      const error = new Error(errorData?.message || '콘텐츠 저장에 실패했습니다.') as Error & {
+        matchedKeywords?: string[];
+      };
+      error.matchedKeywords = errorData?.matchedKeywords;
+      throw error;
     }
 
     return response.json();
+  };
+
+  const getBlockedWordValidationText = () => [title, extractTextFromContentBody(content)].filter(Boolean).join(' ');
+
+  const validateBlockedWords = async () => {
+    const blockedWords = await getBlockedWords();
+    const validationText = getBlockedWordValidationText();
+    const matchResult = findMatchedBlockedWords(validationText, blockedWords);
+
+    if (matchResult.hasBlockedWords) {
+      setMatchedBlockedKeywords(matchResult.matchedKeywords);
+      setBlockedWordSourceText(validationText);
+      setIsBlockedWordModalOpen(true);
+      return false;
+    }
+
+    return true;
   };
 
   const handleSaveDraft = async () => {
@@ -181,6 +210,11 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
 
   const handlePublish = async () => {
     try {
+      const isPublishAllowed = await validateBlockedWords();
+      if (!isPublishAllowed) {
+        return;
+      }
+
       setLastAction('publish');
       await submitContent('published');
       toaster.create({
@@ -190,6 +224,18 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
       });
       router.push('/admin/community/content');
     } catch (error) {
+      if (
+        error instanceof Error &&
+        'matchedKeywords' in error &&
+        Array.isArray((error as Error & { matchedKeywords?: string[] }).matchedKeywords) &&
+        (error as Error & { matchedKeywords?: string[] }).matchedKeywords?.length
+      ) {
+        setMatchedBlockedKeywords((error as Error & { matchedKeywords?: string[] }).matchedKeywords ?? []);
+        setBlockedWordSourceText(getBlockedWordValidationText());
+        setIsBlockedWordModalOpen(true);
+        return;
+      }
+
       console.error('publish failed:', error);
       toaster.create({
         description: error instanceof Error ? error.message : '콘텐츠 발행에 실패했습니다.',
@@ -376,6 +422,15 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
           </Flex>
         </Flex>
       </Grid>
+
+      <BlockedWordAlertModal
+        isOpen={isBlockedWordModalOpen}
+        onClose={() => setIsBlockedWordModalOpen(false)}
+        title="금지 키워드가 포함되어 발행할 수 없습니다."
+        description="제목 또는 본문에 포함된 금지 키워드를 수정한 뒤 다시 발행해주세요."
+        matchedKeywords={matchedBlockedKeywords}
+        sourceText={blockedWordSourceText}
+      />
     </PageContainer>
   );
 }

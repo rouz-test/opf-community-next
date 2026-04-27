@@ -1,0 +1,291 @@
+[
+  {
+    "id": "community-comment-1",
+    "contentId": "content-1",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-101",
+      "visibility": "public",
+      "displayName": "김하늘",
+      "identifierType": "email",
+      "identifierValue": "haneul@example.com",
+      "avatar": ""
+    },
+    "content": "샘플 콘텐츠에도 댓글 관리가 붙으니까 실제 운영 화면에 훨씬 가까워 보이네요.",
+    "status": "published",
+    "likeCount": 4,
+    "isLikedByMe": true,
+    "createdAt": "2026-04-24T11:10:00.000Z",
+    "updatedAt": "2026-04-24T11:10:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-2",
+    "contentId": "content-1",
+    "parentId": "community-comment-1",
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io",
+      "avatar": ""
+    },
+    "content": "맞아요. 이후 유저 화면으로 옮길 수 있게 관리자 기준 데이터 구조부터 정리해두는 중입니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-24T11:42:00.000Z",
+    "updatedAt": "2026-04-24T11:42:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-3",
+    "contentId": "content-1",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-102",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "email",
+      "identifierValue": "anonymous102@example.com",
+      "avatar": ""
+    },
+    "content": "삭제 상태만 잘 보여주면 운영 검토에도 도움이 될 것 같습니다.",
+    "status": "published",
+    "likeCount": 1,
+    "isLikedByMe": true,
+    "createdAt": "2026-04-25T02:05:00.000Z",
+    "updatedAt": "2026-04-25T02:05:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-4",
+    "contentId": "content-1777018368845",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-201",
+      "visibility": "public",
+      "displayName": "이소정",
+      "identifierType": "email",
+      "identifierValue": "sojeong@example.com",
+      "avatar": ""
+    },
+    "content": "제목 길이 테스트용 게시글인데도 실제 운영 화면처럼 댓글이 보여서 검토하기 좋네요.",
+    "status": "published",
+    "likeCount": 2,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T04:10:00.000Z",
+    "updatedAt": "2026-04-25T04:10:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-5",
+    "contentId": "content-1777018368845",
+    "parentId": "community-comment-4",
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io",
+      "avatar": ""
+    },
+    "content": "이런 식으로 상세 화면에서 바로 댓글 흐름을 확인할 수 있도록 맞춰두었습니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T04:28:00.000Z",
+    "updatedAt": "2026-04-25T04:28:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-6",
+    "contentId": "content-1777018052424",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-202",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "email",
+      "identifierValue": "anonymous202@example.com",
+      "avatar": ""
+    },
+    "content": "이미지랑 본문 스타일이 섞인 게시글에도 댓글 섹션이 자연스럽게 이어지네요.",
+    "status": "published",
+    "likeCount": 1,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T06:15:00.000Z",
+    "updatedAt": "2026-04-25T06:15:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-7",
+    "contentId": "content-1777018052424",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-203",
+      "visibility": "public",
+      "displayName": "정유진",
+      "identifierType": "email",
+      "identifierValue": "yujin@example.com",
+      "avatar": ""
+    },
+    "content": "공지 여부나 홍보 여부와 상관없이 상세 UX는 동일하게 가져가는 방향이 더 안정적일 것 같습니다.",
+    "status": "published",
+    "likeCount": 3,
+    "isLikedByMe": true,
+    "createdAt": "2026-04-25T08:03:00.000Z",
+    "updatedAt": "2026-04-25T08:03:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-8",
+    "contentId": "content-1776932354106",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-204",
+      "visibility": "public",
+      "displayName": "한주희",
+      "identifierType": "email",
+      "identifierValue": "juhee@example.com",
+      "avatar": ""
+    },
+    "content": "짧은 게시글이라도 댓글 하나만 붙어도 훨씬 실제 서비스 느낌이 납니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T09:20:00.000Z",
+    "updatedAt": "2026-04-25T09:20:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-9",
+    "contentId": "content-3",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-205",
+      "visibility": "public",
+      "displayName": "박도윤",
+      "identifierType": "email",
+      "identifierValue": "doyun@example.com",
+      "avatar": ""
+    },
+    "content": "임시 저장 상태여도 내부 검토용으로 댓글을 붙여보는 흐름이 가능하면 좋겠어요.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T10:05:00.000Z",
+    "updatedAt": "2026-04-25T10:05:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-10",
+    "contentId": "content-3",
+    "parentId": "community-comment-9",
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io",
+      "avatar": ""
+    },
+    "content": "실서비스 규칙과 별개로 현재 목업에서는 상세 검토를 위해 댓글 흐름만 확인할 수 있게 두었습니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-25T10:44:00.000Z",
+    "updatedAt": "2026-04-25T10:44:00.000Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-1777268253990",
+    "contentId": "content-1777018368845",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "댓글을 쓰면 댓글이 써지나?",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-27T05:37:33.990Z",
+    "updatedAt": "2026-04-27T05:37:33.990Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-1777269104727",
+    "contentId": "content-1777018368845",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "댓글 카운트 테스트",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-27T05:51:44.727Z",
+    "updatedAt": "2026-04-27T05:51:44.727Z",
+    "deletedAt": null
+  },
+  {
+    "id": "community-comment-1777270366953",
+    "contentId": "content-1777018368845",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "ㅁㄹㅇㅁㄴㅇㄹㅁㄴㅇㄹ",
+    "status": "deleted",
+    "likeCount": 0,
+    "createdAt": "2026-04-27T06:12:46.953Z",
+    "updatedAt": "2026-04-27T06:12:54.035Z",
+    "deletedAt": "2026-04-27T06:12:54.035Z"
+  },
+  {
+    "id": "community-comment-1777272714455",
+    "contentId": "content-1777018368845",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "시적",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-27T06:51:54.455Z",
+    "updatedAt": "2026-04-27T06:51:54.455Z",
+    "deletedAt": null
+  }
+]

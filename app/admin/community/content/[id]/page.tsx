@@ -1,19 +1,30 @@
 'use client';
 
-import { Box, Button, Flex, Image, Link as ChakraLink, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Image, Link as ChakraLink, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, BadgeCheck, Bookmark, Eye, Heart, Megaphone, MessageSquare } from 'lucide-react';
-import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
+import CommentEditor from '@/app/admin/components/comment/comment-editor';
+import CommentItem from '@/app/admin/components/comment/comment-item';
+import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import BaseModal from '@/app/admin/components/modal/base-modal';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import { toaster } from '@/app/admin/components/ui/toaster';
 import tagsData from '@/data/mock/tags.json';
+import { getBlockedWords } from '@/lib/blocked-words';
+import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
+import type {
+  CommunityComment,
+  CommunityCommentListResponse,
+  CommunityContentCommentStats,
+} from '@/types/community-comment';
 import type { Tag } from '@/types/tag';
 import ContentActionMenu from '@/app/admin/components/content-action-menu';
 
@@ -239,6 +250,11 @@ function getStatusBadgeStyle(content: CommunityContent) {
   }
 
   return { bg: '#ECFDF5', color: '#047857' };
+}
+
+async function parseErrorMessage(response: Response, fallback: string) {
+  const data = (await response.json().catch(() => null)) as { message?: string } | null;
+  return data?.message || fallback;
 }
 
 // ==============================
@@ -563,6 +579,87 @@ export default function CommunityContentDetailPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [comments, setComments] = useState<CommunityComment[]>([]);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const [commentValue, setCommentValue] = useState('');
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
+  const [replyValue, setReplyValue] = useState('');
+  const [isReplySubmitting, setIsReplySubmitting] = useState(false);
+  const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
+  const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
+  const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
+  const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
+  const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+
+  const applyCommentStats = useCallback((stats: CommunityContentCommentStats) => {
+    setContent((prevContent) => {
+      if (!prevContent) return prevContent;
+
+      return {
+        ...prevContent,
+        stats: {
+          ...prevContent.stats,
+          commentCount: stats.commentCount,
+          replyCount: stats.replyCount,
+        },
+      };
+    });
+  }, []);
+
+  const loadComments = useCallback(async () => {
+    if (!contentId) {
+      setComments([]);
+      setCommentsError(null);
+      return;
+    }
+
+    try {
+      setIsCommentsLoading(true);
+      setCommentsError(null);
+
+      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}`, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(await parseErrorMessage(response, '댓글 목록을 불러오지 못했습니다.'));
+      }
+
+      const data = (await response.json()) as CommunityCommentListResponse;
+      setComments(data.items);
+      applyCommentStats(data.stats);
+    } catch (error) {
+      setCommentsError(error instanceof Error ? error.message : '댓글 목록을 불러오지 못했습니다.');
+    } finally {
+      setIsCommentsLoading(false);
+    }
+  }, [applyCommentStats, contentId]);
+
+  const openBlockedWordModal = useCallback((title: string, description: string, matchedKeywords: string[], sourceText: string) => {
+    setBlockedWordModalTitle(title);
+    setBlockedWordModalDescription(description);
+    setMatchedBlockedKeywords(matchedKeywords);
+    setBlockedWordSourceText(sourceText);
+    setIsBlockedWordModalOpen(true);
+  }, []);
+
+  const validateBlockedWords = useCallback(
+    async (text: string, title: string, description: string) => {
+      const blockedWords = await getBlockedWords();
+      const matchResult = findMatchedBlockedWords(text, blockedWords);
+
+      if (matchResult.hasBlockedWords) {
+        openBlockedWordModal(title, description, matchResult.matchedKeywords, text);
+        return false;
+      }
+
+      return true;
+    },
+    [openBlockedWordModal],
+  );
 
   useEffect(() => {
     if (!contentId) {
@@ -611,6 +708,10 @@ export default function CommunityContentDetailPage() {
       isCancelled = true;
     };
   }, [contentId]);
+
+  useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
 
   // === Action handlers ===
   const handlePatchContent = async (payload: Partial<CommunityContent>) => {
@@ -668,6 +769,198 @@ export default function CommunityContentDetailPage() {
   const handleEditContent = () => {
     if (!contentId) return;
     router.push(`/admin/community/content/${contentId}/edit`);
+  };
+
+  const handleCreateComment = async () => {
+    if (!contentId || isCommentSubmitting) return;
+
+    try {
+      const isAllowed = await validateBlockedWords(
+        commentValue,
+        '금지 키워드가 포함되어 댓글을 등록할 수 없습니다.',
+        '댓글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+      );
+
+      if (!isAllowed) {
+        return;
+      }
+
+      setIsCommentSubmitting(true);
+
+      const response = await fetch('/api/mock/community-comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contentId,
+          content: commentValue,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { message?: string; matchedKeywords?: string[] }
+          | null;
+
+        if (errorData?.matchedKeywords?.length) {
+          openBlockedWordModal(
+            '금지 키워드가 포함되어 댓글을 등록할 수 없습니다.',
+            '댓글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+            errorData.matchedKeywords,
+            commentValue,
+          );
+          return;
+        }
+
+        throw new Error(errorData?.message || '댓글을 등록하지 못했습니다.');
+      }
+
+      setCommentValue('');
+      toaster.create({
+        type: 'success',
+        description: '댓글이 등록되었습니다.',
+      });
+      await loadComments();
+    } catch (error) {
+      toaster.create({
+        type: 'error',
+        description: error instanceof Error ? error.message : '댓글을 등록하지 못했습니다.',
+      });
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
+  const handleCreateReply = async (comment: CommunityComment) => {
+    if (!contentId || isReplySubmitting) return;
+
+    try {
+      const isAllowed = await validateBlockedWords(
+        replyValue,
+        '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
+        '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+      );
+
+      if (!isAllowed) {
+        return;
+      }
+
+      setIsReplySubmitting(true);
+
+      const response = await fetch('/api/mock/community-comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contentId,
+          parentId: comment.id,
+          content: replyValue,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { message?: string; matchedKeywords?: string[] }
+          | null;
+
+        if (errorData?.matchedKeywords?.length) {
+          openBlockedWordModal(
+            '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
+            '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+            errorData.matchedKeywords,
+            replyValue,
+          );
+          return;
+        }
+
+        throw new Error(errorData?.message || '답글을 등록하지 못했습니다.');
+      }
+
+      setReplyTargetId(null);
+      setReplyTargetName(null);
+      setReplyValue('');
+      toaster.create({
+        type: 'success',
+        description: '답글이 등록되었습니다.',
+      });
+      await loadComments();
+    } catch (error) {
+      toaster.create({
+        type: 'error',
+        description: error instanceof Error ? error.message : '답글을 등록하지 못했습니다.',
+      });
+    } finally {
+      setIsReplySubmitting(false);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string, nextCommentValue: string) => {
+    const isAllowed = await validateBlockedWords(
+      nextCommentValue,
+      '금지 키워드가 포함되어 댓글을 수정할 수 없습니다.',
+      '댓글 내용에서 금지 키워드를 수정한 뒤 다시 저장해주세요.',
+    );
+
+    if (!isAllowed) {
+      return false;
+    }
+
+    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: nextCommentValue,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => null)) as
+        | { message?: string; matchedKeywords?: string[] }
+        | null;
+
+      if (errorData?.matchedKeywords?.length) {
+        openBlockedWordModal(
+          '금지 키워드가 포함되어 댓글을 수정할 수 없습니다.',
+          '댓글 내용에서 금지 키워드를 수정한 뒤 다시 저장해주세요.',
+          errorData.matchedKeywords,
+          nextCommentValue,
+        );
+        return false;
+      }
+
+      toaster.create({
+        type: 'error',
+        description: errorData?.message || '댓글을 수정하지 못했습니다.',
+      });
+      return false;
+    }
+
+    toaster.create({
+      type: 'success',
+      description: '댓글이 수정되었습니다.',
+    });
+    await loadComments();
+    return true;
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(await parseErrorMessage(response, '댓글을 삭제하지 못했습니다.'));
+    }
+
+    toaster.create({
+      type: 'success',
+      description: '댓글이 삭제되었습니다.',
+    });
+    await loadComments();
   };
 
   if (isLoading) {
@@ -861,6 +1154,93 @@ export default function CommunityContentDetailPage() {
             </Flex>
           </Flex>
         </Box>
+
+        <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF">
+          <Box px="24px" py="20px" borderBottom="1px solid" borderColor="#E5E7EB">
+            <Flex align="center" gap="6px" mb="16px">
+              <Text fontSize="18px" fontWeight="700" color="#111827">
+                댓글
+              </Text>
+              <Text fontSize="13px" color="#6B7280">
+                {content.stats.commentCount + content.stats.replyCount}개
+              </Text>
+            </Flex>
+            {replyTargetId && replyTargetName ? (
+              <Box
+                mb="12px"
+                px="12px"
+                py="10px"
+                borderRadius="12px"
+                bg="#FFF7ED"
+                borderWidth="1px"
+                borderColor="#FED7AA"
+              >
+                <Text fontSize="12px" color="#9A3412">
+                  현재 <Text as="span" fontWeight="700">{replyTargetName}</Text> 님의 댓글에 답글을 작성 중입니다.
+                </Text>
+              </Box>
+            ) : null}
+
+            <CommentEditor
+              value={commentValue}
+              onChange={setCommentValue}
+              onSubmit={() => {
+                void handleCreateComment();
+              }}
+              submitLabel="댓글 등록"
+              isSubmitting={isCommentSubmitting}
+              placeholder="댓글을 입력하세요."
+            />
+          </Box>
+
+          <Box px="24px" py="20px">
+            {isCommentsLoading ? (
+              <Flex minH="120px" align="center" justify="center" gap="10px" color="#6B7280">
+                <Spinner size="sm" />
+                <Text fontSize="13px">댓글을 불러오는 중입니다.</Text>
+              </Flex>
+            ) : commentsError ? (
+              <Box
+                borderWidth="1px"
+                borderColor="#FECACA"
+                bg="#FEF2F2"
+                borderRadius="14px"
+                px="16px"
+                py="14px"
+              >
+                <Text fontSize="13px" color="#B91C1C">
+                  {commentsError}
+                </Text>
+              </Box>
+            ) : comments.length > 0 ? (
+              <Flex direction="column" gap="12px">
+                {comments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    replyTargetId={replyTargetId}
+                    replyDraft={replyValue}
+                    isReplySubmitting={isReplySubmitting}
+                    onReplyDraftChange={setReplyValue}
+                    onReplyStart={(targetComment) => {
+                      setReplyTargetId(targetComment.id);
+                      setReplyTargetName(targetComment.author.displayName);
+                      setReplyValue('');
+                    }}
+                    onReplyCancel={() => {
+                      setReplyTargetId(null);
+                      setReplyTargetName(null);
+                      setReplyValue('');
+                    }}
+                    onReplySubmit={handleCreateReply}
+                    onUpdateComment={handleUpdateComment}
+                    onDeleteComment={handleDeleteComment}
+                  />
+                ))}
+              </Flex>
+            ) : null}
+          </Box>
+        </Box>
       </Flex>
 
       <BaseModal
@@ -906,6 +1286,15 @@ export default function CommunityContentDetailPage() {
           </Text>
         </Flex>
       </BaseModal>
+
+      <BlockedWordAlertModal
+        isOpen={isBlockedWordModalOpen}
+        onClose={() => setIsBlockedWordModalOpen(false)}
+        title={blockedWordModalTitle}
+        description={blockedWordModalDescription}
+        matchedKeywords={matchedBlockedKeywords}
+        sourceText={blockedWordSourceText}
+      />
     </PageContainer>
   );
 }

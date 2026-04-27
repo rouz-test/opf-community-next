@@ -42,8 +42,8 @@
       "viewCount": 0,
       "likeCount": 0,
       "saveCount": 0,
-      "commentCount": 0,
-      "replyCount": 0
+      "commentCount": 5,
+      "replyCount": 1
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
     "updatedAt": "2026-04-27T03:29:55.609Z",
@@ -190,7 +190,7 @@
       "viewCount": 0,
       "likeCount": 0,
       "saveCount": 0,
-      "commentCount": 0,
+      "commentCount": 2,
       "replyCount": 0
     },
     "createdAt": "2026-04-24T08:07:32.424Z",
@@ -627,7 +627,7 @@
       "viewCount": 0,
       "likeCount": 0,
       "saveCount": 0,
-      "commentCount": 0,
+      "commentCount": 1,
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:19:14.106Z",
@@ -720,8 +720,8 @@
       "viewCount": 32,
       "likeCount": 80,
       "saveCount": 18,
-      "commentCount": 96,
-      "replyCount": 34
+      "commentCount": 2,
+      "replyCount": 1
     },
     "createdAt": "2026-04-23T10:00:00.000Z",
     "updatedAt": "2026-04-27T03:30:00.889Z",
@@ -763,7 +763,7 @@
       "viewCount": 32,
       "likeCount": 4,
       "saveCount": 3,
-      "commentCount": 6,
+      "commentCount": 1,
       "replyCount": 1
     },
     "createdAt": "2026-04-23T12:00:00.000Z",
