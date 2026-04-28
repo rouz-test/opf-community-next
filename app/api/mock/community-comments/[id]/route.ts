@@ -8,7 +8,10 @@ import {
   syncCommunityContentCommentStats,
   writeCommunityComments,
 } from '@/lib/community-comments';
-import type { CommunityCommentUpdatePayload } from '@/types/community-comment';
+import type {
+  CommunityCommentActionActor,
+  CommunityCommentUpdatePayload,
+} from '@/types/community-comment';
 
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -23,29 +26,38 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = (await request.json()) as Partial<CommunityCommentUpdatePayload>;
     const content = body.content?.trim();
+    const nextStatus = body.status;
+    const actionActor: CommunityCommentActionActor =
+      body.actionActor === 'author' ? 'author' : 'admin';
 
-    if (!content) {
+    if (nextStatus !== undefined && !['published', 'archived', 'deleted'].includes(nextStatus)) {
+      return NextResponse.json({ message: '유효하지 않은 댓글 상태입니다.' }, { status: 400 });
+    }
+
+    if (body.content !== undefined && !content) {
       return NextResponse.json({ message: '수정할 댓글 내용을 입력해주세요.' }, { status: 400 });
     }
 
-    if (content.length > MAX_COMMENT_LENGTH) {
+    if (content && content.length > MAX_COMMENT_LENGTH) {
       return NextResponse.json(
         { message: `댓글은 ${MAX_COMMENT_LENGTH}자 이하로 입력해주세요.` },
         { status: 400 },
       );
     }
 
-    const blockedWords = await readBlockedWordsFromStore();
-    const matchResult = findMatchedBlockedWords(content, blockedWords);
+    if (content) {
+      const blockedWords = await readBlockedWordsFromStore();
+      const matchResult = findMatchedBlockedWords(content, blockedWords);
 
-    if (matchResult.hasBlockedWords) {
-      return NextResponse.json(
-        {
-          message: '금지 키워드가 포함되어 댓글을 수정할 수 없습니다.',
-          matchedKeywords: matchResult.matchedKeywords,
-        },
-        { status: 400 },
-      );
+      if (matchResult.hasBlockedWords) {
+        return NextResponse.json(
+          {
+            message: '금지 키워드가 포함되어 댓글을 수정할 수 없습니다.',
+            matchedKeywords: matchResult.matchedKeywords,
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const comments = await readCommunityComments();
@@ -56,15 +68,32 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     if (comments[targetIndex].status === 'deleted') {
-      return NextResponse.json({ message: '삭제된 댓글은 수정할 수 없습니다.' }, { status: 400 });
+      return NextResponse.json({ message: '삭제된 댓글은 변경할 수 없습니다.' }, { status: 400 });
+    }
+
+    if (body.content === undefined && nextStatus === undefined) {
+      return NextResponse.json({ message: '변경할 댓글 정보가 없습니다.' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
     const nextComments = [...comments];
     nextComments[targetIndex] = {
       ...nextComments[targetIndex],
-      content,
+      content: content ?? nextComments[targetIndex].content,
+      status: nextStatus ?? nextComments[targetIndex].status,
       updatedAt: now,
+      archivedAt:
+        nextStatus === 'archived'
+          ? now
+          : nextStatus === 'published'
+            ? null
+            : nextComments[targetIndex].archivedAt,
+      archivedBy:
+        nextStatus === 'archived'
+          ? actionActor
+          : nextStatus === 'published'
+            ? null
+            : nextComments[targetIndex].archivedBy ?? null,
     };
 
     await writeCommunityComments(nextComments);
@@ -82,9 +111,14 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
+    const body = (await request.json().catch(() => null)) as
+      | Partial<CommunityCommentUpdatePayload>
+      | null;
+    const actionActor: CommunityCommentActionActor =
+      body?.actionActor === 'author' ? 'author' : 'admin';
     const comments = await readCommunityComments();
     const targetIndex = comments.findIndex((comment) => comment.id === id);
 
@@ -98,7 +132,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       ...nextComments[targetIndex],
       status: 'deleted',
       updatedAt: now,
+      archivedAt: nextComments[targetIndex].archivedAt,
+      archivedBy: nextComments[targetIndex].archivedBy ?? null,
       deletedAt: now,
+      deletedBy: actionActor,
     };
 
     await writeCommunityComments(nextComments);

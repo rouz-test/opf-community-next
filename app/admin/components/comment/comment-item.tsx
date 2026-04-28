@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Button, Flex, Portal, Text } from '@chakra-ui/react';
-import { CornerDownRight, Heart, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
+import { Archive, CornerDownRight, Heart, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
@@ -20,6 +20,7 @@ type CommentItemProps = {
   onReplyCancel: () => void;
   onReplySubmit: (comment: CommunityComment) => Promise<void>;
   onUpdateComment: (commentId: string, content: string) => Promise<boolean>;
+  onArchiveToggle: (commentId: string, nextStatus: 'published' | 'archived') => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
 };
 
@@ -37,6 +38,30 @@ function getInitial(name: string) {
   return name.slice(0, 1).toUpperCase();
 }
 
+function getArchivedMessage(comment: CommunityComment) {
+  if (comment.archivedBy === 'author') {
+    return '작성자에 의해 보관된 댓글입니다.';
+  }
+
+  if (comment.archivedBy === 'admin') {
+    return '관리자에 의해 보관된 댓글입니다.';
+  }
+
+  return '보관된 댓글입니다.';
+}
+
+function getDeletedMessage(comment: CommunityComment) {
+  if (comment.deletedBy === 'author') {
+    return '작성자에 의해 삭제된 댓글입니다.';
+  }
+
+  if (comment.deletedBy === 'admin') {
+    return '관리자에 의해 삭제된 댓글입니다.';
+  }
+
+  return '삭제된 댓글입니다.';
+}
+
 export default function CommentItem({
   comment,
   depth = 0,
@@ -50,12 +75,14 @@ export default function CommentItem({
   onReplyCancel,
   onReplySubmit,
   onUpdateComment,
+  onArchiveToggle,
   onDeleteComment,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(comment.content);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isLikedByMe, setIsLikedByMe] = useState(comment.isLikedByMe);
   const [likeCount, setLikeCount] = useState(comment.likeCount);
@@ -63,6 +90,7 @@ export default function CommentItem({
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   const isDeleted = comment.status === 'deleted';
+  const isArchived = comment.status === 'archived';
   const isReplyComposerOpen = replyTargetId === comment.id;
 
   const isMine = currentUserId ? comment.author.id === currentUserId : comment.author.type === 'admin';
@@ -128,6 +156,18 @@ export default function CommentItem({
     }
   };
 
+  const handleArchiveToggle = async () => {
+    if (isArchiving) return;
+
+    try {
+      setIsArchiving(true);
+      await onArchiveToggle(comment.id, isArchived ? 'published' : 'archived');
+      setIsActionMenuOpen(false);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const handleToggleLike = () => {
     const nextIsLiked = !isLikedByMe;
 
@@ -186,6 +226,12 @@ export default function CommentItem({
                         삭제됨
                       </Text>
                     </Box>
+                  ) : isArchived ? (
+                    <Box px="8px" py="2px" borderRadius="9999px" bg="#F3F4F6">
+                      <Text fontSize="11px" fontWeight="700" color="#6B7280">
+                        보관됨
+                      </Text>
+                    </Box>
                   ) : null}
                 </Flex>
 
@@ -241,6 +287,30 @@ export default function CommentItem({
                             fontSize="13px"
                             fontWeight="600"
                             color="#374151"
+                            disabled={isArchiving}
+                            _hover={{ bg: '#F9FAFB' }}
+                            onClick={() => {
+                              void handleArchiveToggle();
+                            }}
+                          >
+                            <Flex align="center" gap="8px">
+                              <Archive size={14} />
+                              <Text as="span">{isArchived ? '노출 전환' : '보관'}</Text>
+                            </Flex>
+                          </Button>
+
+                          {!isArchived ? (
+                            <Button
+                            type="button"
+                            variant="ghost"
+                            justifyContent="flex-start"
+                            w="100%"
+                            h="34px"
+                            px="12px"
+                            borderRadius="0"
+                            fontSize="13px"
+                            fontWeight="600"
+                            color="#374151"
                             _hover={{ bg: '#F9FAFB' }}
                             onClick={() => {
                               setEditValue(comment.content);
@@ -253,6 +323,7 @@ export default function CommentItem({
                               <Text as="span">수정</Text>
                             </Flex>
                           </Button>
+                          ) : null}
 
                           <Button
                             type="button"
@@ -284,8 +355,8 @@ export default function CommentItem({
               ) : null}
             </Flex>
 
-            <Box mt="8px">
-              {isEditing ? (
+              <Box mt="8px">
+              {isEditing && !isArchived ? (
                 <CommentEditor
                   value={editValue}
                   onChange={setEditValue}
@@ -301,13 +372,22 @@ export default function CommentItem({
                   autoFocus
                 />
               ) : (
-                <Text fontSize="13px" lineHeight="1.65" color={isDeleted ? '#9CA3AF' : '#374151'} whiteSpace="pre-wrap">
-                  {isDeleted ? '삭제된 댓글입니다.' : comment.content}
+                <Text
+                  fontSize="13px"
+                  lineHeight="1.65"
+                  color={isDeleted || isArchived ? '#9CA3AF' : '#374151'}
+                  whiteSpace="pre-wrap"
+                >
+                  {isDeleted
+                    ? getDeletedMessage(comment)
+                    : isArchived
+                      ? getArchivedMessage(comment)
+                      : comment.content}
                 </Text>
               )}
             </Box>
 
-            {!isDeleted ? (
+            {!isDeleted && !isArchived ? (
               <Flex align="center" gap="12px" mt="8px" pl="2px">
                 <Button
                   type="button"
@@ -351,7 +431,7 @@ export default function CommentItem({
             ) : null}
           </Box>
 
-          {!isDeleted && isReplyComposerOpen ? (
+          {!isDeleted && !isArchived && isReplyComposerOpen ? (
             <Box mt="14px" pl={{ base: '0', md: '8px' }}>
               <Flex align="center" gap="6px" mb="8px" color="#6B7280">
                 <CornerDownRight size={14} />
@@ -390,6 +470,7 @@ export default function CommentItem({
                   onReplyCancel={onReplyCancel}
                   onReplySubmit={onReplySubmit}
                   onUpdateComment={onUpdateComment}
+                  onArchiveToggle={onArchiveToggle}
                   onDeleteComment={onDeleteComment}
                 />
               ))}

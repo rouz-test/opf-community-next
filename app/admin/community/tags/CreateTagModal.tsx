@@ -41,8 +41,8 @@ type CreateTagModalProps = {
 
 const initialFormValues: TagFormValues = {
   name: '',
-  textColor: '#C2410C',
-  bgColor: '#FFEDD5',
+  textColor: '#585858',
+  bgColor: '#E9E9E9',
 };
 
 function getSafeColor(value: string, fallback: string) {
@@ -124,10 +124,12 @@ export default function CreateTagModal({
   onSubmit,
   initialValues,
   title = '태그 추가',
-  submitLabel = '추가',
+  submitLabel,
   existingTagNames = [],
 }: CreateTagModalProps) {
   const [formValues, setFormValues] = useState<TagFormValues>(initialFormValues);
+
+  const resolvedSubmitLabel = submitLabel ?? (initialValues ? '수정' : '추가');
 
   useEffect(() => {
     if (isOpen) {
@@ -149,18 +151,22 @@ export default function CreateTagModal({
     normalizedCurrentName !== normalizedInitialName &&
     existingTagNames.some((name) => name.trim().toLowerCase() === normalizedCurrentName);
 
+  const isNameBlank = trimmedName.length === 0;
+  const isNameTooLong = formValues.name.length > 20;
+  const isSubmitDisabled = isNameBlank || isNameTooLong || isDuplicateName;
+
   const nameErrorText =
-    formValues.name.length > 10
-      ? '태그명은 10자 이내로 입력해주세요.'
+    isNameTooLong
+      ? '태그명은 20자 이내로 입력해주세요.'
       : isDuplicateName
       ? '중복된 태그명은 사용할 수 없습니다.'
       : undefined;
 
   const handleSubmit = () => {
-    if (isDuplicateName || formValues.name.length > 10) return;
+    if (isSubmitDisabled) return;
 
     onSubmit({
-      name: formValues.name.trim() || '새로운 태그',
+      name: trimmedName,
       textColor: formValues.textColor.trim() || '#C2410C',
       bgColor: formValues.bgColor.trim() || '#FFEDD5',
     });
@@ -198,8 +204,8 @@ export default function CreateTagModal({
             value={formValues.name}
             onChange={(e) => handleChange('name', e.target.value)}
             type="text"
-            placeholder="태그명을 작성해 주세요. (10글자 이내)"
-            maxLength={10}
+            placeholder="태그명을 작성해 주세요. (20글자 이내)"
+            maxLength={20}
             errorText={nameErrorText}
           />
 
@@ -277,8 +283,15 @@ export default function CreateTagModal({
           >
             취소
           </AdminButton>
-          <AdminButton type="button" variantStyle="primary" size="md" flex="1" onClick={handleSubmit}>
-            {submitLabel}
+          <AdminButton
+            type="button"
+            variantStyle="primary"
+            size="md"
+            flex="1"
+            onClick={handleSubmit}
+            disabled={isSubmitDisabled}
+          >
+            {resolvedSubmitLabel}
           </AdminButton>
         </Flex>
       </AdminCard>

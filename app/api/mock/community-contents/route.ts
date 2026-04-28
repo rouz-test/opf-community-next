@@ -3,14 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
+import { normalizeTagIds } from '@/lib/tags';
 import type {
   CommunityContent,
   CommunityContentListResponse,
   CommunityContentPayload,
   CommunityContentStats,
 } from '@/types/community-content';
+import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
+const TAGS_PATH = 'data/mock/tags.json';
 
 type CreateCommunityContentRequestBody = Partial<CommunityContentPayload>;
 
@@ -44,15 +47,45 @@ function createDefaultContent() {
   };
 }
 
+async function normalizeStoredContents(contents: CommunityContent[]) {
+  const tags = await readJsonFile<Tag[]>(TAGS_PATH);
+
+  const normalizedContents = contents.map((content) => {
+    const normalizedTagIds = normalizeTagIds(content.tagIds, tags);
+
+    if (
+      normalizedTagIds.length === content.tagIds.length &&
+      normalizedTagIds.every((tagId, index) => tagId === content.tagIds[index])
+    ) {
+      return content;
+    }
+
+    return {
+      ...content,
+      tagIds: normalizedTagIds,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  const hasChanges = normalizedContents.some((content, index) => content !== contents[index]);
+
+  if (hasChanges) {
+    await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, normalizedContents);
+  }
+
+  return { normalizedContents, tags };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const { normalizedContents } = await normalizeStoredContents(contents);
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
 
     const filteredItems = isValidContentStatus(status)
-      ? contents.filter((item) => item.status === status)
-      : contents;
+      ? normalizedContents.filter((item) => item.status === status)
+      : normalizedContents;
 
     const response: CommunityContentListResponse = {
       items: filteredItems,
@@ -132,13 +165,15 @@ export async function POST(request: NextRequest) {
     }
 
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const now = new Date().toISOString();
+    const nextTagIds = normalizeTagIds(body.tagIds, tags);
 
     const newContent: CommunityContent = {
       id: `content-${Date.now()}`,
       title,
       content: body.content && isObject(body.content) ? body.content : createDefaultContent(),
-      tagIds: body.tagIds,
+      tagIds: nextTagIds,
       status: body.status,
       author: {
         type: body.author.type === 'admin' ? 'admin' : 'user',
@@ -165,7 +200,7 @@ export async function POST(request: NextRequest) {
       publishedAt: body.status === 'published' || body.status === 'archived' ? now : null,
     };
 
-    const nextContents = [newContent, ...contents];
+    const nextContents = [newContent, ...normalizedContents];
     await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
 
     return NextResponse.json(newContent, { status: 201 });

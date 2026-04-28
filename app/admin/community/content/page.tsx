@@ -1,6 +1,5 @@
 'use client';
-import { LuTrash2, LuArchive, LuCalendar } from 'react-icons/lu';
-import { ChevronDownIcon, SearchIcon } from '@/app/admin/components/ui/icons';
+import { LuTrash2, LuArchive, LuCalendar, LuChevronDown, LuSearch } from 'react-icons/lu';
 import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import {
   Box,
@@ -26,6 +25,7 @@ import BaseModal from '@/app/admin/components/modal/base-modal';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminBadge from '@/app/admin/components/ui/badge';
 import AdminSearchField from '@/app/admin/components/ui/search-field';
+import { toaster } from '@/app/admin/components/ui/toaster';
 import AdminTable, {
   AdminTableBody,
   AdminTableCell,
@@ -44,6 +44,7 @@ import { Tooltip } from '@/app/admin/components/editor/tooltip';
 const DEFAULT_PAGE_SIZE = 13;
 const PAGE_SIZE_OPTIONS = [13, 30, 50] as const;
 const PAGE_WINDOW = 5;
+const FORCE_FRESH_CREATE_SESSION_KEY = 'admin-community-content-force-fresh-create';
 
 function getPaginationItems(
   currentPage: number,
@@ -286,6 +287,7 @@ export default function CommunityContentPage() {
     router.push(`/admin/community/content/${contentId}`);
   };
   const handleNavigateToCreate = () => {
+    window.sessionStorage.setItem(FORCE_FRESH_CREATE_SESSION_KEY, '1');
     router.push('/admin/community/content/create');
   };
 
@@ -375,6 +377,15 @@ export default function CommunityContentPage() {
           setContents((prev) =>
             prev.map((content) => updatedMap.get(content.id) ?? content)
           );
+
+          toaster.create({
+            description:
+              updatedContents.length === 1
+                ? '콘텐츠가 보관되었습니다.'
+                : `${updatedContents.length}개의 콘텐츠가 보관되었습니다.`,
+            type: 'success',
+            duration: 2000,
+          });
         }
 
         setSelectedRowKeys((prev) => prev.filter((rowKey) => !contentIds.includes(rowKey)));
@@ -442,6 +453,29 @@ export default function CommunityContentPage() {
 
         const updatedContent = (await response.json()) as CommunityContent;
         setContents((prev) => prev.map((content) => (content.id === updatedContent.id ? updatedContent : content)));
+
+        if (payload.status !== undefined) {
+          toaster.create({
+            description:
+              payload.status === 'archived'
+                ? '콘텐츠가 보관되었습니다.'
+                : '콘텐츠가 노출로 전환되었습니다.',
+            type: 'success',
+            duration: 2000,
+          });
+        } else if (payload.flags?.isPinned !== undefined) {
+          toaster.create({
+            description: payload.flags.isPinned ? '콘텐츠가 고정되었습니다.' : '콘텐츠 고정이 해제되었습니다.',
+            type: 'success',
+            duration: 2000,
+          });
+        } else if (payload.flags?.isNotice !== undefined) {
+          toaster.create({
+            description: payload.flags.isNotice ? '콘텐츠가 공지로 지정되었습니다.' : '콘텐츠 공지 지정이 해제되었습니다.',
+            type: 'success',
+            duration: 2000,
+          });
+        }
       } catch (error) {
         console.error('failed to update content:', error);
         window.alert(error instanceof Error ? error.message : '콘텐츠 상태 변경에 실패했습니다.');
@@ -735,7 +769,7 @@ export default function CommunityContentPage() {
                     _hover={{ bg: '#F9FAFB' }}
                     onClick={handleApplyDateFilter}
                   >
-                    <SearchIcon />
+                    <Icon as={LuSearch} boxSize="16px" />
                   </IconButton>
                 </Flex>
 
@@ -759,7 +793,7 @@ export default function CommunityContentPage() {
                   >
                     <Flex align="center" gap="8px">
                       <Text as="span">{tagFilterLabel}</Text>
-                      <ChevronDownIcon />
+                      <Icon as={LuChevronDown} boxSize="16px" />
                     </Flex>
                   </Button>
 
@@ -835,7 +869,7 @@ export default function CommunityContentPage() {
                         ? '전체'
                         : `선택 ${flagFilter.length}개`}
                       </Text>
-                      <ChevronDownIcon />
+                      <Icon as={LuChevronDown} boxSize="16px" />
                     </Flex>
                   </Button>
 
@@ -914,7 +948,7 @@ export default function CommunityContentPage() {
                       <Text>
                         {authorFilter === 'all' ? '작성자 전체' : authorFilter === 'admin' ? '관리자' : '사용자'}
                       </Text>
-                      <ChevronDownIcon />
+                      <Icon as={LuChevronDown} boxSize="16px" />
                     </Flex>
                   </Button>
 
@@ -1069,204 +1103,214 @@ export default function CommunityContentPage() {
           </AdminTableHead>
 
           <AdminTableBody>
-            {pagedRows.map((row, index) => {
-              const rowKey = row.id;
+            {filteredRows.length === 0 ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={10} textAlign="center" py="24px">
+                  <Text fontSize="13px" color="#6B7280">
+                    검색 결과가 없습니다.
+                  </Text>
+                </AdminTableCell>
+              </AdminTableRow>
+            ) : (
+              pagedRows.map((row, index) => {
+                const rowKey = row.id;
 
-              return (
-              <AdminTableRow key={rowKey}>
-                <AdminTableCell textAlign="center" px="16px">
-                  <Checkbox.Root
-                    size="sm"
-                    checked={selectedRowKeys.includes(rowKey)}
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={isMutating}
-                    onCheckedChange={(details) => handleToggleRow(rowKey, details.checked === true)}
-                  >
-                    <Checkbox.HiddenInput />
-                    <Checkbox.Control />
-                  </Checkbox.Root>
-                </AdminTableCell>
-                <AdminTableCell
-                  fontWeight="600"
-                  color="#374151"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  {(currentPageSafe - 1) * pageSize + index + 1}
-                </AdminTableCell>
-                <AdminTableCell
-                  color="#4B5563"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  {row.type}
-                </AdminTableCell>
-                <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
-                  {row.tags.length > 1 ? (
-                    <Tooltip
-                      content={row.tags
-                        .slice(1)
-                        .map((tag) => tag.name)
-                        .join(', ')}
-                      positioning={{ placement: 'top' }}
-                      openDelay={150}
-                      closeDelay={50}
-                      contentProps={{
-                        maxW: '280px',
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-word',
-                      }}
+                return (
+                <AdminTableRow key={rowKey}>
+                  <AdminTableCell textAlign="center" px="16px">
+                    <Checkbox.Root
+                      size="sm"
+                      checked={selectedRowKeys.includes(rowKey)}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={isMutating}
+                      onCheckedChange={(details) => handleToggleRow(rowKey, details.checked === true)}
                     >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                    </Checkbox.Root>
+                  </AdminTableCell>
+                  <AdminTableCell
+                    fontWeight="600"
+                    color="#374151"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
+                  >
+                    {(currentPageSafe - 1) * pageSize + index + 1}
+                  </AdminTableCell>
+                  <AdminTableCell
+                    color="#4B5563"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
+                  >
+                    {row.type}
+                  </AdminTableCell>
+                  <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
+                    {row.tags.length > 1 ? (
+                      <Tooltip
+                        content={row.tags
+                          .slice(1)
+                          .map((tag) => tag.name)
+                          .join(', ')}
+                        positioning={{ placement: 'top' }}
+                        openDelay={150}
+                        closeDelay={50}
+                        contentProps={{
+                          maxW: '280px',
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                          {row.tags.slice(0, 1).map((tag) => (
+                            <Box key={tag.id} flexShrink={0}>
+                              <AdminTagBadge tag={tag} />
+                            </Box>
+                          ))}
+                          <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
+                            +{row.tags.length - 1}
+                          </Text>
+                        </Flex>
+                      </Tooltip>
+                    ) : (
                       <Flex align="center" gap="6px" minW="0" wrap="nowrap">
                         {row.tags.slice(0, 1).map((tag) => (
                           <Box key={tag.id} flexShrink={0}>
                             <AdminTagBadge tag={tag} />
                           </Box>
                         ))}
-                        <Text fontSize="12px" fontWeight="600" color="#6B7280" flexShrink={0}>
-                          +{row.tags.length - 1}
-                        </Text>
                       </Flex>
-                    </Tooltip>
-                  ) : (
-                    <Flex align="center" gap="6px" minW="0" wrap="nowrap">
-                      {row.tags.slice(0, 1).map((tag) => (
-                        <Box key={tag.id} flexShrink={0}>
-                          <AdminTagBadge tag={tag} />
-                        </Box>
-                      ))}
+                    )}
+                  </AdminTableCell>
+                  <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
+                    <Flex align="center" gap="8px" minW="0">
+                      {row.isNotice ? (
+                        <AdminBadge
+                          tone="orangeSolid"
+                          rounded="md"
+                          h="20px"
+                          px="6px"
+                          fontSize="10px"
+                          fontWeight="700"
+                          flexShrink={0}
+                        >
+                          공지
+                        </AdminBadge>
+                      ) : null}
+                      {row.originalContent.flags.isPinned ? (
+                        <AdminBadge
+                          tone="blueSolid"
+                          rounded="md"
+                          h="20px"
+                          px="6px"
+                          fontSize="10px"
+                          fontWeight="700"
+                          flexShrink={0}
+                        >
+                          고정
+                        </AdminBadge>
+                      ) : null}
+                      {row.isPromoted ? (
+                        <AdminBadge
+                          tone="purple"
+                          rounded="md"
+                          h="20px"
+                          px="6px"
+                          fontSize="10px"
+                          fontWeight="700"
+                          flexShrink={0}
+                        >
+                          홍보
+                        </AdminBadge>
+                      ) : null}
+                      <AdminTableEllipsisText
+                        flex="1"
+                        minW="0"
+                        fontSize="13px"
+                        fontWeight="500"
+                        color="#111827"
+                      >
+                        {row.title}
+                      </AdminTableEllipsisText>
                     </Flex>
-                  )}
-                </AdminTableCell>
-                <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
-                  <Flex align="center" gap="8px" minW="0">
-                    {row.isNotice ? (
-                      <AdminBadge
-                        tone="orangeSolid"
-                        rounded="md"
-                        h="20px"
-                        px="6px"
-                        fontSize="10px"
-                        fontWeight="700"
-                        flexShrink={0}
-                      >
-                        공지
-                      </AdminBadge>
-                    ) : null}
-                    {row.originalContent.flags.isPinned ? (
-                      <AdminBadge
-                        tone="blueSolid"
-                        rounded="md"
-                        h="20px"
-                        px="6px"
-                        fontSize="10px"
-                        fontWeight="700"
-                        flexShrink={0}
-                      >
-                        고정
-                      </AdminBadge>
-                    ) : null}
-                    {row.isPromoted ? (
-                      <AdminBadge
-                        tone="purple"
-                        rounded="md"
-                        h="20px"
-                        px="6px"
-                        fontSize="10px"
-                        fontWeight="700"
-                        flexShrink={0}
-                      >
-                        홍보
-                      </AdminBadge>
-                    ) : null}
-                    <AdminTableEllipsisText
-                      flex="1"
-                      minW="0"
-                      fontSize="13px"
-                      fontWeight="500"
-                      color="#111827"
-                    >
-                      {row.title}
-                    </AdminTableEllipsisText>
-                  </Flex>
-                </AdminTableCell>
-                <AdminTableCell
-                  fontWeight="500"
-                  color="#4B5563"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  <AdminTableEllipsisText flex="1" minW="0">
-                    {row.author}
-                  </AdminTableEllipsisText>
-                </AdminTableCell>
-                <AdminTableCell
-                  color="#6B7280"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  <AdminTableEllipsisText flex="1" minW="0">
-                    {row.publishedAt}
-                  </AdminTableEllipsisText>
-                </AdminTableCell>
-                <AdminTableCell
-                  textAlign="center"
-                  fontWeight="500"
-                  color="#374151"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  {row.viewCount}
-                </AdminTableCell>
-                <AdminTableCell
-                  textAlign="center"
-                  cursor="pointer"
-                  onClick={() => handleNavigateToDetail(row.id)}
-                >
-                  <AdminBadge
-                    tone={getStatusTone(row.status)}
-                    h="24px"
-                    px="12px"
-                    fontSize="11px"
-                    fontWeight="700"
+                  </AdminTableCell>
+                  <AdminTableCell
+                    fontWeight="500"
+                    color="#4B5563"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
                   >
-                    {row.status}
-                  </AdminBadge>
-                </AdminTableCell>
-                <AdminTableCell textAlign="center">
-                <ContentActionMenu
-                  content={row.originalContent}
-                  isSubmitting={isMutating}
-                  onArchiveToggle={() => {
-                    void handleUpdateContent(row.id, {
-                      status: row.originalContent.status === 'archived' ? 'published' : 'archived',
-                    });
-                  }}
-                  onPinnedToggle={() => {
-                    void handleUpdateContent(row.id, {
-                      flags: {
-                        ...row.originalContent.flags,
-                        isPinned: !row.originalContent.flags.isPinned,
-                      },
-                    });
-                  }}
-                  onNoticeToggle={() => {
-                    void handleUpdateContent(row.id, {
-                      flags: {
-                        ...row.originalContent.flags,
-                        isNotice: !row.originalContent.flags.isNotice,
-                      },
-                    });
-                  }}
-                  onEdit={() => router.push(`/admin/community/content/${row.id}/edit`)}
-                  onDelete={() => {
-                    handleOpenDeleteModal([row.id]);
-                  }}
-                />
-                </AdminTableCell>
-              </AdminTableRow>
-              );
-            })}
+                    <AdminTableEllipsisText flex="1" minW="0">
+                      {row.author}
+                    </AdminTableEllipsisText>
+                  </AdminTableCell>
+                  <AdminTableCell
+                    color="#6B7280"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
+                  >
+                    <AdminTableEllipsisText flex="1" minW="0">
+                      {row.publishedAt}
+                    </AdminTableEllipsisText>
+                  </AdminTableCell>
+                  <AdminTableCell
+                    textAlign="center"
+                    fontWeight="500"
+                    color="#374151"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
+                  >
+                    {row.viewCount}
+                  </AdminTableCell>
+                  <AdminTableCell
+                    textAlign="center"
+                    cursor="pointer"
+                    onClick={() => handleNavigateToDetail(row.id)}
+                  >
+                    <AdminBadge
+                      tone={getStatusTone(row.status)}
+                      h="24px"
+                      px="12px"
+                      fontSize="11px"
+                      fontWeight="700"
+                    >
+                      {row.status}
+                    </AdminBadge>
+                  </AdminTableCell>
+                  <AdminTableCell textAlign="center">
+                  <ContentActionMenu
+                    content={row.originalContent}
+                    isSubmitting={isMutating}
+                    onArchiveToggle={() => {
+                      void handleUpdateContent(row.id, {
+                        status: row.originalContent.status === 'archived' ? 'published' : 'archived',
+                      });
+                    }}
+                    onPinnedToggle={() => {
+                      void handleUpdateContent(row.id, {
+                        flags: {
+                          ...row.originalContent.flags,
+                          isPinned: !row.originalContent.flags.isPinned,
+                        },
+                      });
+                    }}
+                    onNoticeToggle={() => {
+                      void handleUpdateContent(row.id, {
+                        flags: {
+                          ...row.originalContent.flags,
+                          isNotice: !row.originalContent.flags.isNotice,
+                        },
+                      });
+                    }}
+                    onEdit={() => router.push(`/admin/community/content/${row.id}/edit`)}
+                    onDelete={() => {
+                      handleOpenDeleteModal([row.id]);
+                    }}
+                  />
+                  </AdminTableCell>
+                </AdminTableRow>
+                );
+              })
+            )}
           </AdminTableBody>
         </AdminTableRoot>
       </AdminTable>

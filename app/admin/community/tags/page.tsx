@@ -1,13 +1,14 @@
 'use client';
+import { LuGripVertical, LuPencil, LuCircleX } from 'react-icons/lu';
 import { useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import {
   Box,
   Flex,
+  Icon,
   Text,
 } from '@chakra-ui/react';
 import AdminIconButton from '@/app/admin/components/ui/icon-button';
-import { DragHandleIcon, EditIcon, DeleteIcon } from '@/app/admin/components/ui/icons';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminButton from '@/app/admin/components/ui/button';
@@ -376,7 +377,7 @@ export default function CommunityTagsPage() {
                       onDragStart={(event) => handleDragStart(event, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      {!isFixedTag ? <DragHandleIcon /> : null}
+                      {!isFixedTag ? <Icon as={LuGripVertical} boxSize="16px" /> : null}
                     </Flex>
 
                     <AdminTagBadge
@@ -403,10 +404,10 @@ export default function CommunityTagsPage() {
                       {!isFixedTag ? (
                         <>
                           <AdminIconButton aria-label="태그 수정" onClick={() => handleOpenEdit(index)}>
-                            <EditIcon />
+                            <Icon as={LuPencil} boxSize="16px" />
                           </AdminIconButton>
                           <AdminIconButton aria-label="태그 삭제" onClick={() => handleDeleteTag(index)}>
-                            <DeleteIcon />
+                            <Icon as={LuCircleX} boxSize="16px" />
                           </AdminIconButton>
                         </>
                       ) : null}
@@ -439,7 +440,7 @@ export default function CommunityTagsPage() {
         onSubmit={handleSubmitEdit}
         initialValues={editingTagValues}
         title="태그 수정"
-        submitLabel="저장"
+        submitLabel="수정"
         existingTagNames={tags
           .filter((_, index) => index !== editingTagIndex)
           .map((tag) => tag.name)}

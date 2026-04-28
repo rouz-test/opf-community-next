@@ -950,6 +950,12 @@ export default function CommunityContentDetailPage() {
   const handleDeleteComment = async (commentId: string) => {
     const response = await fetch(`/api/mock/community-comments/${commentId}`, {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        actionActor: 'admin',
+      }),
     });
 
     if (!response.ok) {
@@ -959,6 +965,42 @@ export default function CommunityContentDetailPage() {
     toaster.create({
       type: 'success',
       description: '댓글이 삭제되었습니다.',
+    });
+    await loadComments();
+  };
+
+  const handleArchiveComment = async (
+    commentId: string,
+    nextStatus: 'published' | 'archived',
+  ) => {
+    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: nextStatus,
+        actionActor: 'admin',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        await parseErrorMessage(
+          response,
+          nextStatus === 'archived'
+            ? '댓글을 보관하지 못했습니다.'
+            : '댓글을 노출 전환하지 못했습니다.',
+        ),
+      );
+    }
+
+    toaster.create({
+      type: 'success',
+      description:
+        nextStatus === 'archived'
+          ? '댓글이 보관되었습니다.'
+          : '댓글이 다시 노출되었습니다.',
     });
     await loadComments();
   };
@@ -1234,7 +1276,9 @@ export default function CommunityContentDetailPage() {
                     }}
                     onReplySubmit={handleCreateReply}
                     onUpdateComment={handleUpdateComment}
+                    onArchiveToggle={handleArchiveComment}
                     onDeleteComment={handleDeleteComment}
+                    currentUserRole="admin"
                   />
                 ))}
               </Flex>

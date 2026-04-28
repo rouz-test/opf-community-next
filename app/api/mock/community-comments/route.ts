@@ -135,7 +135,10 @@ export async function POST(request: NextRequest) {
       isLikedByMe: false,
       createdAt: now,
       updatedAt: now,
+      archivedAt: null,
+      archivedBy: null,
       deletedAt: null,
+      deletedBy: null,
     };
 
     const nextComments = [...comments, nextComment];

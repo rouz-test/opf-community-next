@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
+import { normalizeTagIds } from '@/lib/tags';
+import type { CommunityContent } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
 
 const TAGS_PATH = 'data/mock/tags.json';
+const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
 
 type RouteContext = {
   params: Promise<{
@@ -38,7 +41,18 @@ export async function DELETE(_: NextRequest, context: RouteContext) {
         sortOrder: index + 1,
       }));
 
+    const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const nextContents = contents.map((content) => ({
+      ...content,
+      tagIds: normalizeTagIds(
+        content.tagIds.filter((tagId) => tagId !== id),
+        nextTags,
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+
     await writeJsonFile<Tag[]>(TAGS_PATH, nextTags);
+    await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {

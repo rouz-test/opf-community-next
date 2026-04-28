@@ -1,8 +1,6 @@
 
-
-import { Box, Button, Flex, Text } from '@chakra-ui/react';
-
-import { ChevronDownIcon } from '@/app/admin/components/ui/icons';
+import { LuChevronDown } from 'react-icons/lu';
+import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
 
 export type AdminPageSizeSelectProps = {
   value: number;
@@ -37,7 +35,7 @@ export default function AdminPageSizeSelect({
       >
         <Flex align="center" gap="4px">
           <Text as="span">{value}</Text>
-          <ChevronDownIcon />
+          <Icon as={LuChevronDown} boxSize="16px" />
         </Flex>
       </Button>
 

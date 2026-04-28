@@ -3,12 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
+import { normalizeTagIds } from '@/lib/tags';
 import type {
   CommunityContent,
   CommunityContentPayload,
 } from '@/types/community-content';
+import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
+const TAGS_PATH = 'data/mock/tags.json';
 
 type RouteContext = {
   params: Promise<{
@@ -28,11 +31,41 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+async function normalizeStoredContents(contents: CommunityContent[]) {
+  const tags = await readJsonFile<Tag[]>(TAGS_PATH);
+
+  const normalizedContents = contents.map((content) => {
+    const normalizedTagIds = normalizeTagIds(content.tagIds, tags);
+
+    if (
+      normalizedTagIds.length === content.tagIds.length &&
+      normalizedTagIds.every((tagId, index) => tagId === content.tagIds[index])
+    ) {
+      return content;
+    }
+
+    return {
+      ...content,
+      tagIds: normalizedTagIds,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  const hasChanges = normalizedContents.some((content, index) => content !== contents[index]);
+
+  if (hasChanges) {
+    await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, normalizedContents);
+  }
+
+  return { normalizedContents, tags };
+}
+
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
-    const content = contents.find((item) => item.id === id);
+    const { normalizedContents } = await normalizeStoredContents(contents);
+    const content = normalizedContents.find((item) => item.id === id);
 
     if (!content) {
       return NextResponse.json(
@@ -56,7 +89,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const body = (await request.json()) as UpdateCommunityContentRequestBody;
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
-    const targetIndex = contents.findIndex((item) => item.id === id);
+    const { normalizedContents, tags } = await normalizeStoredContents(contents);
+    const targetIndex = normalizedContents.findIndex((item) => item.id === id);
 
     if (targetIndex === -1) {
       return NextResponse.json(
@@ -65,7 +99,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const currentContent = contents[targetIndex];
+    const currentContent = normalizedContents[targetIndex];
 
     if (body.title !== undefined) {
       const title = body.title.trim();
@@ -114,6 +148,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       body.content !== undefined && isObject(body.content)
         ? body.content
         : currentContent.content;
+    const nextTagIds =
+      body.tagIds !== undefined
+        ? normalizeTagIds(body.tagIds, tags)
+        : normalizeTagIds(currentContent.tagIds, tags);
 
     if (nextStatus === 'published' || nextStatus === 'archived') {
       const blockedWords = await readBlockedWordsFromStore();
@@ -139,7 +177,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ...currentContent,
       title: nextTitle,
       content: nextBody,
-      tagIds: body.tagIds ?? currentContent.tagIds,
+      tagIds: nextTagIds,
       status: nextStatus,
       author: body.author
         ? {
@@ -184,7 +222,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
           : null,
     };
 
-    const nextContents = [...contents];
+    const nextContents = [...normalizedContents];
     nextContents[targetIndex] = nextContent;
 
     await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
@@ -203,7 +241,8 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
-    const targetContent = contents.find((item) => item.id === id);
+    const { normalizedContents } = await normalizeStoredContents(contents);
+    const targetContent = normalizedContents.find((item) => item.id === id);
 
     if (!targetContent) {
       return NextResponse.json(
@@ -212,7 +251,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    const nextContents = contents.filter((item) => item.id !== id);
+    const nextContents = normalizedContents.filter((item) => item.id !== id);
     await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
 
     return NextResponse.json(

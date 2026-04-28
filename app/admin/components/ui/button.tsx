@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Button, type ButtonProps } from '@chakra-ui/react';
@@ -96,6 +94,14 @@ export default function AdminButton({
       fontWeight={fontWeight}
       borderRadius={borderRadius}
       transition="background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
+      _disabled={{
+        bg: '#E5E7EB',
+        color: '#9CA3AF',
+        borderColor: '#E5E7EB',
+        cursor: 'not-allowed',
+        opacity: 1,
+        pointerEvents: 'none',
+      }}
       {...variantStyles[variantStyle]}
       {...rest}
     >

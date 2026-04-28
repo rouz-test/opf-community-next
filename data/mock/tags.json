@@ -19,7 +19,7 @@
     "slug": "수정테스트",
     "status": "inactive",
     "isDefault": false,
-    "sortOrder": 6,
+    "sortOrder": 2,
     "style": {
       "textColor": "#686B00",
       "bgColor": "#FFFED5"
@@ -33,7 +33,7 @@
     "slug": "테스트2",
     "status": "active",
     "isDefault": false,
-    "sortOrder": 5,
+    "sortOrder": 3,
     "style": {
       "textColor": "#5777FF",
       "bgColor": "#F5F9FF"
@@ -42,26 +42,12 @@
     "updatedAt": "2026-04-27T03:35:06.485Z"
   },
   {
-    "id": "tag_1776227420728",
-    "name": "테스트3",
-    "slug": "테스트3",
-    "status": "inactive",
-    "isDefault": false,
-    "sortOrder": 3,
-    "style": {
-      "textColor": "#007D0E",
-      "bgColor": "#CCFFA6"
-    },
-    "createdAt": "2026-04-15T04:30:20.728Z",
-    "updatedAt": "2026-04-27T03:35:06.470Z"
-  },
-  {
     "id": "tag_1776318266291",
     "name": "테스트4",
     "slug": "테스트4",
     "status": "active",
     "isDefault": false,
-    "sortOrder": 2,
+    "sortOrder": 4,
     "style": {
       "textColor": "#C2410C",
       "bgColor": "#FFEDD5"
@@ -70,26 +56,12 @@
     "updatedAt": "2026-04-27T03:35:06.461Z"
   },
   {
-    "id": "tag_1776318282467",
-    "name": "테스트5수정",
-    "slug": "테스트5수정",
-    "status": "active",
-    "isDefault": false,
-    "sortOrder": 4,
-    "style": {
-      "textColor": "#C20CA4",
-      "bgColor": "#FFFAFA"
-    },
-    "createdAt": "2026-04-16T05:44:42.467Z",
-    "updatedAt": "2026-04-27T03:35:06.479Z"
-  },
-  {
     "id": "tag_1777275819911",
     "name": "새로운 태그",
     "slug": "새로운-태그",
     "status": "active",
     "isDefault": false,
-    "sortOrder": 7,
+    "sortOrder": 5,
     "style": {
       "textColor": "#7D4B38",
       "bgColor": "#F7EDDC"

@@ -4,7 +4,8 @@ import type {
   CommunityContentAuthorVisibility,
 } from '@/types/community-content';
 
-export type CommunityCommentStatus = 'published' | 'deleted';
+export type CommunityCommentStatus = 'published' | 'archived' | 'deleted';
+export type CommunityCommentActionActor = 'admin' | 'author';
 
 export type CommunityCommentAuthor = {
   type: CommunityContentAuthorType;
@@ -27,7 +28,10 @@ export type CommunityCommentEntity = {
   isLikedByMe: boolean;
   createdAt: string;
   updatedAt: string;
+  archivedAt: string | null;
+  archivedBy: CommunityCommentActionActor | null;
   deletedAt: string | null;
+  deletedBy: CommunityCommentActionActor | null;
 };
 
 export type CommunityComment = CommunityCommentEntity & {
@@ -43,7 +47,9 @@ export type CommunityCommentPayload = {
 };
 
 export type CommunityCommentUpdatePayload = {
-  content: string;
+  content?: string;
+  status?: CommunityCommentStatus;
+  actionActor?: CommunityCommentActionActor;
 };
 
 export type CommunityContentCommentStats = {

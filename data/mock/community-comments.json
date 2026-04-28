@@ -160,12 +160,14 @@
       "avatar": ""
     },
     "content": "짧은 게시글이라도 댓글 하나만 붙어도 훨씬 실제 서비스 느낌이 납니다.",
-    "status": "published",
+    "status": "archived",
     "likeCount": 0,
     "isLikedByMe": false,
     "createdAt": "2026-04-25T09:20:00.000Z",
-    "updatedAt": "2026-04-25T09:20:00.000Z",
-    "deletedAt": null
+    "updatedAt": "2026-04-28T07:26:19.480Z",
+    "deletedAt": null,
+    "archivedAt": "2026-04-28T07:26:19.480Z",
+    "archivedBy": "admin"
   },
   {
     "id": "community-comment-9",
@@ -287,5 +289,46 @@
     "createdAt": "2026-04-27T06:51:54.455Z",
     "updatedAt": "2026-04-27T07:19:39.541Z",
     "deletedAt": "2026-04-27T07:19:39.541Z"
+  },
+  {
+    "id": "community-comment-1777359777440",
+    "contentId": "content-1776932354106",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "댓글을 입력하는 테스트 중입니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-28T07:02:57.440Z",
+    "updatedAt": "2026-04-28T07:22:14.082Z",
+    "deletedAt": null,
+    "archivedAt": null
+  },
+  {
+    "id": "community-comment-1777359788533",
+    "contentId": "content-1776932354106",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "익명으로도 작성하는 테스트를 진행중입니다,",
+    "status": "deleted",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-04-28T07:03:08.533Z",
+    "updatedAt": "2026-04-28T07:18:42.395Z",
+    "deletedAt": "2026-04-28T07:18:42.395Z"
   }
 ]

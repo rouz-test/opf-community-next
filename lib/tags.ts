@@ -102,6 +102,23 @@ type ResolveTagsOptions = {
   includeInactive?: boolean;
 };
 
+export function getDefaultTag(tags: Tag[]): Tag | null {
+  return tags.find((tag) => tag.isDefault) ?? null;
+}
+
+export function normalizeTagIds(tagIds: string[], tags: Tag[]): string[] {
+  const normalizedTagIds = Array.from(
+    new Set(tagIds.filter((tagId) => typeof tagId === 'string' && tagId.trim())),
+  );
+
+  if (normalizedTagIds.length > 0) {
+    return normalizedTagIds;
+  }
+
+  const defaultTag = getDefaultTag(tags);
+  return defaultTag ? [defaultTag.id] : [];
+}
+
 export function resolveTags(
   tagIds: string[],
   tags: Tag[],
@@ -109,8 +126,9 @@ export function resolveTags(
 ): ResolvedTag[] {
   const { includeInactive = true } = options;
   const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
+  const normalizedTagIds = normalizeTagIds(tagIds, tags);
 
-  return tagIds
+  const resolvedTags = normalizedTagIds
     .map((tagId) => tagMap.get(tagId))
     .filter((tag): tag is Tag => {
       if (!tag) return false;
@@ -127,4 +145,26 @@ export function resolveTags(
       status: tag.status,
       sortOrder: tag.sortOrder,
     }));
+
+  if (resolvedTags.length > 0) {
+    return resolvedTags;
+  }
+
+  const defaultTag = getDefaultTag(tags);
+
+  if (!defaultTag) {
+    return [];
+  }
+
+  return [
+    {
+      id: defaultTag.id,
+      name: defaultTag.name,
+      textColor: defaultTag.style.textColor,
+      bgColor: defaultTag.style.bgColor,
+      isDefault: defaultTag.isDefault,
+      status: defaultTag.status,
+      sortOrder: defaultTag.sortOrder,
+    },
+  ];
 }
