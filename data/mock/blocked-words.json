@@ -1,5 +1,17 @@
 [
   {
+    "id": "blocked_word_1777274846149",
+    "keyword": "baNANA",
+    "createdAt": "2026-04-27",
+    "createdBy": "admin01"
+  },
+  {
+    "id": "blocked_word_1777274836274",
+    "keyword": "apple",
+    "createdAt": "2026-04-27",
+    "createdBy": "admin01"
+  },
+  {
     "id": "blocked_word_1776231257753",
     "keyword": "시대",
     "createdAt": "2026-04-15",
@@ -8,12 +20,6 @@
   {
     "id": "blocked_word_1776231254531",
     "keyword": "상실",
-    "createdAt": "2026-04-15",
-    "createdBy": "admin01"
-  },
-  {
-    "id": "blocked_word_1776231241430",
-    "keyword": "헤르만",
     "createdAt": "2026-04-15",
     "createdBy": "admin01"
   },
@@ -42,32 +48,8 @@
     "createdBy": "admin01"
   },
   {
-    "id": "blocked_word_1776231191470",
-    "keyword": "민법",
-    "createdAt": "2026-04-15",
-    "createdBy": "admin01"
-  },
-  {
-    "id": "blocked_word_1776231177081",
-    "keyword": "형법총론",
-    "createdAt": "2026-04-15",
-    "createdBy": "admin01"
-  },
-  {
-    "id": "blocked_word_1776231170350",
-    "keyword": "노동법",
-    "createdAt": "2026-04-15",
-    "createdBy": "admin01"
-  },
-  {
     "id": "blocked_word_1776231165219",
     "keyword": "정치학",
-    "createdAt": "2026-04-15",
-    "createdBy": "admin01"
-  },
-  {
-    "id": "blocked_word_1776231158455",
-    "keyword": "저작권법",
     "createdAt": "2026-04-15",
     "createdBy": "admin01"
   },

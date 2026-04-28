@@ -1,5 +1,53 @@
 [
   {
+    "id": "content-1777347735121",
+    "title": "제목 없음",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": null
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "bananana"
+            }
+          ]
+        }
+      ]
+    },
+    "tagIds": [
+      "tag_1"
+    ],
+    "status": "draft",
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "flags": {
+      "isPinned": false,
+      "isNotice": false,
+      "isPromoted": false
+    },
+    "stats": {
+      "viewCount": 0,
+      "likeCount": 0,
+      "saveCount": 0,
+      "commentCount": 0,
+      "replyCount": 0
+    },
+    "createdAt": "2026-04-28T03:42:15.121Z",
+    "updatedAt": "2026-04-28T03:42:15.121Z",
+    "publishedAt": null
+  },
+  {
     "id": "content-1777018368845",
     "title": "제목이 길어 슬픈 콘텐츠입니다. 아마도 말줄임표로 표시되겠지요.",
     "content": {
@@ -24,7 +72,7 @@
       "tag_1776318266291",
       "tag_1776227420728"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -46,7 +94,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
-    "updatedAt": "2026-04-27T03:29:55.609Z",
+    "updatedAt": "2026-04-27T07:45:09.106Z",
     "publishedAt": "2026-04-24T08:12:48.845Z"
   },
   {
@@ -172,7 +220,7 @@
       "tag_1776227420728",
       "tag_1776318266291"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -194,7 +242,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-24T08:07:32.424Z",
-    "updatedAt": "2026-04-27T03:29:57.143Z",
+    "updatedAt": "2026-04-27T07:44:41.804Z",
     "publishedAt": "2026-04-24T08:07:32.424Z"
   },
   {
@@ -609,7 +657,7 @@
     "tagIds": [
       "tag_1776318282467"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -631,7 +679,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:19:14.106Z",
-    "updatedAt": "2026-04-27T03:29:58.534Z",
+    "updatedAt": "2026-04-27T07:44:41.810Z",
     "publishedAt": "2026-04-23T08:19:14.106Z"
   },
   {
@@ -654,7 +702,7 @@
     "tagIds": [
       "tag_1"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -676,7 +724,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-04-27T03:29:59.716Z",
+    "updatedAt": "2026-04-27T07:44:41.816Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
@@ -702,7 +750,7 @@
       "tag_1776216676340",
       "tag_1776227420728"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -724,7 +772,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T10:00:00.000Z",
-    "updatedAt": "2026-04-27T03:30:00.889Z",
+    "updatedAt": "2026-04-27T07:44:41.822Z",
     "publishedAt": "2026-04-23T10:00:00.000Z"
   },
   {
@@ -744,7 +792,9 @@
         }
       ]
     },
-    "tagIds": [],
+    "tagIds": [
+      "tag_1"
+    ],
     "status": "published",
     "author": {
       "type": "user",
@@ -767,7 +817,209 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T12:00:00.000Z",
-    "updatedAt": "2026-04-27T03:30:02.351Z",
+    "updatedAt": "2026-04-28T03:57:27.837Z",
     "publishedAt": "2026-04-27T03:29:45.477Z"
+  }
+,
+  {
+    "id": "post-101",
+    "title": "요즘 창업 아이템 고민 중인데 방향이 맞는지 모르겠어요",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "AI 기반으로 소상공인 매출 분석 서비스를 구상 중인데 시장성이 있을지 고민입니다. 혹시 비슷한 경험 있으신 분 계실까요?" }] }] },
+    "tagIds": ["startup", "idea"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-11",
+      "displayName": "김민준",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "minjun_dev"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 132, "likeCount": 14, "saveCount": 3, "commentCount": 5, "replyCount": 2 },
+    "createdAt": "2026-04-20T10:12:00Z",
+    "updatedAt": "2026-04-20T10:12:00Z",
+    "publishedAt": "2026-04-20T10:12:00Z"
+  },
+  {
+    "id": "post-102",
+    "title": "투자 받기 전에 꼭 준비해야 할 것들",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "최근 IR 준비하면서 느낀 건, 숫자보다 스토리가 더 중요하다는 점이었습니다. 특히 문제 정의를 명확하게 하는 게 핵심 같아요." }] }] },
+    "tagIds": ["investment"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-22",
+      "displayName": "이서연",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "seoyeon_start"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": true },
+    "stats": { "viewCount": 421, "likeCount": 52, "saveCount": 21, "commentCount": 12, "replyCount": 4 },
+    "createdAt": "2026-04-18T08:00:00Z",
+    "updatedAt": "2026-04-18T08:00:00Z",
+    "publishedAt": "2026-04-18T08:00:00Z"
+  },
+  {
+    "id": "post-103",
+    "title": "초기 스타트업에서 개발자 채용 어떻게 하시나요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "지금 혼자 개발하고 있는데 슬슬 팀원이 필요할 것 같아서요. 비용도 부담되고 어떤 기준으로 채용해야 할지 고민입니다." }] }] },
+    "tagIds": ["team", "dev"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-33",
+      "displayName": "박준호",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "junho_lab"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 289, "likeCount": 23, "saveCount": 7, "commentCount": 9, "replyCount": 3 },
+    "createdAt": "2026-04-19T14:30:00Z",
+    "updatedAt": "2026-04-19T14:30:00Z",
+    "publishedAt": "2026-04-19T14:30:00Z"
+  },
+  {
+    "id": "post-104",
+    "title": "정부지원사업 신청해보신 분 계신가요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "사업계획서 작성이 생각보다 어렵네요. 선정 팁이나 주의사항 있으면 공유 부탁드립니다." }] }] },
+    "tagIds": ["startup", "support"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-44",
+      "displayName": "최지훈",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "jihun_idea"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 198, "likeCount": 17, "saveCount": 5, "commentCount": 6, "replyCount": 1 },
+    "createdAt": "2026-04-17T09:15:00Z",
+    "updatedAt": "2026-04-17T09:15:00Z",
+    "publishedAt": "2026-04-17T09:15:00Z"
+  },
+  {
+    "id": "post-105",
+    "title": "서비스 런칭하고 나서 가장 힘든 점이 뭔가요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "개발보다 운영이 더 어렵다는 말을 실감하고 있습니다. 특히 사용자 유입이 쉽지 않네요." }] }] },
+    "tagIds": ["operation"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-55",
+      "displayName": "정다은",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "daeun_pm"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 354, "likeCount": 41, "saveCount": 10, "commentCount": 11, "replyCount": 4 },
+    "createdAt": "2026-04-16T13:45:00Z",
+    "updatedAt": "2026-04-16T13:45:00Z",
+    "publishedAt": "2026-04-16T13:45:00Z"
+  },
+
+  {
+    "id": "post-106",
+    "title": "MVP 어디까지 만들어야 적당할까요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "기능을 계속 추가하다보니 끝이 없네요. MVP 기준을 어떻게 잡으셨는지 궁금합니다." }] }] },
+    "tagIds": ["mvp"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-66",
+      "displayName": "윤태호",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "taeho_builder"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 210, "likeCount": 19, "saveCount": 6, "commentCount": 7, "replyCount": 2 },
+    "createdAt": "2026-04-15T11:20:00Z",
+    "updatedAt": "2026-04-15T11:20:00Z",
+    "publishedAt": "2026-04-15T11:20:00Z"
+  },
+  {
+    "id": "post-107",
+    "title": "초기 마케팅 채널 뭐부터 시작해야 할까요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "SNS, 광고, 커뮤니티 등 선택지가 많아서 고민입니다. 초기 스타트업 기준으로 효율적인 채널 추천 부탁드립니다." }] }] },
+    "tagIds": ["marketing"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-77",
+      "displayName": "한유진",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "yujin_growth"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 267, "likeCount": 28, "saveCount": 9, "commentCount": 8, "replyCount": 3 },
+    "createdAt": "2026-04-14T16:00:00Z",
+    "updatedAt": "2026-04-14T16:00:00Z",
+    "publishedAt": "2026-04-14T16:00:00Z"
+  },
+  {
+    "id": "post-108",
+    "title": "공동창업 vs 단독창업 어떤게 더 나을까요?",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "혼자 시작했는데 가끔은 같이 할 사람이 있었으면 좋겠다는 생각이 듭니다. 경험 있으신 분들 의견 궁금합니다." }] }] },
+    "tagIds": ["team"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-88",
+      "displayName": "강현우",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "hyunwoo_ceo"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 305, "likeCount": 33, "saveCount": 8, "commentCount": 10, "replyCount": 4 },
+    "createdAt": "2026-04-13T12:10:00Z",
+    "updatedAt": "2026-04-13T12:10:00Z",
+    "publishedAt": "2026-04-13T12:10:00Z"
+  },
+  {
+    "id": "post-109",
+    "title": "서비스 UX 피드백 부탁드립니다",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "현재 베타 서비스 운영 중인데 UX 관련해서 개선 포인트가 있는지 의견 부탁드립니다." }] }] },
+    "tagIds": ["ux"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-99",
+      "displayName": "오지민",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "jimin_design"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 178, "likeCount": 12, "saveCount": 4, "commentCount": 5, "replyCount": 1 },
+    "createdAt": "2026-04-12T09:50:00Z",
+    "updatedAt": "2026-04-12T09:50:00Z",
+    "publishedAt": "2026-04-12T09:50:00Z"
+  },
+  {
+    "id": "post-110",
+    "title": "첫 매출 발생했는데 다음 단계가 고민입니다",
+    "content": { "type": "doc", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "드디어 첫 매출이 발생했는데 이후 확장 전략을 어떻게 가져가야 할지 고민입니다. 경험 공유 부탁드립니다." }] }] },
+    "tagIds": ["growth"],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-101",
+      "displayName": "이동훈",
+      "visibility": "public",
+      "identifierType": "nickname",
+      "identifierValue": "donghun_scale"
+    },
+    "flags": { "isPinned": false, "isNotice": false, "isPromoted": false },
+    "stats": { "viewCount": 392, "likeCount": 47, "saveCount": 15, "commentCount": 13, "replyCount": 5 },
+    "createdAt": "2026-04-11T18:25:00Z",
+    "updatedAt": "2026-04-11T18:25:00Z",
+    "publishedAt": "2026-04-11T18:25:00Z"
   }
 ]

@@ -281,11 +281,11 @@
       "identifierValue": "admin@comasoft.io"
     },
     "content": "시적",
-    "status": "published",
+    "status": "deleted",
     "likeCount": 0,
     "isLikedByMe": false,
     "createdAt": "2026-04-27T06:51:54.455Z",
-    "updatedAt": "2026-04-27T06:51:54.455Z",
-    "deletedAt": null
+    "updatedAt": "2026-04-27T07:19:39.541Z",
+    "deletedAt": "2026-04-27T07:19:39.541Z"
   }
 ]

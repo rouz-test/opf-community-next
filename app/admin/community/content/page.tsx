@@ -207,6 +207,7 @@ export default function CommunityContentPage() {
   const endDateInputRef = useRef<HTMLInputElement | null>(null);
   const tagFilterRef = useRef<HTMLDivElement | null>(null);
   const flagFilterRef = useRef<HTMLDivElement | null>(null);
+  const authorFilterRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
@@ -214,6 +215,10 @@ export default function CommunityContentPage() {
   type FlagFilter = 'promoted' | 'notice' | 'pinned';
   const [flagFilter, setFlagFilter] = useState<FlagFilter[]>([]);
   const [isFlagFilterOpen, setIsFlagFilterOpen] = useState(false);
+
+  type AuthorFilter = 'all' | 'admin' | 'user';
+  const [authorFilter, setAuthorFilter] = useState<AuthorFilter>('all');
+  const [isAuthorFilterOpen, setIsAuthorFilterOpen] = useState(false);
 
   const router = useRouter();
 
@@ -245,7 +250,7 @@ export default function CommunityContentPage() {
   }, [loadContents]);
 
   useEffect(() => {
-    if (!isTagFilterOpen && !isFlagFilterOpen) return;
+    if (!isTagFilterOpen && !isFlagFilterOpen && !isAuthorFilterOpen) return;
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
@@ -253,15 +258,18 @@ export default function CommunityContentPage() {
       if (!(target instanceof Node)) return;
       if (tagFilterRef.current?.contains(target)) return;
       if (flagFilterRef.current?.contains(target)) return;
+      if (authorFilterRef.current?.contains(target)) return;
 
       setIsTagFilterOpen(false);
       setIsFlagFilterOpen(false);
+      setIsAuthorFilterOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsTagFilterOpen(false);
         setIsFlagFilterOpen(false);
+        setIsAuthorFilterOpen(false);
       }
     };
 
@@ -272,7 +280,7 @@ export default function CommunityContentPage() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFlagFilterOpen, isTagFilterOpen]);
+  }, [isAuthorFilterOpen, isFlagFilterOpen, isTagFilterOpen]);
 
   const handleNavigateToDetail = (contentId: string) => {
     router.push(`/admin/community/content/${contentId}`);
@@ -544,9 +552,21 @@ export default function CommunityContentPage() {
           }
         }
 
+        if (authorFilter !== 'all' && row.originalContent.author.type !== authorFilter) {
+          return false;
+        }
+
         return true;
       }),
-    [appliedEndDate, appliedStartDate, contentRows, flagFilter, normalizedSearchKeyword, selectedTags]
+    [
+      appliedEndDate,
+      appliedStartDate,
+      authorFilter,
+      contentRows,
+      flagFilter,
+      normalizedSearchKeyword,
+      selectedTags,
+    ]
   );
 
   const totalCount = filteredRows.length;
@@ -870,6 +890,76 @@ export default function CommunityContentPage() {
                       </CheckboxGroup>
                     </Box>
                   )}
+                </Box>
+
+                <Box ref={authorFilterRef} position="relative">
+                  <Button
+                    variant="outline"
+                    h="40px"
+                    px="16px"
+                    borderRadius="8px"
+                    borderColor="#E5E7EB"
+                    bg="#FFFFFF"
+                    color="#374151"
+                    fontSize="13px"
+                    fontWeight="500"
+                    _hover={{ bg: '#F9FAFB' }}
+                    onClick={() => {
+                      setIsAuthorFilterOpen((prev) => !prev);
+                      setIsTagFilterOpen(false);
+                      setIsFlagFilterOpen(false);
+                    }}
+                  >
+                    <Flex align="center" gap="8px">
+                      <Text>
+                        {authorFilter === 'all' ? '작성자 전체' : authorFilter === 'admin' ? '관리자' : '사용자'}
+                      </Text>
+                      <ChevronDownIcon />
+                    </Flex>
+                  </Button>
+
+                  {isAuthorFilterOpen ? (
+                    <Box
+                      position="absolute"
+                      top="calc(100% + 8px)"
+                      right="0"
+                      minW="160px"
+                      borderWidth="1px"
+                      borderColor="#E5E7EB"
+                      borderRadius="12px"
+                      bg="#FFFFFF"
+                      boxShadow="0 12px 32px rgba(17, 24, 39, 0.12)"
+                      p="6px"
+                      zIndex={20}
+                    >
+                      {[
+                        { label: '전체', value: 'all' },
+                        { label: '관리자', value: 'admin' },
+                        { label: '사용자', value: 'user' },
+                      ].map((option) => (
+                        <Button
+                          key={option.value}
+                          variant="ghost"
+                          w="100%"
+                          justifyContent="flex-start"
+                          h="36px"
+                          px="10px"
+                          borderRadius="8px"
+                          fontSize="13px"
+                          fontWeight="500"
+                          color="#374151"
+                          _hover={{ bg: '#F9FAFB' }}
+                          onClick={() => {
+                            setAuthorFilter(option.value as AuthorFilter);
+                            setCurrentPage(1);
+                            setIsAuthorFilterOpen(false);
+                          }}
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </Box>
+                  ) : null}
                 </Box>
               </Flex>
 

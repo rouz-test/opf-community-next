@@ -115,7 +115,7 @@ export default function BlockedWordAlertModal({
           py="12px"
         >
           <Text fontSize="12px" fontWeight="700" color="#92400E" mb="8px">
-            감지된 문맥
+            감지된 문맥 ({matchedKeywords.length}건)
           </Text>
 
           {matchedSegments.length > 0 ? (
