@@ -213,6 +213,11 @@ export default function CommunityContentPage() {
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
 
+  type SortKey = 'date' | 'view' | 'comment' | 'like' | null;
+  type SortDirection = 'asc' | 'desc';
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
   type FlagFilter = 'promoted' | 'notice' | 'pinned';
   const [flagFilter, setFlagFilter] = useState<FlagFilter[]>([]);
   const [isFlagFilterOpen, setIsFlagFilterOpen] = useState(false);
@@ -506,6 +511,25 @@ export default function CommunityContentPage() {
     [contents]
   );
 
+  const handleSort = (key: SortKey) => {
+    setCurrentPage(1);
+    setSortKey((prevKey) => {
+      if (prevKey !== key) {
+        setSortDirection('desc');
+        return key;
+      }
+
+      setSortDirection((prevDir) => {
+        if (prevDir === 'desc') return 'asc';
+        // asc -> none
+        setSortKey(null);
+        return 'desc';
+      });
+
+      return prevKey;
+    });
+  };
+
   const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
     if (item.type === 'first') {
       setCurrentPage(1);
@@ -534,74 +558,96 @@ export default function CommunityContentPage() {
 
   const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
 
-  const filteredRows = useMemo(
-    () =>
-      contentRows.filter((row) => {
-        const referenceDate = row.referenceDate;
+  const filteredRows = useMemo(() => {
+    const base = contentRows.filter((row) => {
+      const referenceDate = row.referenceDate;
 
-        if (appliedStartDate) {
-          if (!referenceDate) return false;
-          const start = new Date(appliedStartDate);
-          start.setHours(0, 0, 0, 0);
-          if (referenceDate < start) return false;
-        }
+      if (appliedStartDate) {
+        if (!referenceDate) return false;
+        const start = new Date(appliedStartDate);
+        start.setHours(0, 0, 0, 0);
+        if (referenceDate < start) return false;
+      }
 
-        if (appliedEndDate) {
-          if (!referenceDate) return false;
-          const end = new Date(appliedEndDate);
-          end.setHours(23, 59, 59, 999);
-          if (referenceDate > end) return false;
-        }
+      if (appliedEndDate) {
+        if (!referenceDate) return false;
+        const end = new Date(appliedEndDate);
+        end.setHours(23, 59, 59, 999);
+        if (referenceDate > end) return false;
+      }
 
-        if (selectedTags.length > 0) {
-          const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
-          if (!hasSelectedTag) {
-            return false;
-          }
-        }
+      if (selectedTags.length > 0) {
+        const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
+        if (!hasSelectedTag) return false;
+      }
 
-        if (flagFilter.length > 0) {
-          const matches = [];
-        
-          if (flagFilter.includes('promoted')) matches.push(row.isPromoted);
-          if (flagFilter.includes('notice')) matches.push(row.isNotice);
-          if (flagFilter.includes('pinned')) matches.push(row.originalContent.flags.isPinned);
-        
-          if (!matches.some(Boolean)) return false;
-        }
-        
-        if (normalizedSearchKeyword) {
-          const searchTarget = [
-            row.title,
-            row.bodyText,
-            row.author,
-            row.type,
-            ...row.tags.map((tag) => tag.name),
-          ]
-            .join(' ')
-            .toLowerCase();
+      if (flagFilter.length > 0) {
+        const matches = [];
 
-          if (!searchTarget.includes(normalizedSearchKeyword)) {
-            return false;
-          }
-        }
+        if (flagFilter.includes('promoted')) matches.push(row.isPromoted);
+        if (flagFilter.includes('notice')) matches.push(row.isNotice);
+        if (flagFilter.includes('pinned')) matches.push(row.originalContent.flags.isPinned);
 
-        if (authorFilter !== 'all' && row.originalContent.author.type !== authorFilter) {
+        if (!matches.some(Boolean)) return false;
+      }
+
+      if (normalizedSearchKeyword) {
+        const searchTarget = [
+          row.title,
+          row.bodyText,
+          row.author,
+          row.type,
+          ...row.tags.map((tag) => tag.name),
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        if (!searchTarget.includes(normalizedSearchKeyword)) {
           return false;
         }
+      }
 
-        return true;
-      }),
-    [
-      appliedEndDate,
-      appliedStartDate,
-      authorFilter,
-      contentRows,
-      flagFilter,
-      normalizedSearchKeyword,
-      selectedTags,
-    ]
-  );
+      if (authorFilter !== 'all' && row.originalContent.author.type !== authorFilter) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!sortKey) return base;
+
+    return [...base].sort((a, b) => {
+      let aValue = 0;
+      let bValue = 0;
+
+      if (sortKey === 'date') {
+        aValue = a.referenceDate?.getTime() ?? 0;
+        bValue = b.referenceDate?.getTime() ?? 0;
+      } else if (sortKey === 'view') {
+        aValue = a.viewCount;
+        bValue = b.viewCount;
+      } else if (sortKey === 'comment') {
+        aValue = a.originalContent.stats.commentCount + a.originalContent.stats.replyCount;
+        bValue = b.originalContent.stats.commentCount + b.originalContent.stats.replyCount;
+      } else if (sortKey === 'like') {
+        aValue = a.originalContent.stats.likeCount;
+        bValue = b.originalContent.stats.likeCount;
+      }
+
+      if (sortDirection === 'asc') return aValue - bValue;
+      return bValue - aValue;
+    });
+  }, [
+    appliedEndDate,
+    appliedStartDate,
+    authorFilter,
+    contentRows,
+    flagFilter,
+    normalizedSearchKeyword,
+    selectedTags,
+    sortKey,
+    sortDirection,
+  ]);
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -1090,13 +1136,55 @@ export default function CommunityContentPage() {
                   <Checkbox.Control />
                 </Checkbox.Root>
               </AdminTableColumnHeader>
-              <AdminTableColumnHeader w="72px">번호</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="88px">구분</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="180px">태그</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="60px">번호</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="72px">구분</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="150px">태그</AdminTableColumnHeader>
               <AdminTableColumnHeader minW="320px">제목</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="120px">작성자</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="160px">발행일시</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="96px" textAlign="center">조회수</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="100px">작성자</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="140px">
+                <Flex align="center" gap="4px" cursor="pointer" onClick={() => handleSort('date')}>
+                  <Text>발행일시</Text>
+                  <Icon
+                    as={LuChevronDown}
+                    boxSize="14px"
+                    transform={sortKey === 'date' && sortDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    opacity={sortKey === 'date' ? 1 : 0.3}
+                  />
+                </Flex>
+              </AdminTableColumnHeader>
+              <AdminTableColumnHeader w="80px" textAlign="center">
+                <Flex align="center" justify="center" gap="4px" cursor="pointer" onClick={() => handleSort('view')}>
+                  <Text>조회수</Text>
+                  <Icon
+                    as={LuChevronDown}
+                    boxSize="14px"
+                    transform={sortKey === 'view' && sortDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    opacity={sortKey === 'view' ? 1 : 0.3}
+                  />
+                </Flex>
+              </AdminTableColumnHeader>
+              <AdminTableColumnHeader w="80px" textAlign="center">
+                <Flex align="center" justify="center" gap="4px" cursor="pointer" onClick={() => handleSort('comment')}>
+                  <Text>댓글</Text>
+                  <Icon
+                    as={LuChevronDown}
+                    boxSize="14px"
+                    transform={sortKey === 'comment' && sortDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    opacity={sortKey === 'comment' ? 1 : 0.3}
+                  />
+                </Flex>
+              </AdminTableColumnHeader>
+              <AdminTableColumnHeader w="80px" textAlign="center">
+                <Flex align="center" justify="center" gap="4px" cursor="pointer" onClick={() => handleSort('like')}>
+                  <Text>좋아요</Text>
+                  <Icon
+                    as={LuChevronDown}
+                    boxSize="14px"
+                    transform={sortKey === 'like' && sortDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    opacity={sortKey === 'like' ? 1 : 0.3}
+                  />
+                </Flex>
+              </AdminTableColumnHeader>
               <AdminTableColumnHeader w="96px" textAlign="center">상태</AdminTableColumnHeader>
               <AdminTableColumnHeader w="56px" textAlign="center">액션</AdminTableColumnHeader>
             </Table.Row>
@@ -1105,7 +1193,7 @@ export default function CommunityContentPage() {
           <AdminTableBody>
             {filteredRows.length === 0 ? (
               <AdminTableRow>
-                <AdminTableCell colSpan={10} textAlign="center" py="24px">
+                <AdminTableCell colSpan={12} textAlign="center" py="24px">
                   <Text fontSize="13px" color="#6B7280">
                     검색 결과가 없습니다.
                   </Text>
@@ -1260,6 +1348,12 @@ export default function CommunityContentPage() {
                     onClick={() => handleNavigateToDetail(row.id)}
                   >
                     {row.viewCount}
+                  </AdminTableCell>
+                  <AdminTableCell textAlign="center" color="#374151">
+                    {row.originalContent.stats.commentCount + row.originalContent.stats.replyCount}
+                  </AdminTableCell>
+                  <AdminTableCell textAlign="center" color="#374151">
+                    {row.originalContent.stats.likeCount}
                   </AdminTableCell>
                   <AdminTableCell
                     textAlign="center"
