@@ -15,7 +15,16 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import tagsData from '@/data/mock/tags.json';
-import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
+import { fetchCommunityContentList } from '@/lib/community-contents';
+import type {
+  CommunityContent,
+  CommunityContentBody,
+  CommunityContentListAuthorFilter,
+  CommunityContentListFlagFilter,
+  CommunityContentListResponse,
+  CommunityContentListSortDirection,
+  CommunityContentListSortKey,
+} from '@/types/community-content';
 import { resolveTags } from '@/lib/tags';
 import type { Tag } from '@/types/tag';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
@@ -191,6 +200,8 @@ function getStatusTone(status: string) {
 
 export default function CommunityContentPage() {
   const [contents, setContents] = useState<CommunityContent[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
@@ -213,16 +224,16 @@ export default function CommunityContentPage() {
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
 
-  type SortKey = 'date' | 'view' | 'comment' | 'like' | null;
-  type SortDirection = 'asc' | 'desc';
+  type SortKey = CommunityContentListSortKey | null;
+  type SortDirection = CommunityContentListSortDirection;
   const [sortKey, setSortKey] = useState<SortKey>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  type FlagFilter = 'promoted' | 'notice' | 'pinned';
+  type FlagFilter = CommunityContentListFlagFilter;
   const [flagFilter, setFlagFilter] = useState<FlagFilter[]>([]);
   const [isFlagFilterOpen, setIsFlagFilterOpen] = useState(false);
 
-  type AuthorFilter = 'all' | 'admin' | 'user';
+  type AuthorFilter = CommunityContentListAuthorFilter;
   const [authorFilter, setAuthorFilter] = useState<AuthorFilter>('all');
   const [isAuthorFilterOpen, setIsAuthorFilterOpen] = useState(false);
 
@@ -231,25 +242,51 @@ export default function CommunityContentPage() {
   const loadContents = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/mock/community-contents', {
-        cache: 'no-store',
-      });
+      const data = (await fetchCommunityContentList({
+        page: currentPage,
+        pageSize,
+        search: appliedSearchKeyword.trim(),
+        startDate: appliedStartDate,
+        endDate: appliedEndDate,
+        authorType: authorFilter,
+        tags: selectedTags,
+        flags: flagFilter,
+        sortKey: sortKey ?? undefined,
+        sortDirection,
+      })) as CommunityContentListResponse;
 
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => null)) as { message?: string } | null;
-        throw new Error(errorData?.message || '콘텐츠 목록을 불러오지 못했습니다.');
+      setContents(data.items);
+      setTotalCount(data.meta.totalCount);
+      setTotalPages(data.meta.totalPages);
+
+      if (data.meta.page !== currentPage) {
+        setCurrentPage(data.meta.page);
       }
 
-      const data = (await response.json()) as { items?: CommunityContent[] };
-      setContents(Array.isArray(data.items) ? data.items : []);
+      if (data.meta.pageSize !== pageSize) {
+        setPageSize(data.meta.pageSize);
+      }
     } catch (error) {
       console.error('failed to load community contents:', error);
       window.alert(error instanceof Error ? error.message : '콘텐츠 목록을 불러오지 못했습니다.');
       setContents([]);
+      setTotalCount(0);
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [
+    appliedEndDate,
+    appliedSearchKeyword,
+    appliedStartDate,
+    authorFilter,
+    currentPage,
+    flagFilter,
+    pageSize,
+    selectedTags,
+    sortDirection,
+    sortKey,
+  ]);
 
   useEffect(() => {
     void loadContents();
@@ -556,106 +593,9 @@ export default function CommunityContentPage() {
     }
   };
 
-  const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
-
-  const filteredRows = useMemo(() => {
-    const base = contentRows.filter((row) => {
-      const referenceDate = row.referenceDate;
-
-      if (appliedStartDate) {
-        if (!referenceDate) return false;
-        const start = new Date(appliedStartDate);
-        start.setHours(0, 0, 0, 0);
-        if (referenceDate < start) return false;
-      }
-
-      if (appliedEndDate) {
-        if (!referenceDate) return false;
-        const end = new Date(appliedEndDate);
-        end.setHours(23, 59, 59, 999);
-        if (referenceDate > end) return false;
-      }
-
-      if (selectedTags.length > 0) {
-        const hasSelectedTag = row.tags.some((tag) => selectedTags.includes(tag.name));
-        if (!hasSelectedTag) return false;
-      }
-
-      if (flagFilter.length > 0) {
-        const matches = [];
-
-        if (flagFilter.includes('promoted')) matches.push(row.isPromoted);
-        if (flagFilter.includes('notice')) matches.push(row.isNotice);
-        if (flagFilter.includes('pinned')) matches.push(row.originalContent.flags.isPinned);
-
-        if (!matches.some(Boolean)) return false;
-      }
-
-      if (normalizedSearchKeyword) {
-        const searchTarget = [
-          row.title,
-          row.bodyText,
-          row.author,
-          row.type,
-          ...row.tags.map((tag) => tag.name),
-        ]
-          .join(' ')
-          .toLowerCase();
-
-        if (!searchTarget.includes(normalizedSearchKeyword)) {
-          return false;
-        }
-      }
-
-      if (authorFilter !== 'all' && row.originalContent.author.type !== authorFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    if (!sortKey) return base;
-
-    return [...base].sort((a, b) => {
-      let aValue = 0;
-      let bValue = 0;
-
-      if (sortKey === 'date') {
-        aValue = a.referenceDate?.getTime() ?? 0;
-        bValue = b.referenceDate?.getTime() ?? 0;
-      } else if (sortKey === 'view') {
-        aValue = a.viewCount;
-        bValue = b.viewCount;
-      } else if (sortKey === 'comment') {
-        aValue = a.originalContent.stats.commentCount + a.originalContent.stats.replyCount;
-        bValue = b.originalContent.stats.commentCount + b.originalContent.stats.replyCount;
-      } else if (sortKey === 'like') {
-        aValue = a.originalContent.stats.likeCount;
-        bValue = b.originalContent.stats.likeCount;
-      }
-
-      if (sortDirection === 'asc') return aValue - bValue;
-      return bValue - aValue;
-    });
-  }, [
-    appliedEndDate,
-    appliedStartDate,
-    authorFilter,
-    contentRows,
-    flagFilter,
-    normalizedSearchKeyword,
-    selectedTags,
-    sortKey,
-    sortDirection,
-  ]);
-
-  const totalCount = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const filteredRows = contentRows;
   const currentPageSafe = Math.min(currentPage, totalPages);
-  const pagedRows = filteredRows.slice(
-    (currentPageSafe - 1) * pageSize,
-    currentPageSafe * pageSize,
-  );
+  const pagedRows = filteredRows;
   const paginationItems = getPaginationItems(currentPageSafe, totalPages);
   
   useEffect(() => {
@@ -1191,7 +1131,7 @@ export default function CommunityContentPage() {
           </AdminTableHead>
 
           <AdminTableBody>
-            {filteredRows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <AdminTableRow>
                 <AdminTableCell colSpan={12} textAlign="center" py="24px">
                   <Text fontSize="13px" color="#6B7280">

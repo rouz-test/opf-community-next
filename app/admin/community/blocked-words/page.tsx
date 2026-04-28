@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   Box,
@@ -34,10 +34,10 @@ import AdminTablePagination, {
 } from '@/app/admin/components/ui/table/admin-table-pagination';
 import {
   createBlockedWord,
+  fetchBlockedWordsList,
   deleteBlockedWord,
-  getBlockedWords,
 } from '@/lib/blocked-words';
-import type { BlockedWord } from '@/types/blocked-word';
+import type { BlockedWord, BlockedWordsListResponse } from '@/types/blocked-word';
 
 import BlockedWordCreateModal from './BlockedWordCreateModal';
 
@@ -66,7 +66,7 @@ function getPaginationItems(
 
   const halfWindow = Math.floor(PAGE_WINDOW / 2);
   let startPage = Math.max(1, currentPage - halfWindow);
-  let endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
+  const endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
 
   if (endPage - startPage + 1 < PAGE_WINDOW) {
     startPage = Math.max(1, endPage - PAGE_WINDOW + 1);
@@ -108,6 +108,9 @@ function getPaginationItems(
 export default function CommunityBlockedWordsPage() {
   const { open, onOpen, onClose } = useDisclosure();
   const [blockedWords, setBlockedWords] = useState<BlockedWord[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [newKeyword, setNewKeyword] = useState('');
@@ -120,16 +123,27 @@ export default function CommunityBlockedWordsPage() {
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadBlockedWords = async () => {
+  const loadBlockedWords = useCallback(
+    async (override?: { page?: number; pageSize?: number; search?: string }) => {
       try {
-        const fetchedBlockedWords = await getBlockedWords();
+        setIsLoading(true);
+        const data = (await fetchBlockedWordsList({
+          page: override?.page ?? currentPage,
+          pageSize: override?.pageSize ?? pageSize,
+          search: override?.search ?? appliedSearchKeyword.trim(),
+        })) as BlockedWordsListResponse;
 
-        if (!isMounted) return;
+        setBlockedWords(data.items);
+        setTotalCount(data.meta.totalCount);
+        setTotalPages(data.meta.totalPages);
 
-        setBlockedWords(fetchedBlockedWords);
+        if (data.meta.page !== currentPage) {
+          setCurrentPage(data.meta.page);
+        }
+
+        if (data.meta.pageSize !== pageSize) {
+          setPageSize(data.meta.pageSize);
+        }
       } catch (error) {
         console.error('[CommunityBlockedWordsPage] failed to load blocked words:', error);
 
@@ -138,40 +152,24 @@ export default function CommunityBlockedWordsPage() {
           type: 'error',
           duration: 2000,
         });
+      } finally {
+        setIsLoading(false);
       }
-    };
-
-    void loadBlockedWords();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const normalizedSearchKeyword = appliedSearchKeyword.trim().toLowerCase();
-  const filteredBlockedWords = blockedWords.filter((item) =>
-    normalizedSearchKeyword ? item.keyword.toLowerCase().includes(normalizedSearchKeyword) : true,
+    },
+    [appliedSearchKeyword, currentPage, pageSize],
   );
-
-  const totalCount = filteredBlockedWords.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const currentPageSafe = Math.min(currentPage, totalPages);
-  const pagedBlockedWords = filteredBlockedWords.slice(
-    (currentPageSafe - 1) * pageSize,
-    currentPageSafe * pageSize,
-  );
-  const paginationItems = getPaginationItems(currentPageSafe, totalPages);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+    void loadBlockedWords();
+  }, [loadBlockedWords]);
 
-  const allKeywordIds = filteredBlockedWords.map((item) => item.id);
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginationItems = getPaginationItems(currentPageSafe, totalPages);
+
+  const allKeywordIds = blockedWords.map((item) => item.id);
   const isAllSelected =
-    filteredBlockedWords.length > 0 &&
-    filteredBlockedWords.every((item) => selectedKeywordIds.includes(item.id));
+    blockedWords.length > 0 &&
+    blockedWords.every((item) => selectedKeywordIds.includes(item.id));
   const isIndeterminate = selectedKeywordIds.length > 0 && !isAllSelected;
 
   const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
@@ -206,20 +204,24 @@ export default function CommunityBlockedWordsPage() {
 
     setIsCreatingKeyword(true);
     setCreateKeywordError('');
-    setCurrentPage(1);
     setIsPageSizeMenuOpen(false);
 
     try {
-      const createdBlockedWord = await createBlockedWord({
+      await createBlockedWord({
         keyword: trimmedKeyword,
         createdBy: 'admin01',
       });
 
-      setBlockedWords((prev) => [createdBlockedWord, ...prev]);
       setNewKeyword('');
       setCreateKeywordError('');
-      setCurrentPage(1);
       onClose();
+      setSelectedKeywordIds([]);
+
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      } else {
+        await loadBlockedWords({ page: 1 });
+      }
 
       toaster.create({
         description: '키워드가 등록되었습니다.',
@@ -270,10 +272,9 @@ export default function CommunityBlockedWordsPage() {
     try {
       await deleteBlockedWord(deleteTarget.id);
 
-      setBlockedWords((prev) => prev.filter((item) => item.id !== deleteTarget.id));
       setSelectedKeywordIds((prev) => prev.filter((itemId) => itemId !== deleteTarget.id));
       setDeleteTarget(null);
-      setCurrentPage(1);
+      await loadBlockedWords();
 
       toaster.create({
         description: '키워드가 삭제되었습니다.',
@@ -305,18 +306,15 @@ export default function CommunityBlockedWordsPage() {
   const handleDeleteSelectedKeywords = async () => {
     if (selectedKeywordIds.length === 0) return;
 
-    const previousBlockedWords = blockedWords;
-
     try {
       for (const id of selectedKeywordIds) {
         await deleteBlockedWord(id);
       }
 
-      setBlockedWords((prev) => prev.filter((item) => !selectedKeywordIds.includes(item.id)));
       setSelectedKeywordIds([]);
       setIsBulkDeleteModalOpen(false);
-      setCurrentPage(1);
       setIsPageSizeMenuOpen(false);
+      await loadBlockedWords();
 
       toaster.create({
         description: '선택한 키워드가 삭제되었습니다.',
@@ -324,8 +322,6 @@ export default function CommunityBlockedWordsPage() {
         duration: 2000,
       });
     } catch (error) {
-      setBlockedWords(previousBlockedWords);
-
       const message = error instanceof Error
         ? error.message
         : '선택한 키워드를 삭제하지 못했습니다.';
@@ -434,7 +430,7 @@ export default function CommunityBlockedWordsPage() {
             </AdminTableHead>
 
             <AdminTableBody>
-              {filteredBlockedWords.length === 0 ? (
+              {!isLoading && blockedWords.length === 0 ? (
                 <AdminTableRow>
                   <AdminTableCell colSpan={5} textAlign="center" py="24px">
                     <Text fontSize="13px" color="#6B7280">
@@ -443,7 +439,7 @@ export default function CommunityBlockedWordsPage() {
                   </AdminTableCell>
                 </AdminTableRow>
               ) : (
-                pagedBlockedWords.map((item) => (
+                blockedWords.map((item) => (
                   <AdminTableRow key={item.id}>
                     <AdminTableCell textAlign="center" px="12px">
                       <Checkbox.Root

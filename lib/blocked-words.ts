@@ -1,4 +1,9 @@
-import type { BlockedWord } from '@/types/blocked-word';
+import { buildBlockedWordsListSearchParams } from '@/lib/blocked-word-list';
+import type {
+  BlockedWord,
+  BlockedWordsListQuery,
+  BlockedWordsListResponse,
+} from '@/types/blocked-word';
 
 export type CreateBlockedWordPayload = {
   keyword: string;
@@ -16,6 +21,22 @@ export async function getBlockedWords(): Promise<BlockedWord[]> {
   }
 
   return response.json() as Promise<BlockedWord[]>;
+}
+
+export async function fetchBlockedWordsList(
+  query: BlockedWordsListQuery,
+): Promise<BlockedWordsListResponse> {
+  const searchParams = buildBlockedWordsListSearchParams(query);
+  const response = await fetch(`/api/mock/blocked-words?${searchParams.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error('금지 키워드 목록을 불러오지 못했습니다.');
+  }
+
+  return response.json() as Promise<BlockedWordsListResponse>;
 }
 
 export async function createBlockedWord(payload: CreateBlockedWordPayload): Promise<BlockedWord> {

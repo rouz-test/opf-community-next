@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
+import {
+  isCommunityContentListSortDirection,
+  isCommunityContentListSortKey,
+  parseCommunityContentListQuery,
+} from '@/lib/community-content-list';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
-import { normalizeTagIds } from '@/lib/tags';
+import { normalizeTagIds, resolveTags } from '@/lib/tags';
 import type {
   CommunityContent,
   CommunityContentListResponse,
@@ -47,6 +52,28 @@ function createDefaultContent() {
   };
 }
 
+function getContentTypeLabel(content: CommunityContent) {
+  if (content.author.type === 'admin') {
+    return '관리자';
+  }
+
+  return content.author.visibility === 'anonymous' ? '익명' : '실명';
+}
+
+function getAuthorDisplay(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return content.author.identifierValue || content.author.id;
+  }
+
+  return content.author.displayName || content.author.identifierValue || content.author.id;
+}
+
+function getContentReferenceDate(content: CommunityContent) {
+  const candidate = content.publishedAt ?? content.createdAt;
+  const parsed = new Date(candidate);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 async function normalizeStoredContents(contents: CommunityContent[]) {
   const tags = await readJsonFile<Tag[]>(TAGS_PATH);
 
@@ -79,16 +106,116 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
 export async function GET(request: NextRequest) {
   try {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
-    const { normalizedContents } = await normalizeStoredContents(contents);
-    const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status');
+    const { normalizedContents, tags } = await normalizeStoredContents(contents);
+    const query = parseCommunityContentListQuery(request.nextUrl.searchParams);
 
-    const filteredItems = isValidContentStatus(status)
-      ? normalizedContents.filter((item) => item.status === status)
+    let filteredItems = isValidContentStatus(query.status)
+      ? normalizedContents.filter((item) => item.status === query.status)
       : normalizedContents;
 
+    filteredItems = filteredItems.filter((content) => {
+      const referenceDate = getContentReferenceDate(content);
+      const resolvedTags = resolveTags(content.tagIds, tags);
+
+      if (query.startDate) {
+        if (!referenceDate) return false;
+        const start = new Date(query.startDate);
+        start.setHours(0, 0, 0, 0);
+        if (referenceDate < start) return false;
+      }
+
+      if (query.endDate) {
+        if (!referenceDate) return false;
+        const end = new Date(query.endDate);
+        end.setHours(23, 59, 59, 999);
+        if (referenceDate > end) return false;
+      }
+
+      if (query.tags.length > 0) {
+        const hasSelectedTag = resolvedTags.some((tag) => query.tags.includes(tag.name));
+        if (!hasSelectedTag) return false;
+      }
+
+      if (query.flags.length > 0) {
+        const matches: boolean[] = [];
+
+        if (query.flags.includes('promoted')) matches.push(content.flags.isPromoted);
+        if (query.flags.includes('notice')) matches.push(content.flags.isNotice);
+        if (query.flags.includes('pinned')) matches.push(content.flags.isPinned);
+
+        if (!matches.some(Boolean)) return false;
+      }
+
+      if (query.search) {
+        const searchTarget = [
+          content.title,
+          extractTextFromContentBody(content.content),
+          getAuthorDisplay(content),
+          getContentTypeLabel(content),
+          ...resolvedTags.map((tag) => tag.name),
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        if (!searchTarget.includes(query.search.toLowerCase())) {
+          return false;
+        }
+      }
+
+      if (query.authorType !== 'all' && content.author.type !== query.authorType) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (isCommunityContentListSortKey(query.sortKey)) {
+      filteredItems = [...filteredItems].sort((a, b) => {
+        let aValue = 0;
+        let bValue = 0;
+
+        if (query.sortKey === 'date') {
+          aValue = getContentReferenceDate(a)?.getTime() ?? 0;
+          bValue = getContentReferenceDate(b)?.getTime() ?? 0;
+        } else if (query.sortKey === 'view') {
+          aValue = a.stats.viewCount;
+          bValue = b.stats.viewCount;
+        } else if (query.sortKey === 'comment') {
+          aValue = a.stats.commentCount + a.stats.replyCount;
+          bValue = b.stats.commentCount + b.stats.replyCount;
+        } else if (query.sortKey === 'like') {
+          aValue = a.stats.likeCount;
+          bValue = b.stats.likeCount;
+        }
+
+        if (isCommunityContentListSortDirection(query.sortDirection) && query.sortDirection === 'asc') {
+          return aValue - bValue;
+        }
+
+        return bValue - aValue;
+      });
+    }
+
+    const totalCount = filteredItems.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / query.pageSize));
+    const currentPage = Math.min(query.page, totalPages);
+    const pagedItems = filteredItems.slice(
+      (currentPage - 1) * query.pageSize,
+      currentPage * query.pageSize,
+    );
+
     const response: CommunityContentListResponse = {
-      items: filteredItems,
+      items: pagedItems,
+      meta: {
+        totalCount,
+        page: currentPage,
+        pageSize: query.pageSize,
+        totalPages,
+      },
+      query: {
+        ...query,
+        page: currentPage,
+      },
     };
 
     return NextResponse.json(response, { status: 200 });

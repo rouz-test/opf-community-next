@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { parseBlockedWordsListQuery } from '@/lib/blocked-word-list';
 import { writeJsonFile } from '@/lib/mock-file';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
-import type { BlockedWord } from '@/types/blocked-word';
+import type { BlockedWord, BlockedWordsListResponse } from '@/types/blocked-word';
 
 const BLOCKED_WORDS_PATH = 'data/mock/blocked-words.json';
 
@@ -11,10 +12,47 @@ type CreateBlockedWordRequestBody = Partial<{
   createdBy: string;
 }>;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const blockedWords = await readBlockedWordsFromStore();
-    return NextResponse.json(blockedWords, { status: 200 });
+    const hasListQuery =
+      request.nextUrl.searchParams.has('page') ||
+      request.nextUrl.searchParams.has('pageSize') ||
+      request.nextUrl.searchParams.has('search');
+
+    if (!hasListQuery) {
+      return NextResponse.json(blockedWords, { status: 200 });
+    }
+
+    const query = parseBlockedWordsListQuery(request.nextUrl.searchParams);
+    const normalizedSearch = query.search.toLowerCase();
+    const filteredItems = blockedWords.filter((item) =>
+      normalizedSearch ? item.keyword.toLowerCase().includes(normalizedSearch) : true,
+    );
+
+    const totalCount = filteredItems.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / query.pageSize));
+    const currentPage = Math.min(query.page, totalPages);
+    const pagedItems = filteredItems.slice(
+      (currentPage - 1) * query.pageSize,
+      currentPage * query.pageSize,
+    );
+
+    const response: BlockedWordsListResponse = {
+      items: pagedItems,
+      meta: {
+        totalCount,
+        totalPages,
+        page: currentPage,
+        pageSize: query.pageSize,
+      },
+      query: {
+        ...query,
+        page: currentPage,
+      },
+    };
+
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('[GET /api/mock/blocked-words] failed:', error);
     return NextResponse.json(

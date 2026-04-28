@@ -76,8 +76,67 @@ export type CommunityContentPayload = {
 // API 응답 타입 (확장 대비)
 // =============================
 
+export type CommunityContentListSortKey = 'date' | 'view' | 'comment' | 'like';
+
+export type CommunityContentListSortDirection = 'asc' | 'desc';
+
+export type CommunityContentListFlagFilter = 'promoted' | 'notice' | 'pinned';
+
+export type CommunityContentListAuthorFilter = 'all' | 'admin' | 'user';
+
+export type CommunityContentListQuery = {
+  page?: number;
+  pageSize?: number;
+  status?: CommunityContentStatus;
+  authorType?: CommunityContentListAuthorFilter;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  tags?: string[];
+  flags?: CommunityContentListFlagFilter[];
+  sortKey?: CommunityContentListSortKey;
+  sortDirection?: CommunityContentListSortDirection;
+};
+
+export type CommunityContentListQueryInput = {
+  page?: number | string | null;
+  pageSize?: number | string | null;
+  status?: string | null;
+  authorType?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  search?: string | null;
+  tags?: string[];
+  flags?: string[];
+  sortKey?: string | null;
+  sortDirection?: string | null;
+};
+
+export type CommunityContentListResolvedQuery = {
+  page: number;
+  pageSize: number;
+  status?: CommunityContentStatus;
+  authorType: CommunityContentListAuthorFilter;
+  startDate: string;
+  endDate: string;
+  search: string;
+  tags: string[];
+  flags: CommunityContentListFlagFilter[];
+  sortKey: CommunityContentListSortKey | null;
+  sortDirection: CommunityContentListSortDirection;
+};
+
+export type CommunityContentListMeta = {
+  totalCount: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+};
+
 export type CommunityContentListResponse = {
   items: CommunityContent[];
+  meta: CommunityContentListMeta;
+  query: CommunityContentListResolvedQuery;
 };
 
 export type CommunityContentDetailResponse = CommunityContent;
