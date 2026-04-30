@@ -7,66 +7,126 @@
     "isDefault": true,
     "sortOrder": 1,
     "style": {
-      "textColor": "#454545",
-      "bgColor": "#DEDEDE"
+      "color": "#454545"
     },
     "createdAt": "2026-04-13T10:00:00.000Z",
-    "updatedAt": "2026-04-27T03:35:06.411Z"
+    "updatedAt": "2026-04-30T04:50:29.529Z"
   },
   {
     "id": "tag_1776216676340",
-    "name": "수정테스트",
-    "slug": "수정테스트",
+    "name": "문제 정의",
+    "slug": "문제-정의",
     "status": "inactive",
     "isDefault": false,
-    "sortOrder": 2,
+    "sortOrder": 6,
     "style": {
-      "textColor": "#686B00",
-      "bgColor": "#FFFED5"
+      "color": "#DEDE00"
     },
     "createdAt": "2026-04-15T01:31:16.339Z",
-    "updatedAt": "2026-04-27T03:35:06.497Z"
+    "updatedAt": "2026-04-30T04:50:29.594Z"
   },
   {
     "id": "tag_1776227414022",
-    "name": "테스트2",
-    "slug": "테스트2",
+    "name": "타겟 고객",
+    "slug": "타겟-고객",
     "status": "active",
     "isDefault": false,
-    "sortOrder": 3,
+    "sortOrder": 8,
     "style": {
-      "textColor": "#5777FF",
-      "bgColor": "#F5F9FF"
+      "color": "#7692F5"
     },
     "createdAt": "2026-04-15T04:30:14.022Z",
-    "updatedAt": "2026-04-27T03:35:06.485Z"
+    "updatedAt": "2026-04-30T04:50:29.614Z"
   },
   {
     "id": "tag_1776318266291",
-    "name": "테스트4",
-    "slug": "테스트4",
+    "name": "가치 제안",
+    "slug": "가치-제안",
     "status": "active",
     "isDefault": false,
     "sortOrder": 4,
     "style": {
-      "textColor": "#C2410C",
-      "bgColor": "#FFEDD5"
+      "color": "#FF6C24"
     },
     "createdAt": "2026-04-16T05:44:26.291Z",
-    "updatedAt": "2026-04-27T03:35:06.461Z"
+    "updatedAt": "2026-04-30T04:50:29.580Z"
   },
   {
     "id": "tag_1777275819911",
-    "name": "새로운 태그",
-    "slug": "새로운-태그",
+    "name": "시장 검증",
+    "slug": "시장-검증",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 7,
+    "style": {
+      "color": "#00CF06"
+    },
+    "createdAt": "2026-04-27T07:43:39.911Z",
+    "updatedAt": "2026-04-30T04:50:29.602Z"
+  },
+  {
+    "id": "tag_1777522919444",
+    "name": "MVP",
+    "slug": "mvp",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 10,
+    "style": {
+      "color": "#8B5CF6"
+    },
+    "createdAt": "2026-04-30T04:21:59.444Z",
+    "updatedAt": "2026-04-30T04:50:29.623Z"
+  },
+  {
+    "id": "tag_1777524546970",
+    "name": "수익 모델",
+    "slug": "수익-모델",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 3,
+    "style": {
+      "color": "#FF3636"
+    },
+    "createdAt": "2026-04-30T04:49:06.970Z",
+    "updatedAt": "2026-04-30T04:50:29.575Z"
+  },
+  {
+    "id": "tag_1777524560496",
+    "name": "경쟁 분석",
+    "slug": "경쟁-분석",
     "status": "active",
     "isDefault": false,
     "sortOrder": 5,
     "style": {
-      "textColor": "#7D4B38",
-      "bgColor": "#F7EDDC"
+      "color": "#FFAB3B"
     },
-    "createdAt": "2026-04-27T07:43:39.911Z",
-    "updatedAt": "2026-04-27T07:43:39.911Z"
+    "createdAt": "2026-04-30T04:49:20.496Z",
+    "updatedAt": "2026-04-30T04:50:29.585Z"
+  },
+  {
+    "id": "tag_1777524605248",
+    "name": "성장 전략",
+    "slug": "성장-전략",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 9,
+    "style": {
+      "color": "#000CDB"
+    },
+    "createdAt": "2026-04-30T04:50:05.248Z",
+    "updatedAt": "2026-04-30T04:50:29.619Z"
+  },
+  {
+    "id": "tag_1777524626865",
+    "name": "투자 유치",
+    "slug": "투자-유치",
+    "status": "active",
+    "isDefault": false,
+    "sortOrder": 2,
+    "style": {
+      "color": "#FFA6C3"
+    },
+    "createdAt": "2026-04-30T04:50:26.865Z",
+    "updatedAt": "2026-04-30T04:50:29.570Z"
   }
 ]

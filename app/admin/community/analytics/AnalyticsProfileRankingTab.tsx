@@ -280,6 +280,18 @@ const rankingSections: RankingSection[] = [
   },
 ];
 
+const normalizedRankingSections: RankingSection[] = rankingSections.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => ({
+    ...card,
+    title: card.title === '닉네임' ? '익명' : card.title,
+    items: card.items.map((item) => ({
+      ...item,
+      badge: item.badge === '닉네임' ? '익명' : item.badge,
+    })),
+  })),
+}));
+
 function RankingCard({ card }: { card: RankingCardItem }) {
   return (
     <AdminCard as="article" borderRadius="8px" p="0">
@@ -388,7 +400,7 @@ function RankingSectionBlock({ section }: { section: RankingSection }) {
 export default function AnalyticsProfileRankingTab() {
   return (
     <Flex direction="column" gap="16px">
-      {rankingSections.map((section) => (
+      {normalizedRankingSections.map((section) => (
         <RankingSectionBlock key={section.title} section={section} />
       ))}
     </Flex>

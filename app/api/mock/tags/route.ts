@@ -7,8 +7,7 @@ const TAGS_PATH = 'data/mock/tags.json';
 
 type CreateTagRequestBody = Partial<{
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
 }>;
 
 export async function GET() {
@@ -63,8 +62,7 @@ export async function POST(request: NextRequest) {
       isDefault: false,
       sortOrder: tags.length + 1,
       style: {
-        textColor: body.textColor?.trim() || '#C2410C',
-        bgColor: body.bgColor?.trim() || '#FFEDD5',
+        color: body.color?.trim() || '#C2410C',
       },
       createdAt: now,
       updatedAt: now,

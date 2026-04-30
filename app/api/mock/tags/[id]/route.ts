@@ -66,8 +66,7 @@ export async function DELETE(_: NextRequest, context: RouteContext) {
 
 type UpdateTagRequestBody = Partial<{
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
   status: Tag['status'];
   sortOrder: number;
 }>;
@@ -123,8 +122,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       status: body.status ?? targetTag.status,
       sortOrder: body.sortOrder ?? targetTag.sortOrder,
       style: {
-        textColor: body.textColor?.trim() || targetTag.style.textColor,
-        bgColor: body.bgColor?.trim() || targetTag.style.bgColor,
+        color: body.color?.trim() || targetTag.style.color,
       },
       updatedAt: new Date().toISOString(),
     };

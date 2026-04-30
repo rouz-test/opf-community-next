@@ -6,6 +6,7 @@ import AdminButton from '@/app/admin/components/ui/button';
 import AnalyticsContentRankingTab from './AnalyticsContentRankingTab';
 import AnalyticsProfileRankingTab from './AnalyticsProfileRankingTab';
 import AnalyticsOverviewTab from './AnalyticsOverviewTab';
+import type { AnalyticsDateRangeKey } from './analytics-data';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminSelectTrigger from '@/app/admin/components/ui/select-trigger';
@@ -18,9 +19,7 @@ const analyticsTabs = [
 
 type AnalyticsTabKey = (typeof analyticsTabs)[number]['key'];
 
-type DateRangeKey = 'today' | '7days' | '30days' | '90days' | 'all';
-
-const dateRangeOptions: Array<{ key: DateRangeKey; label: string }> = [
+const dateRangeOptions: Array<{ key: AnalyticsDateRangeKey; label: string }> = [
   { key: 'today', label: '오늘' },
   { key: '7days', label: '최근 7일' },
   { key: '30days', label: '최근 30일' },
@@ -30,7 +29,7 @@ const dateRangeOptions: Array<{ key: DateRangeKey; label: string }> = [
 
 export default function CommunityAnalyticsPage() {
   const [activeTab, setActiveTab] = useState<AnalyticsTabKey>('default');
-  const [dateRange, setDateRange] = useState<DateRangeKey>('today');
+  const [dateRange, setDateRange] = useState<AnalyticsDateRangeKey>('today');
 
   return (
     <PageContainer>
@@ -119,7 +118,7 @@ export default function CommunityAnalyticsPage() {
       ) : activeTab === 'profile' ? (
         <AnalyticsProfileRankingTab />
       ) : (
-        <AnalyticsContentRankingTab />
+        <AnalyticsContentRankingTab dateRange={dateRange} />
       )}
     </PageContainer>
   );

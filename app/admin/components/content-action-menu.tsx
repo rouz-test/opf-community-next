@@ -1,10 +1,19 @@
 'use client';
 
-import { Box, Button, Flex, Portal, Text } from '@chakra-ui/react';
-import { Archive, Edit3, Megaphone, MoreVertical, Pin, PinOff, Trash2 } from 'lucide-react';
+import { Box, Button, Portal, Text } from '@chakra-ui/react';
+import { Archive, Edit3, Megaphone, MoreVertical, Pin, PinOff, Tag, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CommunityContent } from '@/types/community-content';
+
+export type ContentActionMenuItem = {
+  key: string;
+  label: string;
+  onClick: () => void;
+  icon?: 'tag';
+  danger?: boolean;
+  dividerBefore?: boolean;
+};
 
 type ContentActionMenuProps = {
   content: CommunityContent;
@@ -14,6 +23,7 @@ type ContentActionMenuProps = {
   onNoticeToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  extraItems?: ContentActionMenuItem[];
 };
 
 export default function ContentActionMenu({
@@ -24,6 +34,7 @@ export default function ContentActionMenu({
   onNoticeToggle,
   onEdit,
   onDelete,
+  extraItems = [],
 }: ContentActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
@@ -79,6 +90,14 @@ export default function ContentActionMenu({
   const handleClick = (cb: () => void) => {
     setIsOpen(false);
     cb();
+  };
+
+  const renderExtraIcon = (icon?: ContentActionMenuItem['icon']) => {
+    if (icon === 'tag') {
+      return <Tag size={15} />;
+    }
+
+    return null;
   };
 
   return (
@@ -141,6 +160,23 @@ export default function ContentActionMenu({
                 {content.flags.isNotice ? '공지 해제' : '공지 지정'}
               </Text>
             </Button>
+
+            {extraItems.map((item) => (
+              <Box key={item.key}>
+                {item.dividerBefore ? <Box h="1px" bg="#F3F4F6" my="6px" /> : null}
+                <Button
+                  w="100%"
+                  variant="ghost"
+                  justifyContent="flex-start"
+                  px="12px"
+                  color={item.danger ? '#DC2626' : undefined}
+                  onClick={() => handleClick(item.onClick)}
+                >
+                  {renderExtraIcon(item.icon)}
+                  <Text ml="8px">{item.label}</Text>
+                </Button>
+              </Box>
+            ))}
 
             <Box h="1px" bg="#F3F4F6" my="6px" />
 

@@ -48,6 +48,7 @@ import AdminTablePagination, {
   type AdminTablePaginationItem,
 } from '@/app/admin/components/ui/table/admin-table-pagination';
 import ContentActionMenu from '@/app/admin/components/content-action-menu';
+import type { ContentActionMenuItem } from '@/app/admin/components/content-action-menu';
 import { Tooltip } from '@/app/admin/components/editor/tooltip';
 
 const DEFAULT_PAGE_SIZE = 13;
@@ -116,7 +117,12 @@ function getPaginationItems(
 }
 
 const tags = [...(tagsData as Tag[])].sort((a, b) => a.sortOrder - b.sortOrder);
-const tagOptions = tags.map((tag) => tag.name);
+const tagOptions = tags.map((tag) => ({
+  id: tag.id,
+  name: tag.name,
+  color: tag.style.color,
+}));
+const editableTags = tags.filter((tag) => !tag.isDefault);
 
 function extractTextFromTiptapNodes(nodes?: CommunityContentBody[]): string {
   if (!nodes?.length) return '';
@@ -209,6 +215,8 @@ export default function CommunityContentPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [archiveTargetIds, setArchiveTargetIds] = useState<string[]>([]);
   const [deleteTargetIds, setDeleteTargetIds] = useState<string[]>([]);
+  const [tagEditTarget, setTagEditTarget] = useState<CommunityContent | null>(null);
+  const [tagEditSelectedIds, setTagEditSelectedIds] = useState<string[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -475,6 +483,21 @@ export default function CommunityContentPage() {
     setDeleteTargetIds([]);
   }, [deleteTargetIds, handleDeleteContents]);
 
+  const handleOpenTagEditModal = useCallback((content: CommunityContent) => {
+    const selectedIds = resolveTags(content.tagIds, tags)
+      .filter((tag) => !tag.isDefault)
+      .map((tag) => tag.id);
+
+    setTagEditTarget(content);
+    setTagEditSelectedIds(selectedIds);
+  }, []);
+
+  const handleCloseTagEditModal = useCallback(() => {
+    if (isMutating) return;
+    setTagEditTarget(null);
+    setTagEditSelectedIds([]);
+  }, [isMutating]);
+
   const handleUpdateContent = useCallback(
     async (contentId: string, payload: Partial<CommunityContent>) => {
       try {
@@ -517,16 +540,38 @@ export default function CommunityContentPage() {
             type: 'success',
             duration: 2000,
           });
+        } else if (payload.tagIds !== undefined) {
+          toaster.create({
+            description: '콘텐츠 태그가 수정되었습니다.',
+            type: 'success',
+            duration: 2000,
+          });
         }
+
+        return true;
       } catch (error) {
         console.error('failed to update content:', error);
         window.alert(error instanceof Error ? error.message : '콘텐츠 상태 변경에 실패했습니다.');
+        return false;
       } finally {
         setIsMutating(false);
       }
     },
     []
   );
+
+  const handleConfirmTagEdit = useCallback(async () => {
+    if (!tagEditTarget) return;
+
+    const didUpdate = await handleUpdateContent(tagEditTarget.id, {
+      tagIds: tagEditSelectedIds,
+    });
+
+    if (!didUpdate) return;
+
+    setTagEditTarget(null);
+    setTagEditSelectedIds([]);
+  }, [handleUpdateContent, tagEditSelectedIds, tagEditTarget]);
 
   const contentRows = useMemo(
     () =>
@@ -775,6 +820,7 @@ export default function CommunityContentPage() {
                     onClick={() => {
                       setIsTagFilterOpen((prev) => !prev);
                       setIsFlagFilterOpen(false);
+                      setIsAuthorFilterOpen(false);
                     }}
                   >
                     <Flex align="center" gap="8px">
@@ -805,10 +851,13 @@ export default function CommunityContentPage() {
                         }}
                       >
                         <Flex direction="column" gap="2px">
-                          {tagOptions.map((tag) => (
+                          {tagOptions.map((tag) => {
+                            const isSelected = selectedTags.includes(tag.name);
+
+                            return (
                             <Checkbox.Root
-                              key={tag}
-                              value={tag}
+                              key={tag.id}
+                              value={tag.name}
                               size="sm"
                               px="10px"
                               py="8px"
@@ -816,16 +865,29 @@ export default function CommunityContentPage() {
                               _hover={{ bg: '#F9FAFB' }}
                             >
                               <Checkbox.HiddenInput />
-                              <Flex align="center" gap="8px">
-                                <Checkbox.Control />
+                              <Flex align="center" justify="space-between" gap="16px" w="100%">
+                                <Flex align="center" gap="8px">
+                                  <Box
+                                    boxSize="10px"
+                                    borderRadius="9999px"
+                                    bg={tag.color}
+                                    flexShrink={0}
+                                  />
                                 <Checkbox.Label>
-                                  <Text fontSize="13px" fontWeight="500" color="#374151">
-                                    {tag}
+                                  <Text
+                                    fontSize="13px"
+                                    fontWeight="500"
+                                    color={isSelected ? '#111827' : '#4B5563'}
+                                  >
+                                    {tag.name}
                                   </Text>
                                 </Checkbox.Label>
                               </Flex>
+                                {isSelected ? <Text fontSize="13px" color="#F97316">✓</Text> : null}
+                              </Flex>
                             </Checkbox.Root>
-                          ))}
+                            );
+                          })}
                         </Flex>
                       </CheckboxGroup>
                     </Box>
@@ -847,6 +909,7 @@ export default function CommunityContentPage() {
                     onClick={() => {
                       setIsFlagFilterOpen((prev) => !prev);
                       setIsTagFilterOpen(false);
+                      setIsAuthorFilterOpen(false);
                     }}
                   >
                     <Flex align="center" gap="8px">
@@ -1314,6 +1377,16 @@ export default function CommunityContentPage() {
                   <ContentActionMenu
                     content={row.originalContent}
                     isSubmitting={isMutating}
+                    extraItems={[
+                      {
+                        key: 'edit-tags',
+                        label: '태그 수정',
+                        icon: 'tag',
+                        onClick: () => {
+                          handleOpenTagEditModal(row.originalContent);
+                        },
+                      } satisfies ContentActionMenuItem,
+                    ]}
                     onArchiveToggle={() => {
                       void handleUpdateContent(row.id, {
                         status: row.originalContent.status === 'archived' ? 'published' : 'archived',
@@ -1440,6 +1513,110 @@ export default function CommunityContentPage() {
           </Text>
           <Text fontSize="13px" color="#6B7280">
             삭제 대상: {deleteTargetIds.length === 1 ? '1개' : `${deleteTargetIds.length}개`}
+          </Text>
+        </Flex>
+      </BaseModal>
+
+      <BaseModal
+        isOpen={!!tagEditTarget}
+        onClose={handleCloseTagEditModal}
+        title="태그 수정"
+        footer={
+          <Flex gap="8px" w="100%">
+            <AdminButton
+              type="button"
+              variantStyle="outline"
+              size="md"
+              onClick={handleCloseTagEditModal}
+              disabled={isMutating}
+              flex={1}
+            >
+              취소
+            </AdminButton>
+            <AdminButton
+              type="button"
+              variantStyle="primary"
+              size="md"
+              onClick={() => {
+                void handleConfirmTagEdit();
+              }}
+              disabled={isMutating}
+              flex={1}
+            >
+              저장
+            </AdminButton>
+          </Flex>
+        }
+      >
+        <Flex direction="column" gap="10px">
+          {editableTags.map((tag) => {
+            const isSelected = tagEditSelectedIds.includes(tag.id);
+
+            return (
+              <Box
+                key={tag.id}
+                as="button"
+                w="100%"
+                minH="40px"
+                borderRadius="10px"
+                borderWidth="1px"
+                borderColor={isSelected ? '#FCD9BD' : 'transparent'}
+                bg={isSelected ? '#FFF7ED' : '#FFFFFF'}
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                px="12px"
+                py="8px"
+                cursor="pointer"
+                transition="background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease"
+                _hover={{
+                  transform: 'translateY(-1px)',
+                  bg: isSelected ? '#FFF7ED' : '#F9FAFB',
+                }}
+                _focusVisible={{
+                  outline: 'none',
+                  boxShadow: `0 0 0 2px ${tag.style.color}22`,
+                }}
+                onClick={() => {
+                  setTagEditSelectedIds((prev) =>
+                    prev.includes(tag.id)
+                      ? prev.filter((tagId) => tagId !== tag.id)
+                      : [...prev, tag.id],
+                  );
+                }}
+              >
+                <Flex align="center" gap="8px" minW="0">
+                  <Box boxSize="10px" borderRadius="9999px" bg={tag.style.color} flexShrink={0} />
+                  <Text
+                    fontSize="13px"
+                    fontWeight="500"
+                    color={isSelected ? '#111827' : '#4B5563'}
+                    lineClamp="1"
+                    textAlign="left"
+                  >
+                    {tag.name}
+                  </Text>
+                </Flex>
+                {isSelected ? (
+                  <Text
+                    as="span"
+                    fontSize="16px"
+                    fontWeight="700"
+                    color="#F97316"
+                    flexShrink={0}
+                    lineHeight="1"
+                  >
+                    ✓
+                  </Text>
+                ) : (
+                  <Box boxSize="16px" flexShrink={0} />
+                )}
+              </Box>
+            );
+          })}
+          <Text fontSize="12px" color="#9CA3AF">
+            선택된 태그 {tagEditSelectedIds.length}개
+            {tagEditSelectedIds.length === 0 ? ` · 미선택 시 ${tags.find((tag) => tag.isDefault)?.name ?? '미지정'} 자동 적용` : ''}
           </Text>
         </Flex>
       </BaseModal>

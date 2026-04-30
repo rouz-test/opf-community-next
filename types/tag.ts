@@ -3,8 +3,7 @@
 export type TagStatus = 'active' | 'inactive';
 
 export interface TagStyle {
-  textColor: string;
-  bgColor: string;
+  color: string;
 }
 
 export interface Tag {

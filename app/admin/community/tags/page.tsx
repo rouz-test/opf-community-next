@@ -1,6 +1,6 @@
 'use client';
 import { LuGripVertical, LuPencil, LuCircleX } from 'react-icons/lu';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import {
   Box,
@@ -19,6 +19,8 @@ import AdminSwitch from '@/app/admin/components/ui/switch';
 import CreateTagModal, { type TagFormValues } from './CreateTagModal';
 import BaseModal from '@/app/admin/components/modal/base-modal';
 import { createTag, deleteTag, getTags, updateTag } from '@/lib/tags';
+import { fetchCommunityContentList } from '@/lib/community-contents';
+import type { CommunityContent } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
 
 type TagItem = TagFormValues & {
@@ -32,8 +34,7 @@ type TagItem = TagFormValues & {
 const mapTagToTagItem = (tag: Tag): TagItem => ({
   id: tag.id,
   name: tag.name,
-  textColor: tag.style.textColor,
-  bgColor: tag.style.bgColor,
+  color: tag.style.color,
   count: '0',
   isVisible: tag.isDefault ? true : tag.status === 'active',
   isFixed: tag.isDefault,
@@ -41,6 +42,33 @@ const mapTagToTagItem = (tag: Tag): TagItem => ({
 
 const sortTagsByOrder = (items: Tag[]) =>
   [...items].sort((a, b) => a.sortOrder - b.sortOrder);
+
+function buildTagUsageCountMap(tags: Tag[], contents: CommunityContent[]) {
+  const countMap = new Map<string, number>();
+  const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
+  const defaultTag = tags.find((tag) => tag.isDefault) ?? null;
+
+  for (const content of contents) {
+    const uniqueTagIds = Array.from(
+      new Set(content.tagIds.filter((tagId) => typeof tagId === 'string' && tagId.trim())),
+    );
+    const resolvedTags = uniqueTagIds
+      .map((tagId) => tagMap.get(tagId))
+      .filter((tag): tag is Tag => Boolean(tag));
+    const nonDefaultResolvedTags = resolvedTags.filter((tag) => !tag.isDefault);
+
+    if (nonDefaultResolvedTags.length === 0 && defaultTag) {
+      countMap.set(defaultTag.id, (countMap.get(defaultTag.id) ?? 0) + 1);
+      continue;
+    }
+
+    for (const tag of nonDefaultResolvedTags) {
+      countMap.set(tag.id, (countMap.get(tag.id) ?? 0) + 1);
+    }
+  }
+
+  return countMap;
+}
 
 export default function CommunityTagsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -52,16 +80,39 @@ export default function CommunityTagsPage() {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  const readTagItems = useCallback(async (): Promise<TagItem[]> => {
+    const [fetchedTags, firstContentPage] = await Promise.all([
+      getTags(),
+      fetchCommunityContentList({ page: 1, pageSize: 1000 }),
+    ]);
+
+    const allContents =
+      firstContentPage.meta.totalCount > firstContentPage.items.length
+        ? (
+            await fetchCommunityContentList({
+              page: 1,
+              pageSize: firstContentPage.meta.totalCount,
+            })
+          ).items
+        : firstContentPage.items;
+
+    const countMap = buildTagUsageCountMap(fetchedTags, allContents);
+
+    return sortTagsByOrder(fetchedTags).map((tag) => ({
+      ...mapTagToTagItem(tag),
+      count: String(countMap.get(tag.id) ?? 0),
+    }));
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
     const loadTags = async () => {
       try {
-        const fetchedTags = await getTags();
+        const nextTags = await readTagItems();
 
         if (!isMounted) return;
-
-        setTags(sortTagsByOrder(fetchedTags).map(mapTagToTagItem));
+        setTags(nextTags);
       } catch (error) {
         console.error('[CommunityTagsPage] failed to load tags:', error);
 
@@ -78,7 +129,7 @@ export default function CommunityTagsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [readTagItems]);
 
   const handleToggleVisibility = async (targetIndex: number, checked: boolean) => {
     const targetTag = tags[targetIndex];
@@ -88,14 +139,21 @@ export default function CommunityTagsPage() {
       const updatedTag = await updateTag({
         id: targetTag.id,
         name: targetTag.name,
-        textColor: targetTag.textColor,
-        bgColor: targetTag.bgColor,
+        color: targetTag.color,
         status: checked ? 'active' : 'inactive',
       });
 
       setTags((prev) =>
         prev.map((tag, index) =>
-          index === targetIndex ? mapTagToTagItem(updatedTag) : tag,
+          index === targetIndex
+            ? {
+                ...tag,
+                name: updatedTag.name,
+                color: updatedTag.style.color,
+                isVisible: updatedTag.isDefault ? true : updatedTag.status === 'active',
+                isFixed: updatedTag.isDefault,
+              }
+            : tag,
         ),
       );
     } catch (error) {
@@ -161,8 +219,7 @@ export default function CommunityTagsPage() {
         await updateTag({
           id: tag.id,
           name: tag.name,
-          textColor: tag.textColor,
-          bgColor: tag.bgColor,
+          color: tag.color,
           status: tag.isVisible ? 'active' : 'inactive',
           sortOrder: index + 1,
         });
@@ -172,6 +229,7 @@ export default function CommunityTagsPage() {
         type: 'success',
         duration: 2000,
       });
+      setTags(await readTagItems());
     } catch (error) {
       setTags(previousTags);
 
@@ -194,13 +252,11 @@ export default function CommunityTagsPage() {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      const createdTag = await createTag({
+      await createTag({
         name: values.name,
-        textColor: values.textColor,
-        bgColor: values.bgColor,
+        color: values.color,
       });
-
-      setTags((prev) => [...prev, mapTagToTagItem(createdTag)]);
+      setTags(await readTagItems());
 
       toaster.create({
         description: '태그가 추가되었습니다.',
@@ -232,18 +288,12 @@ export default function CommunityTagsPage() {
     if (!editingTag) return;
 
     try {
-      const updatedTag = await updateTag({
+      await updateTag({
         id: editingTag.id,
         name: values.name,
-        textColor: values.textColor,
-        bgColor: values.bgColor,
+        color: values.color,
       });
-
-      setTags((prev) =>
-        prev.map((tag, index) =>
-          index === editingTagIndex ? mapTagToTagItem(updatedTag) : tag,
-        ),
-      );
+      setTags(await readTagItems());
 
       setIsEditModalOpen(false);
       setEditingTagIndex(null);
@@ -278,8 +328,7 @@ export default function CommunityTagsPage() {
 
     try {
       await deleteTag(deletingTag.id);
-
-      setTags((prev) => prev.filter((_, index) => index !== deletingTagIndex));
+      setTags(await readTagItems());
 
       if (editingTagIndex === deletingTagIndex) {
         setEditingTagIndex(null);
@@ -310,8 +359,7 @@ export default function CommunityTagsPage() {
   const editingTagValues = editingTag
     ? {
         name: editingTag.name,
-        textColor: editingTag.textColor,
-        bgColor: editingTag.bgColor,
+        color: editingTag.color,
       }
     : null;
   const deletingTag = deletingTagIndex !== null ? tags[deletingTagIndex] ?? null : null;
@@ -352,7 +400,7 @@ export default function CommunityTagsPage() {
 
             return (
               <Box
-                key={`${tag.name}-${tag.textColor}-${tag.bgColor}-${index}`}
+                key={`${tag.name}-${tag.color}-${index}`}
                 onDragOver={(event) => handleDragOver(event, index)}
                 onDrop={(event) => handleDrop(event, index)}
               >
@@ -384,8 +432,7 @@ export default function CommunityTagsPage() {
                       tag={{
                         id: tag.id,
                         name: tag.name,
-                        textColor: tag.textColor,
-                        bgColor: tag.bgColor,
+                        color: tag.color,
                         isDefault: !!tag.isFixed,
                         status: tag.isVisible ? 'active' : 'inactive',
                         sortOrder: index + 1,
@@ -426,12 +473,14 @@ export default function CommunityTagsPage() {
         </Text>
       </PageContainer>
       <CreateTagModal
+        key={`create-${isCreateModalOpen ? 'open' : 'closed'}`}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTag}
         existingTagNames={tags.map((tag) => tag.name)}
       />
       <CreateTagModal
+        key={`edit-${editingTag?.id ?? 'none'}-${isEditModalOpen ? 'open' : 'closed'}`}
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);

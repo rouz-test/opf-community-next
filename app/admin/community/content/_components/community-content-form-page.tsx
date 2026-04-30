@@ -691,30 +691,62 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
                   <Box
                     key={tag.id}
                     as="button"
-                    h="36px"
-                    borderRadius="8px"
+                    w="100%"
+                    minH="40px"
+                    borderRadius="10px"
                     borderWidth="1px"
-                    borderColor={withAlpha(tag.style.textColor)}
-                    bg={isSelected ? tag.style.textColor : tag.style.bgColor}
-                    color={isSelected ? tag.style.bgColor : tag.style.textColor}
+                    borderColor={isSelected ? '#FCD9BD' : 'transparent'}
+                    bg={isSelected ? '#FFF7ED' : '#FFFFFF'}
                     display="flex"
                     alignItems="center"
-                    justifyContent="center"
+                    justifyContent="space-between"
                     px="12px"
+                    py="8px"
                     cursor="pointer"
-                    transition="all 0.2s ease"
-                    _hover={{ transform: 'translateY(-1px)' }}
+                    transition="background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease"
+                    _hover={{
+                      transform: 'translateY(-1px)',
+                      bg: isSelected ? '#FFF7ED' : '#F9FAFB',
+                    }}
                     _focusVisible={{
                       outline: 'none',
-                      boxShadow: `0 0 0 2px ${withAlpha(tag.style.textColor, '22')}`,
+                      boxShadow: `0 0 0 2px ${withAlpha(tag.style.color, '22')}`,
                     }}
                     onClick={() => {
                       handleToggleTag(tag.id);
                     }}
                   >
-                    <Text fontSize="12px" fontWeight="600" lineClamp="1">
-                      {tag.name}
-                    </Text>
+                    <Flex align="center" gap="8px" minW="0">
+                      <Box
+                        boxSize="10px"
+                        borderRadius="9999px"
+                        bg={tag.style.color}
+                        flexShrink={0}
+                      />
+                      <Text
+                        fontSize="13px"
+                        fontWeight="500"
+                        color={isSelected ? '#111827' : '#4B5563'}
+                        lineClamp="1"
+                        textAlign="left"
+                      >
+                        {tag.name}
+                      </Text>
+                    </Flex>
+                    {isSelected ? (
+                      <Text
+                        as="span"
+                        fontSize="16px"
+                        fontWeight="700"
+                        color="#F97316"
+                        flexShrink={0}
+                        lineHeight="1"
+                      >
+                        ✓
+                      </Text>
+                    ) : (
+                      <Box boxSize="16px" flexShrink={0} />
+                    )}
                   </Box>
                 );
               })}

@@ -2,15 +2,13 @@ import type { Tag } from '@/types/tag';
 
 export type CreateTagPayload = {
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
 };
 
 export type UpdateTagPayload = {
   id: string;
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
   status?: Tag['status'];
   sortOrder?: number;
 };
@@ -56,8 +54,7 @@ export async function updateTag(payload: UpdateTagPayload): Promise<Tag> {
     },
     body: JSON.stringify({
       name: payload.name,
-      textColor: payload.textColor,
-      bgColor: payload.bgColor,
+      color: payload.color,
       status: payload.status,
       sortOrder: payload.sortOrder,
     }),
@@ -91,8 +88,7 @@ export async function deleteTag(id: string): Promise<void> {
 export interface ResolvedTag {
   id: string;
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
   isDefault: boolean;
   status: Tag['status'];
   sortOrder: number;
@@ -139,8 +135,7 @@ export function resolveTags(
     .map((tag) => ({
       id: tag.id,
       name: tag.name,
-      textColor: tag.style.textColor,
-      bgColor: tag.style.bgColor,
+      color: tag.style.color,
       isDefault: tag.isDefault,
       status: tag.status,
       sortOrder: tag.sortOrder,
@@ -160,8 +155,7 @@ export function resolveTags(
     {
       id: defaultTag.id,
       name: defaultTag.name,
-      textColor: defaultTag.style.textColor,
-      bgColor: defaultTag.style.bgColor,
+      color: defaultTag.style.color,
       isDefault: defaultTag.isDefault,
       status: defaultTag.status,
       sortOrder: defaultTag.sortOrder,

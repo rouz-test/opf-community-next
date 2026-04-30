@@ -47,9 +47,10 @@
     },
     "tagIds": [
       "tag_1776216676340",
-      "tag_1777275819911"
+      "tag_1777275819911",
+      "tag_1777524546970"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -71,7 +72,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:25:34.227Z",
-    "updatedAt": "2026-04-28T07:55:01.739Z",
+    "updatedAt": "2026-04-30T05:13:49.096Z",
     "publishedAt": "2026-04-28T07:41:01.449Z"
   },
   {
@@ -95,7 +96,8 @@
       ]
     },
     "tagIds": [
-      "tag_1"
+      "tag_1777524626865",
+      "tag_1777524546970"
     ],
     "status": "published",
     "author": {
@@ -119,7 +121,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:17:55.788Z",
-    "updatedAt": "2026-04-28T07:41:05.578Z",
+    "updatedAt": "2026-04-30T04:50:42.844Z",
     "publishedAt": "2026-04-28T07:41:05.578Z"
   },
   {
@@ -180,7 +182,9 @@
       ]
     },
     "tagIds": [
-      "tag_1"
+      "tag_1776318266291",
+      "tag_1777524560496",
+      "tag_1776216676340"
     ],
     "status": "published",
     "author": {
@@ -204,7 +208,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T03:42:15.121Z",
-    "updatedAt": "2026-04-28T07:41:08.478Z",
+    "updatedAt": "2026-04-30T04:50:47.852Z",
     "publishedAt": "2026-04-28T07:41:08.478Z"
   },
   {
@@ -228,8 +232,9 @@
       ]
     },
     "tagIds": [
-      "tag_1776318282467",
-      "tag_1776318266291"
+      "tag_1777524560496",
+      "tag_1776216676340",
+      "tag_1777275819911"
     ],
     "status": "archived",
     "author": {
@@ -253,7 +258,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-04-30T04:50:53.023Z",
     "publishedAt": "2026-04-24T08:12:48.845Z"
   },
   {
@@ -813,7 +818,9 @@
       ]
     },
     "tagIds": [
-      "tag_1776318282467"
+      "tag_1777275819911",
+      "tag_1776227414022",
+      "tag_1777524605248"
     ],
     "status": "archived",
     "author": {
@@ -837,7 +844,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:19:14.106Z",
-    "updatedAt": "2026-04-28T07:26:28.528Z",
+    "updatedAt": "2026-04-30T04:50:58.866Z",
     "publishedAt": "2026-04-23T08:19:14.106Z"
   },
   {
@@ -858,9 +865,11 @@
       ]
     },
     "tagIds": [
-      "tag_1"
+      "tag_1776227414022",
+      "tag_1777524605248",
+      "tag_1777522919444"
     ],
-    "status": "archived",
+    "status": "published",
     "author": {
       "type": "admin",
       "id": "admin-1",
@@ -882,7 +891,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-04-28T06:08:21.319Z",
+    "updatedAt": "2026-04-30T04:51:08.778Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
@@ -950,9 +959,9 @@
       ]
     },
     "tagIds": [
-      "tag_1"
+      "tag_1777522919444"
     ],
-    "status": "published",
+    "status": "archived",
     "author": {
       "type": "user",
       "id": "user-999",
@@ -974,7 +983,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T12:00:00.000Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-04-30T05:23:19.696Z",
     "publishedAt": "2026-04-27T03:29:45.477Z"
   },
   {
@@ -996,15 +1005,16 @@
     },
     "tagIds": [
       "startup",
-      "idea"
+      "idea",
+      "tag_1777524546970"
     ],
     "status": "published",
     "author": {
       "type": "user",
       "id": "user-11",
-      "displayName": "김민준",
       "visibility": "public",
-      "identifierType": "nickname",
+      "displayName": "김민준",
+      "identifierType": "email",
       "identifierValue": "minjun_dev"
     },
     "flags": {
@@ -1020,7 +1030,7 @@
       "replyCount": 2
     },
     "createdAt": "2026-04-20T10:12:00Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-04-30T05:14:12.214Z",
     "publishedAt": "2026-04-20T10:12:00Z"
   },
   {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -12,8 +12,9 @@ import {
 } from '@chakra-ui/react';
 import AdminButton from '@/app/admin/components/ui/button';
 import AdminCard from '@/app/admin/components/ui/card';
-import AdminBadge from '@/app/admin/components/ui/badge';
 import AdminTextField from '@/app/admin/components/ui/text-field';
+import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import type { ResolvedTag } from '@/lib/tags';
 
 function CloseIcon() {
   return (
@@ -25,8 +26,7 @@ function CloseIcon() {
 
 export type TagFormValues = {
   name: string;
-  textColor: string;
-  bgColor: string;
+  color: string;
 };
 
 type CreateTagModalProps = {
@@ -41,8 +41,7 @@ type CreateTagModalProps = {
 
 const initialFormValues: TagFormValues = {
   name: '',
-  textColor: '#585858',
-  bgColor: '#E9E9E9',
+  color: '#8B5CF6',
 };
 
 function getSafeColor(value: string, fallback: string) {
@@ -51,15 +50,6 @@ function getSafeColor(value: string, fallback: string) {
   } catch {
     return parseColor(fallback)
   }
-}
-
-function withAlpha(hex: string, alphaHex: string = '66') {
-  // supports #RRGGBB -> #RRGGBBAA
-  if (!hex) return hex;
-  if (hex.startsWith('#') && hex.length === 7) {
-    return `${hex}${alphaHex}`;
-  }
-  return hex; // fallback if not in expected format
 }
 
 type ColorFieldPickerProps = {
@@ -127,15 +117,18 @@ export default function CreateTagModal({
   submitLabel,
   existingTagNames = [],
 }: CreateTagModalProps) {
-  const [formValues, setFormValues] = useState<TagFormValues>(initialFormValues);
+  const [formValues, setFormValues] = useState<TagFormValues>(initialValues ?? initialFormValues);
 
   const resolvedSubmitLabel = submitLabel ?? (initialValues ? '수정' : '추가');
 
-  useEffect(() => {
-    if (isOpen) {
-      setFormValues(initialValues ?? initialFormValues);
-    }
-  }, [isOpen, initialValues]);
+  const previewTag: ResolvedTag = {
+    id: 'preview-tag',
+    name: formValues.name.trim() || '새로운 태그',
+    color: formValues.color || '#8B5CF6',
+    isDefault: false,
+    status: 'active',
+    sortOrder: 0,
+  };
 
   if (!isOpen) return null;
 
@@ -167,8 +160,7 @@ export default function CreateTagModal({
 
     onSubmit({
       name: trimmedName,
-      textColor: formValues.textColor.trim() || '#C2410C',
-      bgColor: formValues.bgColor.trim() || '#FFEDD5',
+      color: formValues.color.trim() || '#8B5CF6',
     });
     onClose();
   };
@@ -209,18 +201,12 @@ export default function CreateTagModal({
             errorText={nameErrorText}
           />
 
-          <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="16px">
+          <Grid templateColumns="minmax(0, 1fr)" gap="16px">
             <ColorFieldPicker
-              label="텍스트 색상"
-              value={formValues.textColor}
-              fallback="#C2410C"
-              onChange={(value) => handleChange('textColor', value)}
-            />
-            <ColorFieldPicker
-              label="배경 색상"
-              value={formValues.bgColor}
-              fallback="#FFEDD5"
-              onChange={(value) => handleChange('bgColor', value)}
+              label="태그 색상"
+              value={formValues.color}
+              fallback="#8B5CF6"
+              onChange={(value) => handleChange('color', value)}
             />
           </Grid>
 
@@ -231,44 +217,30 @@ export default function CreateTagModal({
             <Flex mt="12px" justify="center" gap="24px" wrap="wrap">
               <Flex direction="column" align="center" gap="8px">
                 <Text fontSize="10px" fontWeight="500" color="#9CA3AF">
-                  기본값
+                  필터
                 </Text>
-                <AdminBadge
-                  tone="orange"
-                  px="12px"
-                  py="4px"
-                  fontSize="11px"
-                  fontWeight="600"
-                  color={formValues.textColor || '#C2410C'}
-                  bg={formValues.bgColor || '#FFEDD5'}
-                  borderWidth="1px"
-                  borderColor={withAlpha(formValues.textColor || '#C2410C')}
-                >
-                  {formValues.name.trim() || '새로운 태그'}
-                </AdminBadge>
+                <Flex align="center" gap="8px">
+                  <Box
+                    boxSize="12px"
+                    borderRadius="9999px"
+                    bg={formValues.color || '#8B5CF6'}
+                    flexShrink={0}
+                  />
+                  <Text fontSize="13px" fontWeight="500" color="#111827">
+                    {formValues.name.trim() || '새로운 태그'}
+                  </Text>
+                </Flex>
               </Flex>
 
               <Flex direction="column" align="center" gap="8px">
                 <Text fontSize="10px" fontWeight="500" color="#9CA3AF">
-                  선택값
+                  태그 적용
                 </Text>
-                <AdminBadge
-                  tone="orange"
-                  px="12px"
-                  py="4px"
-                  fontSize="11px"
-                  fontWeight="600"
-                  color={formValues.bgColor || '#FFEDD5'}
-                  bg={formValues.textColor || '#C2410C'}
-                  borderWidth="1px"
-                  borderColor={withAlpha(formValues.bgColor || '#FFEDD5')}
-                >
-                  {formValues.name.trim() || '새로운 태그'}
-                </AdminBadge>
+                <AdminTagBadge tag={previewTag} />
               </Flex>
             </Flex>
             <Text mt="12px" fontSize="11px" color="#C2C7CF">
-              게시글 목록 및 상세 화면에서 기본값/선택값 상태에 따라 위와 같이 표시됩니다.
+              필터에서는 불렛 포인트 색으로, 게시글에는 태그 배경색으로 적용됩니다.
             </Text>
           </Box>
         </Flex>
