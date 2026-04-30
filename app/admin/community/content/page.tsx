@@ -1139,12 +1139,12 @@ export default function CommunityContentPage() {
                   <Checkbox.Control />
                 </Checkbox.Root>
               </AdminTableColumnHeader>
-              <AdminTableColumnHeader w="60px">번호</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="72px">구분</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="150px">태그</AdminTableColumnHeader>
-              <AdminTableColumnHeader minW="320px">제목</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="100px">작성자</AdminTableColumnHeader>
-              <AdminTableColumnHeader w="140px">
+              <AdminTableColumnHeader w="60px" textAlign="center">번호</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="72px" textAlign="center">구분</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="150px" textAlign="center">태그</AdminTableColumnHeader>
+              <AdminTableColumnHeader minW="320px" textAlign="center">제목</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="100px" textAlign="center">작성자</AdminTableColumnHeader>
+              <AdminTableColumnHeader w="140px" textAlign="center">
                 <Flex align="center" gap="4px" cursor="pointer" onClick={() => handleSort('date')}>
                   <Text>발행일시</Text>
                   <Icon
@@ -1221,6 +1221,7 @@ export default function CommunityContentPage() {
                     </Checkbox.Root>
                   </AdminTableCell>
                   <AdminTableCell
+                    textAlign="center"
                     fontWeight="600"
                     color="#374151"
                     cursor="pointer"
@@ -1229,13 +1230,14 @@ export default function CommunityContentPage() {
                     {(currentPageSafe - 1) * pageSize + index + 1}
                   </AdminTableCell>
                   <AdminTableCell
+                    textAlign="center"
                     color="#4B5563"
                     cursor="pointer"
                     onClick={() => handleNavigateToDetail(row.id)}
                   >
                     {row.type}
                   </AdminTableCell>
-                  <AdminTableCell cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
+                  <AdminTableCell textAlign="center" cursor="pointer" onClick={() => handleNavigateToDetail(row.id)}>
                     {row.tags.length > 1 ? (
                       <Tooltip
                         content={row.tags
@@ -1251,7 +1253,7 @@ export default function CommunityContentPage() {
                           wordBreak: 'break-word',
                         }}
                       >
-                        <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                        <Flex align="center" justify="center" gap="6px" minW="0" wrap="nowrap">
                           {row.tags.slice(0, 1).map((tag) => (
                             <Box key={tag.id} flexShrink={0}>
                               <AdminTagBadge tag={tag} />
@@ -1263,7 +1265,7 @@ export default function CommunityContentPage() {
                         </Flex>
                       </Tooltip>
                     ) : (
-                      <Flex align="center" gap="6px" minW="0" wrap="nowrap">
+                      <Flex align="center" justify="center" gap="6px" minW="0" wrap="nowrap">
                         {row.tags.slice(0, 1).map((tag) => (
                           <Box key={tag.id} flexShrink={0}>
                             <AdminTagBadge tag={tag} />
@@ -1325,6 +1327,7 @@ export default function CommunityContentPage() {
                     </Flex>
                   </AdminTableCell>
                   <AdminTableCell
+                    textAlign="center"
                     fontWeight="500"
                     color="#4B5563"
                     cursor="pointer"
@@ -1335,6 +1338,7 @@ export default function CommunityContentPage() {
                     </AdminTableEllipsisText>
                   </AdminTableCell>
                   <AdminTableCell
+                    textAlign="center"
                     color="#6B7280"
                     cursor="pointer"
                     onClick={() => handleNavigateToDetail(row.id)}

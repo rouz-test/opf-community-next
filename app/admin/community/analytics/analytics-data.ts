@@ -14,6 +14,8 @@ export type AnalyticsSummaryCardItem = {
   realName: string;
   nickname: string;
   showIndicators?: boolean;
+  leftIndicatorLabel?: string;
+  rightIndicatorLabel?: string;
   children?: AnalyticsSummaryCardItem[];
 };
 
@@ -256,33 +258,39 @@ export function buildAnalyticsOverviewPanel(
         nickname: formatValue(postAnonymous, '개'),
         children: [
           {
-            title: '조회 수',
+            title: '조회 수 (게시글 기준)',
             total: formatValue(viewTotal, '회'),
             realName: formatValue(viewReal, '회'),
             nickname: formatValue(viewAnonymous, '회'),
           },
           {
-            title: '보관 게시글',
-            total: formatValue(archivedContents.length, '개'),
-            realName: formatValue(archivedSplit.real.length, '개'),
-            nickname: formatValue(archivedSplit.anonymous.length, '개'),
+            title: '좋아요 수 (게시글 기준)',
+            total: formatValue(likeTotal, '개'),
+            realName: formatValue(likeReal, '개'),
+            nickname: formatValue(likeAnonymous, '개'),
+          },
+          {
+            title: '저장 수 (게시글 기준)',
+            total: formatValue(saveTotal, '개'),
+            realName: formatValue(saveReal, '개'),
+            nickname: formatValue(saveAnonymous, '개'),
           },
         ],
       },
       {
-        title: '댓글 · 대댓글',
+        title: '댓글 · 대댓글 (댓글 기준)',
         total: formatValue(commentTotal, '개'),
         realName: formatValue(commentReal, '개'),
         nickname: formatValue(commentAnonymous, '개'),
         children: [
           {
-            title: '일반 댓글',
+            title: '일반 댓글 (댓글 기준)',
             total: formatValue(rootComments.length, '개'),
             realName: formatValue(rootSplit.real.length, '개'),
             nickname: formatValue(rootSplit.anonymous.length, '개'),
           },
           {
-            title: '대댓글',
+            title: '대댓글 (댓글 기준)',
             total: formatValue(replies.length, '개'),
             realName: formatValue(replySplit.real.length, '개'),
             nickname: formatValue(replySplit.anonymous.length, '개'),
@@ -290,30 +298,13 @@ export function buildAnalyticsOverviewPanel(
         ],
       },
       {
-        title: '전체 반응 수',
-        total: formatValue(likeTotal + saveTotal, '개'),
-        realName: formatValue(likeReal + saveReal, '개'),
-        nickname: formatValue(likeAnonymous + saveAnonymous, '개'),
-        showIndicators: false,
-        children: [
-          {
-            title: '좋아요 수',
-            total: formatValue(likeTotal, '개'),
-            realName: formatValue(likeReal, '개'),
-            nickname: formatValue(likeAnonymous, '개'),
-            showIndicators: false,
-          },
-          {
-            title: '저장 수',
-            total: formatValue(saveTotal, '개'),
-            realName: formatValue(saveReal, '개'),
-            nickname: formatValue(saveAnonymous, '개'),
-            showIndicators: false,
-          },
-        ],
+        title: '보관 게시글',
+        total: formatValue(archivedContents.length, '개'),
+        realName: formatValue(archivedSplit.real.length, '개'),
+        nickname: formatValue(archivedSplit.anonymous.length, '개'),
       },
       {
-        title: '활동 정지',
+        title: '활동 정지 (계정 기준)',
         total: formatValue(pausedItems.length, '개'),
         realName: formatValue(pausedReal, '개'),
         nickname: formatValue(pausedAnonymous, '개'),

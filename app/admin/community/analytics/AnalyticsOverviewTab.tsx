@@ -21,8 +21,8 @@ function SummaryCard({ card }: { card: AnalyticsSummaryCardItem }) {
   const realRatio = Math.max(0, Math.min(100, (real / total) * 100));
   const nickRatio = Math.max(0, Math.min(100, (nick / total) * 100));
 
-  const leftIndicator = '실명';
-  const rightIndicator = '익명';
+  const leftIndicator = card.leftIndicatorLabel ?? '실명';
+  const rightIndicator = card.rightIndicatorLabel ?? '익명';
 
   const normalizeIndicatorValue = (value: string) =>
     value
@@ -33,6 +33,10 @@ function SummaryCard({ card }: { card: AnalyticsSummaryCardItem }) {
 
   const leftValue = normalizeIndicatorValue(card.realName);
   const rightValue = normalizeIndicatorValue(card.nickname);
+  const childColumnTemplate =
+    (card.children?.length ?? 0) >= 3
+      ? 'repeat(3, minmax(0, 1fr))'
+      : 'repeat(2, minmax(0, 1fr))';
 
   if (card.children?.length) {
     return (
@@ -76,7 +80,7 @@ function SummaryCard({ card }: { card: AnalyticsSummaryCardItem }) {
 
         <Grid
           mt="16px"
-          templateColumns="repeat(2, minmax(0, 1fr))"
+          templateColumns={childColumnTemplate}
           gap="12px"
           borderTop="1px solid"
           borderColor="#F3F4F6"
@@ -147,13 +151,21 @@ export default function AnalyticsOverviewTab({ dateRange }: AnalyticsOverviewTab
     () => buildAnalyticsOverviewPanel(dateRange),
     [dateRange],
   );
-  const primaryCards = selectedSummaryPanel.cards.slice(0, 2);
-  const reactionSummaryCard = selectedSummaryPanel.cards.find((card) => card.title === '전체 반응 수');
-  const activityPauseCard = selectedSummaryPanel.cards.find((card) => card.title === '활동 정지');
-  const secondaryCards = [
-    ...(reactionSummaryCard?.children ?? []),
-    ...(activityPauseCard ? [activityPauseCard] : []),
-  ];
+  const postsCard = selectedSummaryPanel.cards.find((card) => card.title === '게시글');
+  const commentsCard = selectedSummaryPanel.cards.find((card) =>
+    card.title.startsWith('댓글 · 대댓글'),
+  );
+  const archivedPostCard = selectedSummaryPanel.cards.find((card) =>
+    card.title.startsWith('보관 게시글'),
+  );
+  const activityPauseCard = selectedSummaryPanel.cards.find((card) =>
+    card.title.startsWith('활동 정지'),
+  );
+
+  const operationCards = [
+    archivedPostCard ?? null,
+    activityPauseCard ?? null,
+  ].filter(Boolean) as AnalyticsSummaryCardItem[];
 
   return (
     <Flex as="section" direction="column" gap="16px">
@@ -170,17 +182,27 @@ export default function AnalyticsOverviewTab({ dateRange }: AnalyticsOverviewTab
         </Flex>
 
         <Flex direction="column" gap="16px" mt="16px">
-          <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="12px">
-            {primaryCards.map((card) => (
-              <SummaryCard key={`${selectedSummaryPanel.title}-${card.title}`} card={card} />
-            ))}
+          <Grid templateColumns="3fr 2fr" gap="12px">
+            {postsCard ? <SummaryCard key={`${selectedSummaryPanel.title}-${postsCard.title}`} card={postsCard} /> : null}
+            {commentsCard ? <SummaryCard key={`${selectedSummaryPanel.title}-${commentsCard.title}`} card={commentsCard} /> : null}
           </Grid>
 
-          <Grid templateColumns="repeat(3, minmax(0, 1fr))" gap="12px">
-            {secondaryCards.map((card) => (
-              <SummaryCard key={`${selectedSummaryPanel.title}-${card.title}`} card={card} />
-            ))}
-          </Grid>
+          <AdminCard as="article" borderRadius="8px" p="16px">
+            <Box borderBottom="1px solid" borderColor="#F3F4F6" pb="12px">
+              <Text fontSize="13px" fontWeight="600" color="#111827">
+                운영 지표
+              </Text>
+              <Text mt="4px" fontSize="12px" color="#6B7280">
+                관리자가 제어하는 상태값 기준 현황입니다.
+              </Text>
+            </Box>
+
+            <Grid mt="16px" templateColumns="repeat(2, minmax(0, 1fr))" gap="12px">
+              {operationCards.map((card) => (
+                <SummaryCard key={`${selectedSummaryPanel.title}-${card.title}`} card={card} />
+              ))}
+            </Grid>
+          </AdminCard>
 
           <AdminCard as="article" borderRadius="8px" p="16px">
             <Box>
