@@ -1,26 +1,77 @@
-
-
 'use client';
 
+import { Box, Button, Flex, Switch, Text } from '@chakra-ui/react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function NotificationRow({
+  title,
+  description,
+  checked,
+  onToggle,
+  showDivider = false,
+}: {
+  title: string;
+  description?: string;
+  checked: boolean;
+  onToggle: () => void;
+  showDivider?: boolean;
+}) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={onChange}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        checked ? 'bg-orange-500' : 'bg-gray-200'
-      }`}
+    <Flex
+      align="flex-start"
+      justify="space-between"
+      gap="16px"
+      pt={showDivider ? '20px' : '0'}
+      borderTop={showDivider ? '1px solid' : 'none'}
+      borderColor="#F3F4F6"
     >
-      <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-1'
-        }`}
-      />
-    </button>
+      <Box>
+        <Text fontSize="14px" fontWeight="700" color="#111827">
+          {title}
+        </Text>
+        {description ? (
+          <Text mt="8px" fontSize="12px" color="#9CA3AF" lineHeight="1.6">
+            {description}
+          </Text>
+        ) : null}
+      </Box>
+
+      <Switch.Root checked={checked} onCheckedChange={onToggle}>
+        <Switch.HiddenInput />
+        <Switch.Control
+          w="44px"
+          h="24px"
+          bg={checked ? '#F97316' : '#E5E7EB'}
+          borderRadius="9999px"
+          transition="background-color 0.2s ease"
+        >
+          <Switch.Thumb
+            boxSize="20px"
+            bg="#FFFFFF"
+            boxShadow="sm"
+            transform={checked ? 'translateX(20px)' : 'translateX(2px)'}
+            transition="transform 0.2s ease"
+          />
+        </Switch.Control>
+      </Switch.Root>
+    </Flex>
+  );
+}
+
+function SettingsCard({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      borderWidth="1px"
+      borderColor="#E5E7EB"
+      borderRadius="20px"
+      bg="#FFFFFF"
+      px={{ base: '20px', sm: '24px' }}
+      py={{ base: '20px', sm: '24px' }}
+      boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
+    >
+      {children}
+    </Box>
   );
 }
 
@@ -29,59 +80,66 @@ export default function MyPageSettingsNotificationsPage() {
   const [isNewsletterEnabled, setIsNewsletterEnabled] = useState(false);
 
   return (
-    <div className="mx-auto w-full max-w-[960px]">
-      <header className="space-y-1">
-      <h1 className="text-2xl font-semibold text-gray-900">설정</h1>
-       
-        
-      </header>
+    <Box mx="auto" w="100%" maxW="960px">
+      <Box>
+        <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
+          알림
+        </Text>
+        <Text mt="4px" fontSize="14px" color="#6B7280">
+          이메일로 받는 주요 커뮤니티 알림과 뉴스레터 수신 여부를 관리합니다.
+        </Text>
+      </Box>
 
-      <div className="mt-6 space-y-16">
-        <section>
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">알림</h2>
-          <div className="rounded-[20px] bg-white px-6 py-5 shadow-sm ring-1 ring-gray-200">
-            <div className="space-y-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-900">서비스 알림 이메일 정보 수신</h2>
-                  <p className="mt-2 text-xs text-gray-400">
-                    *모집 알림, 멘션 알림 등 중요한 알림이 전송됩니다.
-                  </p>
-                </div>
-                <ToggleSwitch
-                  checked={isServiceEmailEnabled}
-                  onChange={() => setIsServiceEmailEnabled((prev) => !prev)}
-                />
-              </div>
+      <Flex direction="column" gap="48px" mt="24px">
+        <Box>
+          <Text mb="16px" fontSize="14px" fontWeight="700" color="#111827">
+            알림 설정
+          </Text>
+          <SettingsCard>
+            <Flex direction="column" gap="20px">
+              <NotificationRow
+                title="서비스 알림 이메일 정보 수신"
+                description="*모집 알림, 멘션 알림 등 중요한 알림이 전송됩니다."
+                checked={isServiceEmailEnabled}
+                onToggle={() => setIsServiceEmailEnabled((prev) => !prev)}
+              />
+              <NotificationRow
+                title="뉴스레터 정보 수신"
+                checked={isNewsletterEnabled}
+                onToggle={() => setIsNewsletterEnabled((prev) => !prev)}
+                showDivider
+              />
+            </Flex>
+          </SettingsCard>
+        </Box>
 
-              <div className="flex items-start justify-between gap-4 border-t border-gray-100 pt-5">
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-900">뉴스레터 정보 수신</h2>
-                </div>
-                <ToggleSwitch
-                  checked={isNewsletterEnabled}
-                  onChange={() => setIsNewsletterEnabled((prev) => !prev)}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="mb-4 text-sm font-semibold text-gray-900">회원 탈퇴</h2>
-          <div className="rounded-[20px] bg-white px-6 py-5 shadow-sm ring-1 ring-gray-200">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">회원 탈퇴하기</p>
-              <button
-                type="button"
-                className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-              >
-                회원탈퇴
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
+        <Box>
+          <Text mb="16px" fontSize="14px" fontWeight="700" color="#111827">
+            회원 탈퇴
+          </Text>
+          <SettingsCard>
+            <Text fontSize="14px" fontWeight="700" color="#111827">
+              회원 탈퇴하기
+            </Text>
+            <Button
+              type="button"
+              mt="16px"
+              h="40px"
+              px="16px"
+              borderRadius="10px"
+              borderWidth="1px"
+              borderColor="#E5E7EB"
+              bg="#FFFFFF"
+              color="#6B7280"
+              fontSize="14px"
+              fontWeight="600"
+              _hover={{ bg: '#F9FAFB', color: '#374151' }}
+            >
+              회원탈퇴
+            </Button>
+          </SettingsCard>
+        </Box>
+      </Flex>
+    </Box>
   );
 }

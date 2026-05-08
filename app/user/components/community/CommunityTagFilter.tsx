@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Box, Button, Collapsible, Flex, HStack, Text } from '@chakra-ui/react';
 
 export type CommunityTagFilterProps = {
   allTags: string[];
@@ -18,95 +19,144 @@ export function CommunityTagFilter({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white">
-      <div className="sm:hidden">
-        <button
+    <Box rounded="lg" borderWidth="1px" borderColor="gray.200" bg="white">
+      <Box display={{ base: 'block', sm: 'none' }}>
+        <Button
           type="button"
           onClick={() => setIsMobileOpen((prev) => !prev)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left"
+          w="full"
+          justifyContent="space-between"
+          rounded="none"
+          bg="transparent"
+          px="4"
+          py="3"
+          textAlign="left"
+          fontWeight="normal"
+          _hover={{ bg: 'transparent' }}
+          _active={{ bg: 'transparent' }}
           aria-expanded={isMobileOpen}
           aria-label="태그 필터 열기"
         >
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900">태그 필터</h3>
-            <p className="mt-1 text-xs text-gray-500">
+          <Box minW="0">
+            <Text fontSize="sm" fontWeight="600" color="gray.900">
+              태그 필터
+            </Text>
+            <Text mt="1" fontSize="xs" color="gray.500">
               {selectedTags.length > 0
                 ? `${selectedTags.length}개 선택됨`
                 : '태그를 선택해 게시글을 좁혀보세요'}
-            </p>
-          </div>
-          <span
-            className={`ml-3 shrink-0 text-sm text-gray-400 transition-transform ${
-              isMobileOpen ? 'rotate-180' : ''
-            }`}
+            </Text>
+          </Box>
+          <Text
+            ml="3"
+            flexShrink={0}
+            fontSize="sm"
+            color="gray.400"
+            transform={isMobileOpen ? 'rotate(180deg)' : 'rotate(0deg)'}
+            transition="transform 0.2s"
           >
             ▾
-          </span>
-        </button>
+          </Text>
+        </Button>
 
-        {isMobileOpen && (
-          <div className="border-t border-gray-100 px-4 py-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-gray-600">태그 선택</p>
-              {selectedTags.length > 0 && (
-                <button
-                  type="button"
-                  onClick={onClearTags}
-                  className="text-xs font-medium text-orange-500 hover:text-orange-600"
-                >
-                  초기화
-                </button>
-              )}
-            </div>
+        <Collapsible.Root open={isMobileOpen}>
+          <Collapsible.Content>
+            <Box borderTopWidth="1px" borderColor="gray.100" px="4" py="3">
+              <Flex mb="3" align="center" justify="space-between" gap="3">
+                <Text fontSize="xs" fontWeight="600" color="gray.600">
+                  태그 선택
+                </Text>
+                {selectedTags.length > 0 ? (
+                  <Button
+                    type="button"
+                    onClick={onClearTags}
+                    variant="ghost"
+                    h="auto"
+                    minW="auto"
+                    px="0"
+                    py="0"
+                    fontSize="xs"
+                    fontWeight="600"
+                    color="orange.500"
+                    _hover={{ color: 'orange.600', bg: 'transparent' }}
+                  >
+                    초기화
+                  </Button>
+                ) : null}
+              </Flex>
 
-            <div className="flex flex-wrap gap-1.5">
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => onToggleTag(tag)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                    selectedTags.includes(tag)
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+              <HStack align="stretch" flexWrap="wrap" gap="1.5">
+                {allTags.map((tag) => (
+                  <Button
+                    key={tag}
+                    type="button"
+                    onClick={() => onToggleTag(tag)}
+                    rounded="full"
+                    px="3"
+                    py="1.5"
+                    h="auto"
+                    fontSize="xs"
+                    fontWeight="600"
+                    bg={selectedTags.includes(tag) ? 'orange.500' : 'gray.100'}
+                    color={selectedTags.includes(tag) ? 'white' : 'gray.600'}
+                    _hover={{
+                      bg: selectedTags.includes(tag) ? 'orange.600' : 'gray.200',
+                    }}
+                  >
+                    #{tag}
+                  </Button>
+                ))}
+              </HStack>
+            </Box>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Box>
 
-      <div className="hidden p-4 sm:block">
-        <h3 className="mb-3 text-xs font-semibold text-gray-900">태그 필터</h3>
-        <div className="flex flex-wrap gap-1.5">
+      <Box display={{ base: 'none', sm: 'block' }} p="4">
+        <Text mb="3" fontSize="xs" fontWeight="600" color="gray.900">
+          태그 필터
+        </Text>
+        <HStack align="stretch" flexWrap="wrap" gap="1.5">
           {allTags.map((tag) => (
-            <button
+            <Button
               key={tag}
               type="button"
               onClick={() => onToggleTag(tag)}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                selectedTags.includes(tag)
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              rounded="full"
+              px="2.5"
+              py="1"
+              h="auto"
+              fontSize="xs"
+              fontWeight="600"
+              bg={selectedTags.includes(tag) ? 'orange.500' : 'gray.100'}
+              color={selectedTags.includes(tag) ? 'white' : 'gray.600'}
+              _hover={{
+                bg: selectedTags.includes(tag) ? 'orange.600' : 'gray.200',
+              }}
             >
               #{tag}
-            </button>
+            </Button>
           ))}
-        </div>
-        {selectedTags.length > 0 && (
-          <button
+        </HStack>
+        {selectedTags.length > 0 ? (
+          <Button
             type="button"
             onClick={onClearTags}
-            className="mt-3 text-xs font-medium text-orange-500 hover:text-orange-600"
+            variant="ghost"
+            mt="3"
+            h="auto"
+            minW="auto"
+            px="0"
+            py="0"
+            fontSize="xs"
+            fontWeight="600"
+            color="orange.500"
+            _hover={{ color: 'orange.600', bg: 'transparent' }}
           >
             필터 초기화
-          </button>
-        )}
-      </div>
-    </section>
+          </Button>
+        ) : null}
+      </Box>
+    </Box>
   );
 }

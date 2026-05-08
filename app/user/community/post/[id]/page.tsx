@@ -1,780 +1,1172 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Image,
+  Link as ChakraLink,
+  Spinner,
+  Text,
+} from '@chakra-ui/react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   ArrowLeft,
-  Heart,
-  MessageSquare,
-  Eye,
-  Share2,
   BadgeCheck,
-  X,
-  ChevronLeft,
-  ChevronRight,
   Bookmark,
-  Ellipsis,
+  Eye,
+  Heart,
+  Megaphone,
+  MessageSquare,
 } from 'lucide-react';
 import {
-  mockCommunityPosts,
-  mockNotices,
-} from '@/data/mockCommunityPosts';
-import { CommunityCommentsSection } from '@/app/user/components/community/CommunityCommentsSection';
-import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
-import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
-import { useAuth } from '@/app/user/components/providers/AuthProvider';
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleString('ko-KR', {
+import CommentEditor from '@/app/admin/components/comment/comment-editor';
+import CommentItem from '@/app/admin/components/comment/comment-item';
+import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
+import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
+import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
+import {
+  COMMUNITY_CURRENT_USER,
+  mockCommunityPosts,
+} from '@/app/user/lib/community-content-data';
+import tagsData from '@/data/mock/tags.json';
+import { resolveTags } from '@/lib/tags';
+import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
+import type {
+  CommunityComment,
+  CommunityCommentListResponse,
+} from '@/types/community-comment';
+import type { Tag } from '@/types/tag';
+
+const tags = tagsData as Tag[];
+const DEFAULT_BODY_TEXT_COLOR = '#374151';
+const DEFAULT_BLOCKQUOTE_TEXT_COLOR = '#111827';
+
+function normalizeFontFamily(fontFamily: string) {
+  if (fontFamily === 'mono') return 'monospace';
+  return fontFamily;
+}
+
+function getTextNodeStyles(node: CommunityContentBody) {
+  const styles: CSSProperties = {};
+  const textDecorations = new Set<string>();
+
+  for (const mark of node.marks ?? []) {
+    if (mark.type === 'bold') styles.fontWeight = 700;
+    if (mark.type === 'italic') styles.fontStyle = 'italic';
+    if (mark.type === 'underline') textDecorations.add('underline');
+    if (mark.type === 'strike') textDecorations.add('line-through');
+    if (mark.type === 'textStyle' && typeof mark.attrs?.color === 'string') {
+      styles.color = mark.attrs.color;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontFamily === 'string') {
+      styles.fontFamily = normalizeFontFamily(mark.attrs.fontFamily);
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.fontSize === 'string') {
+      styles.fontSize = mark.attrs.fontSize;
+    }
+    if (mark.type === 'textStyle' && typeof mark.attrs?.lineHeight === 'string') {
+      styles.lineHeight = mark.attrs.lineHeight;
+    }
+    if (mark.type === 'highlight' && typeof mark.attrs?.color === 'string') {
+      styles.backgroundColor = mark.attrs.color;
+      styles.borderRadius = '4px';
+      styles.paddingInline = '2px';
+    }
+  }
+
+  if (textDecorations.size > 0) {
+    styles.textDecoration = Array.from(textDecorations).join(' ');
+  }
+
+  return styles;
+}
+
+function getYoutubeEmbedUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, '');
+
+    if (hostname === 'youtu.be') {
+      const videoId = parsedUrl.pathname.replace('/', '');
+      if (!videoId) return '';
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+      if (parsedUrl.pathname === '/watch') {
+        const videoId = parsedUrl.searchParams.get('v');
+        if (!videoId) return '';
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      if (parsedUrl.pathname.startsWith('/embed/')) {
+        return url;
+      }
+
+      if (parsedUrl.pathname.startsWith('/shorts/')) {
+        const videoId = parsedUrl.pathname.split('/')[2];
+        if (!videoId) return '';
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+function getImageWidth(node: CommunityContentBody) {
+  return typeof node.attrs?.width === 'string' ? node.attrs.width : '100%';
+}
+
+function getImageAlignment(node: CommunityContentBody) {
+  const align = typeof node.attrs?.align === 'string' ? node.attrs.align : 'left';
+
+  if (align === 'center') {
+    return { ml: 'auto', mr: 'auto' } as const;
+  }
+
+  if (align === 'right') {
+    return { ml: 'auto', mr: '0' } as const;
+  }
+
+  return { ml: '0', mr: 'auto' } as const;
+}
+
+function getQuoteStyle(node: CommunityContentBody) {
+  return typeof node.attrs?.quoteStyle === 'string' ? node.attrs.quoteStyle : 'line';
+}
+
+function getQuoteContainerStyles(node: CommunityContentBody) {
+  const quoteStyle = getQuoteStyle(node);
+
+  if (quoteStyle === 'quote') {
+    return {
+      textAlign: 'center' as const,
+      px: '24px',
+      py: '28px',
+      _before: {
+        content: '"❝"',
+        display: 'block',
+        fontSize: '48px',
+        fontWeight: '700',
+        lineHeight: '1',
+        mb: '8px',
+      },
+      _after: {
+        content: '"❞"',
+        display: 'block',
+        fontSize: '48px',
+        fontWeight: '700',
+        lineHeight: '1',
+        mt: '8px',
+      },
+    };
+  }
+
+  if (quoteStyle === 'frame') {
+    return {
+      borderWidth: '1px',
+      borderColor: '#D1D5DB',
+      borderRadius: '12px',
+      px: '18px',
+      py: '14px',
+    };
+  }
+
+  return {
+    borderLeft: '4px solid',
+    borderColor: '#D1D5DB',
+    pl: '12px',
+  };
+}
+
+function renderInlineContent(nodes?: CommunityContentBody[], keyPrefix = 'inline'): ReactNode {
+  if (!nodes?.length) return null;
+
+  return nodes.map((node, index) => {
+    const key = `${keyPrefix}-${index}`;
+
+    if (node.type === 'text') {
+      const text = node.text ?? '';
+      const linkMark = node.marks?.find((mark) => mark.type === 'link');
+      const textStyles = getTextNodeStyles(node);
+
+      if (!text) {
+        return null;
+      }
+
+      if (typeof linkMark?.attrs?.href === 'string' && linkMark.attrs.href) {
+        return (
+          <ChakraLink
+            key={key}
+            href={linkMark.attrs.href}
+            color="#2563EB"
+            textDecoration="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={textStyles}
+          >
+            {text}
+          </ChakraLink>
+        );
+      }
+
+      return (
+        <Text key={key} as="span" style={textStyles}>
+          {text}
+        </Text>
+      );
+    }
+
+    if (node.type === 'hardBreak') {
+      return <br key={key} />;
+    }
+
+    if (node.content?.length) {
+      return <Fragment key={key}>{renderInlineContent(node.content, key)}</Fragment>;
+    }
+
+    return null;
+  });
+}
+
+function getBlockAlignment(node: CommunityContentBody) {
+  return typeof node.attrs?.textAlign === 'string' ? node.attrs.textAlign : 'left';
+}
+
+function getBlockLineHeight(node: CommunityContentBody, fallback: string) {
+  return typeof node.attrs?.lineHeight === 'string' ? node.attrs.lineHeight : fallback;
+}
+
+function getListItemBlockNode(node: CommunityContentBody) {
+  return node.content?.find((child) => child.type === 'paragraph' || child.type === 'heading') ?? null;
+}
+
+function getListItemAlignment(node: CommunityContentBody) {
+  const blockNode = getListItemBlockNode(node);
+  return blockNode ? getBlockAlignment(blockNode) : 'left';
+}
+
+function getListItemLineHeight(node: CommunityContentBody) {
+  const blockNode = getListItemBlockNode(node);
+  return blockNode ? getBlockLineHeight(blockNode, '1.9') : '1.9';
+}
+
+function renderBodyNode(node: CommunityContentBody, index: number) {
+  if (node.type === 'paragraph') {
+    if (!node.content?.length) {
+      return null;
+    }
+
+    return (
+      <Text
+        key={`paragraph-${index}`}
+        fontSize="15px"
+        lineHeight={getBlockLineHeight(node, '1.95')}
+        color={DEFAULT_BODY_TEXT_COLOR}
+        whiteSpace="pre-wrap"
+        textAlign={getBlockAlignment(node)}
+      >
+        {renderInlineContent(node.content, `paragraph-${index}`)}
+      </Text>
+    );
+  }
+
+  if (node.type === 'image') {
+    const imageSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+    const imageAlt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '콘텐츠 이미지';
+    const imageWidth = getImageWidth(node);
+    const imageAlignment = getImageAlignment(node);
+
+    if (!imageSrc) {
+      return null;
+    }
+
+    return (
+      <Box
+        key={`image-${index}`}
+        overflow="hidden"
+        borderRadius="12px"
+        bg="#F3F4F6"
+        borderWidth="1px"
+        borderColor="#E5E7EB"
+        w={imageWidth}
+        maxW="100%"
+        {...imageAlignment}
+      >
+        <Image src={imageSrc} alt={imageAlt} w="100%" maxH="520px" objectFit="contain" />
+      </Box>
+    );
+  }
+
+  if (node.type === 'heading') {
+    if (!node.content?.length) {
+      return null;
+    }
+
+    return (
+      <Text
+        key={`heading-${index}`}
+        fontSize="21px"
+        fontWeight="700"
+        lineHeight={getBlockLineHeight(node, '1.6')}
+        color="#111827"
+        textAlign={getBlockAlignment(node)}
+      >
+        {renderInlineContent(node.content, `heading-${index}`)}
+      </Text>
+    );
+  }
+
+  if (node.type === 'bulletList') {
+    const items = node.content ?? [];
+    if (items.length === 0) return null;
+
+    return (
+      <Flex key={`bullet-list-${index}`} direction="column" gap="10px">
+        {items.map((item, itemIndex) => (
+          <Box key={`bullet-item-${index}-${itemIndex}`} asChild color={DEFAULT_BODY_TEXT_COLOR}>
+            <ul
+              style={{
+                paddingLeft: '24px',
+                margin: '0',
+                listStyleType: 'disc',
+              }}
+            >
+              <li>
+                <Text
+                  fontSize="15px"
+                  lineHeight={getListItemLineHeight(item)}
+                  color="inherit"
+                  textAlign={getListItemAlignment(item)}
+                >
+                  {renderInlineContent(item.content, `bullet-item-${index}-${itemIndex}`)}
+                </Text>
+              </li>
+            </ul>
+          </Box>
+        ))}
+      </Flex>
+    );
+  }
+
+  if (node.type === 'orderedList') {
+    const items = node.content ?? [];
+    if (items.length === 0) return null;
+
+    return (
+      <Flex key={`ordered-list-${index}`} direction="column" gap="10px">
+        {items.map((item, itemIndex) => (
+          <Box key={`ordered-item-${index}-${itemIndex}`} asChild color={DEFAULT_BODY_TEXT_COLOR}>
+            <ol
+              start={itemIndex + 1}
+              style={{
+                paddingLeft: '28px',
+                margin: '0',
+                listStyleType: 'decimal',
+              }}
+            >
+              <li>
+                <Text
+                  fontSize="15px"
+                  lineHeight={getListItemLineHeight(item)}
+                  color="inherit"
+                  textAlign={getListItemAlignment(item)}
+                >
+                  {renderInlineContent(item.content, `ordered-item-${index}-${itemIndex}`)}
+                </Text>
+              </li>
+            </ol>
+          </Box>
+        ))}
+      </Flex>
+    );
+  }
+
+  if (node.type === 'blockquote') {
+    if (!node.content?.length) {
+      return null;
+    }
+
+    return (
+      <Box key={`blockquote-${index}`} {...getQuoteContainerStyles(node)}>
+        <Text
+          fontSize="15px"
+          lineHeight={getBlockLineHeight(node, '1.95')}
+          color={DEFAULT_BLOCKQUOTE_TEXT_COLOR}
+          whiteSpace="pre-wrap"
+          textAlign={getQuoteStyle(node) === 'quote' ? 'center' : getBlockAlignment(node)}
+        >
+          {renderInlineContent(node.content, `blockquote-${index}`)}
+        </Text>
+      </Box>
+    );
+  }
+
+  if (node.type === 'youtube') {
+    const rawSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+    const src = getYoutubeEmbedUrl(rawSrc);
+    const width = typeof node.attrs?.width === 'number' ? node.attrs.width : 640;
+    const height = typeof node.attrs?.height === 'number' ? node.attrs.height : 360;
+
+    if (!src) {
+      return (
+        <Box
+          key={`youtube-${index}`}
+          borderWidth="1px"
+          borderColor="#E5E7EB"
+          borderRadius="16px"
+          px="20px"
+          py="18px"
+          bg="#F9FAFB"
+        >
+          <Text fontSize="14px" color="#6B7280">
+            유튜브 링크를 임베드 형식으로 변환하지 못했습니다.
+          </Text>
+          {rawSrc ? (
+            <ChakraLink href={rawSrc} target="_blank" rel="noopener noreferrer" color="#2563EB" textDecoration="underline">
+              {rawSrc}
+            </ChakraLink>
+          ) : null}
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        key={`youtube-${index}`}
+        borderRadius="16px"
+        overflow="hidden"
+        borderWidth="1px"
+        borderColor="#E5E7EB"
+        bg="#111827"
+      >
+        <Box asChild display="block" lineHeight="0">
+          <iframe
+            src={src}
+            title={`youtube-${index}`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{
+              display: 'block',
+              width: '100%',
+              maxWidth: `${width}px`,
+              height: `${height}px`,
+              margin: '0 auto',
+              border: 'none',
+            }}
+          />
+        </Box>
+      </Box>
+    );
+  }
+
+  return null;
+}
+
+function getAuthorDisplay(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return '익명';
+  }
+
+  return content.author.displayName || content.author.identifierValue || content.author.id;
+}
+
+function getAuthorInitial(content: CommunityContent) {
+  const base =
+    content.author.visibility === 'anonymous'
+      ? '익명'
+      : content.author.displayName || content.author.identifierValue || content.author.id;
+
+  return base.slice(0, 1).toUpperCase();
+}
+
+function getPublishedAtDisplay(content: CommunityContent) {
+  if (!content.publishedAt) return '-';
+
+  const publishedAt = new Date(content.publishedAt);
+  if (Number.isNaN(publishedAt.getTime())) return '-';
+
+  return publishedAt.toLocaleString('ko-KR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
-};
+}
 
-const formatTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+function getCommentTotalCount(commentCount: number, replyCount: number) {
+  return commentCount + replyCount;
+}
 
-  if (diffMins < 1) return '방금 전';
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
-
-  return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
-};
-
-
-const getPreviewImages = (images?: string[]) => {
-  if (!images || images.length === 0) return [];
-  return images.slice(0, 2);
-};
-
-const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
-
-const getProfileActorId = (authorLike?: { id?: string; profileId?: string }) =>
-  authorLike?.profileId ?? authorLike?.id ?? '';
-
-
-export default function CommunityPostDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { isLoggedIn } = useAuth();
-  const [profileMode, setProfileMode] = useState<'real' | 'nickname'>('nickname');
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const touchStartXRef = useRef<number | null>(null);
-  const touchEndXRef = useRef<number | null>(null);
-  const swipeThreshold = 50;
-  const id = params.id as string;
-
-  const [isOtherPostsOpen, setIsOtherPostsOpen] = useState(false);
-  const [isPostLiked, setIsPostLiked] = useState(false);
-  const [postLikeCount, setPostLikeCount] = useState(0);
-  const [isPostBookmarked, setIsPostBookmarked] = useState(false);
-  const [isPostMenuOpen, setIsPostMenuOpen] = useState(false);
-  const [isPostEditing, setIsPostEditing] = useState(false);
-  const [isPostDeleted, setIsPostDeleted] = useState(false);
-  const [postAuthorDisplayMode, setPostAuthorDisplayMode] = useState<'real' | 'nickname'>('nickname');
-  const [editedPostTitle, setEditedPostTitle] = useState('');
-  const [editedPostContent, setEditedPostContent] = useState('');
-
-  const allPosts = [...mockNotices, ...mockCommunityPosts];
-  const post = allPosts.find((p) => p.id === id);
-
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">게시글을 찾을 수 없습니다</h2>
-          <p className="mb-4 text-gray-600">삭제되었거나 존재하지 않는 게시글입니다.</p>
-          <button
-            type="button"
-            onClick={() => router.push('/user/community')}
-            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
-          >
-            커뮤니티 홈으로
-          </button>
-        </div>
-      </div>
-    );
+function parseErrorMessage(data: unknown, fallback: string) {
+  if (typeof data === 'object' && data !== null && 'message' in data && typeof data.message === 'string') {
+    return data.message;
   }
 
-  const authorOtherPosts = mockCommunityPosts
-    .filter(
-      (item) =>
-        getProfileActorId(item.author) === getProfileActorId(post.author) && item.id !== post.id,
-    )
-    .slice(0, 5);
+  return fallback;
+}
 
-  const currentUser = {
-    name: '박민수',
-    nickname: 'StartupHero',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-    position: '스타트업 개발자',
-    postsCount: 12,
-    commentsCount: 45,
-  };
+function decorateCommentAuthorName(comment: CommunityComment, postAuthorId: string) {
+  if (comment.author.visibility !== 'anonymous') {
+    return comment.author.displayName;
+  }
 
-  const postImages = post.images ?? [];
-  const hasPostImages = postImages.length > 0;
-  const isOwnPost = post.author.accountId === 'account-user-1';
-  const previewImages = useMemo(() => getPreviewImages(postImages), [postImages]);
-  const selectedImage =
-    selectedImageIndex !== null && selectedImageIndex >= 0 && selectedImageIndex < postImages.length
-      ? postImages[selectedImageIndex]
-      : null;
+  return comment.author.id === postAuthorId ? '익명, 작성자' : '익명';
+}
+
+function mapCommentsForUser(comments: CommunityComment[], postAuthorId: string): CommunityComment[] {
+  return comments.map((comment) => ({
+    ...comment,
+    author: {
+      ...comment.author,
+      displayName: decorateCommentAuthorName(comment, postAuthorId),
+      avatar: comment.author.visibility === 'anonymous' ? '' : comment.author.avatar,
+    },
+    replies: mapCommentsForUser(comment.replies, postAuthorId),
+  }));
+}
+
+export default function CommunityPostDetailPage() {
+  const params = useParams<{ id: string }>();
+  const contentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const {
+    isLoggedIn,
+    defaultCommunityIdentity,
+    setDefaultCommunityIdentity,
+  } = useAuth();
+
+  const [content, setContent] = useState<CommunityContent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [comments, setComments] = useState<CommunityComment[]>([]);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const [commentValue, setCommentValue] = useState('');
+  const [commentIdentity, setCommentIdentity] = useState<'real' | 'anonymous'>(defaultCommunityIdentity);
+  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
+  const [replyValue, setReplyValue] = useState('');
+  const [replyIdentity, setReplyIdentity] = useState<'real' | 'anonymous'>(defaultCommunityIdentity);
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [isReplySubmitting, setIsReplySubmitting] = useState(false);
+  const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
+  const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
+  const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
+  const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
+  const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
 
   useEffect(() => {
-    setPostLikeCount(post.likes);
-  }, [post.likes]);
+    setCommentIdentity(defaultCommunityIdentity);
+    setReplyIdentity(defaultCommunityIdentity);
+  }, [defaultCommunityIdentity]);
 
-  useEffect(() => {
-    setPostAuthorDisplayMode(post.isRealName ? 'real' : 'nickname');
-    setEditedPostTitle(post.title);
-    setEditedPostContent(post.content);
-  }, [post.id, post.isRealName, post.title, post.content]);
-
-  const syncProfileMode = (nextMode: 'real' | 'nickname') => {
-    setProfileMode(nextMode);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY, nextMode);
-      window.dispatchEvent(
-        new CustomEvent('community-profile-mode-change', {
-          detail: { mode: nextMode },
-        }),
-      );
-    }
-  };
-
-  const toggleProfileMode = () => {
-    syncProfileMode(profileMode === 'real' ? 'nickname' : 'real');
-  };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const savedMode = window.localStorage.getItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY);
-    if (savedMode === 'real' || savedMode === 'nickname') {
-      setProfileMode(savedMode);
-    }
-
-    const handleProfileModeChange = (event: Event) => {
-      const customEvent = event as CustomEvent<{ mode?: 'real' | 'nickname' }>;
-      const nextMode = customEvent.detail?.mode;
-
-      if (nextMode === 'real' || nextMode === 'nickname') {
-        setProfileMode(nextMode);
-      }
-    };
-
-    window.addEventListener('community-profile-mode-change', handleProfileModeChange as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        'community-profile-mode-change',
-        handleProfileModeChange as EventListener,
-      );
-    };
-  }, []);
-
-  const closeImageModal = () => {
-    setSelectedImageIndex(null);
-  };
-
-  const openImageModal = (index: number) => {
-    setSelectedImageIndex(index);
-  };
-
-
-  const goToPrevImage = () => {
-    if (postImages.length === 0) return;
-    setSelectedImageIndex((prev) => {
-      if (prev === null) return 0;
-      return prev === 0 ? postImages.length - 1 : prev - 1;
-    });
-  };
-
-  const goToNextImage = () => {
-    if (postImages.length === 0) return;
-    setSelectedImageIndex((prev) => {
-      if (prev === null) return 0;
-      return prev === postImages.length - 1 ? 0 : prev + 1;
-    });
-  };
-
-  const handleImageTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    touchStartXRef.current = event.touches[0]?.clientX ?? null;
-    touchEndXRef.current = null;
-  };
-
-  const handleImageTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    touchEndXRef.current = event.touches[0]?.clientX ?? null;
-  };
-
-  const handleImageTouchEnd = () => {
-    if (touchStartXRef.current === null || touchEndXRef.current === null) {
-      touchStartXRef.current = null;
-      touchEndXRef.current = null;
+  const loadComments = useCallback(async (authorId?: string) => {
+    if (!contentId) {
+      setComments([]);
+      setCommentsError(null);
       return;
     }
 
-    const deltaX = touchStartXRef.current - touchEndXRef.current;
+    try {
+      setIsCommentsLoading(true);
+      setCommentsError(null);
 
-    if (Math.abs(deltaX) >= swipeThreshold) {
-      if (deltaX > 0) {
-        goToNextImage();
-      } else {
-        goToPrevImage();
+      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}`, {
+        cache: 'no-store',
+      });
+      const data = (await response.json().catch(() => null)) as CommunityCommentListResponse | { message?: string } | null;
+
+      if (!response.ok || !data || !('items' in data)) {
+        throw new Error(parseErrorMessage(data, '댓글 목록을 불러오지 못했습니다.'));
       }
-    }
 
-    touchStartXRef.current = null;
-    touchEndXRef.current = null;
-  };
+      setComments(authorId ? mapCommentsForUser(data.items, authorId) : data.items);
+    } catch (error) {
+      setCommentsError(error instanceof Error ? error.message : '댓글 목록을 불러오지 못했습니다.');
+    } finally {
+      setIsCommentsLoading(false);
+    }
+  }, [contentId]);
+
+  const openBlockedWordModal = useCallback(
+    (title: string, description: string, matchedKeywords: string[], sourceText: string) => {
+      setBlockedWordModalTitle(title);
+      setBlockedWordModalDescription(description);
+      setMatchedBlockedKeywords(matchedKeywords);
+      setBlockedWordSourceText(sourceText);
+      setIsBlockedWordModalOpen(true);
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (selectedImageIndex === null) return;
+    if (!contentId) {
+      setContent(null);
+      setLoadError('요청하신 게시글을 찾을 수 없습니다.');
+      setIsLoading(false);
+      return;
+    }
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeImageModal();
-      } else if (event.key === 'ArrowLeft') {
-        goToPrevImage();
-      } else if (event.key === 'ArrowRight') {
-        goToNextImage();
+    let isCancelled = false;
+
+    const loadContent = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+
+        const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+        if (!response.ok || !data || !('id' in data)) {
+          throw new Error(parseErrorMessage(data, '게시글 상세 정보를 불러오지 못했습니다.'));
+        }
+
+        if (isCancelled) return;
+        setContent(data);
+        void loadComments(data.author.id);
+      } catch (error) {
+        if (isCancelled) return;
+        setContent(null);
+        setLoadError(error instanceof Error ? error.message : '게시글 상세 정보를 불러오지 못했습니다.');
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    void loadContent();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      isCancelled = true;
     };
-  }, [selectedImageIndex, postImages]);
+  }, [contentId, loadComments]);
+
+  const toggleProfileMode = () => {
+    setDefaultCommunityIdentity(defaultCommunityIdentity === 'real' ? 'anonymous' : 'real');
+  };
+
+  const buildCommentAuthorPayload = useCallback(
+    (identity: 'real' | 'anonymous') => ({
+      type: 'user' as const,
+      id: COMMUNITY_CURRENT_USER.accountId,
+      visibility: identity === 'anonymous' ? 'anonymous' as const : 'public' as const,
+      displayName: identity === 'anonymous' ? '익명' : COMMUNITY_CURRENT_USER.name,
+      identifierType: 'name' as const,
+      identifierValue: COMMUNITY_CURRENT_USER.name,
+      avatar: identity === 'anonymous' ? '' : COMMUNITY_CURRENT_USER.avatar,
+    }),
+    [],
+  );
+
+  const refreshComments = useCallback(async () => {
+    if (!content) return;
+    await loadComments(content.author.id);
+  }, [content, loadComments]);
+
+  const handleCreateComment = async () => {
+    if (!contentId || !content || isCommentSubmitting) return;
+
+    try {
+      setIsCommentSubmitting(true);
+
+      const response = await fetch('/api/mock/community-comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contentId,
+          content: commentValue,
+          author: buildCommentAuthorPayload(commentIdentity),
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { message?: string; matchedKeywords?: string[] }
+        | null;
+
+      if (!response.ok) {
+        if (data?.matchedKeywords?.length) {
+          openBlockedWordModal(
+            '금지 키워드가 포함되어 댓글을 등록할 수 없습니다.',
+            '댓글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+            data.matchedKeywords,
+            commentValue,
+          );
+          return;
+        }
+
+        throw new Error(parseErrorMessage(data, '댓글을 등록하지 못했습니다.'));
+      }
+
+      setCommentValue('');
+      setCommentIdentity(defaultCommunityIdentity);
+      await refreshComments();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '댓글을 등록하지 못했습니다.');
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
+  const handleCreateReply = async (comment: CommunityComment) => {
+    if (!contentId || !content || isReplySubmitting) return;
+
+    try {
+      setIsReplySubmitting(true);
+
+      const response = await fetch('/api/mock/community-comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contentId,
+          parentId: comment.id,
+          content: replyValue,
+          author: buildCommentAuthorPayload(replyIdentity),
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { message?: string; matchedKeywords?: string[] }
+        | null;
+
+      if (!response.ok) {
+        if (data?.matchedKeywords?.length) {
+          openBlockedWordModal(
+            '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
+            '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
+            data.matchedKeywords,
+            replyValue,
+          );
+          return;
+        }
+
+        throw new Error(parseErrorMessage(data, '답글을 등록하지 못했습니다.'));
+      }
+
+      setReplyTargetId(null);
+      setReplyTargetName(null);
+      setReplyValue('');
+      setReplyIdentity(defaultCommunityIdentity);
+      await refreshComments();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '답글을 등록하지 못했습니다.');
+    } finally {
+      setIsReplySubmitting(false);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string, nextCommentValue: string) => {
+    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: nextCommentValue,
+        actionActor: 'author',
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as
+      | { message?: string; matchedKeywords?: string[] }
+      | null;
+
+    if (!response.ok) {
+      if (data?.matchedKeywords?.length) {
+        openBlockedWordModal(
+          '금지 키워드가 포함되어 댓글을 수정할 수 없습니다.',
+          '댓글 내용에서 금지 키워드를 수정한 뒤 다시 저장해주세요.',
+          data.matchedKeywords,
+          nextCommentValue,
+        );
+        return false;
+      }
+
+      window.alert(parseErrorMessage(data, '댓글을 수정하지 못했습니다.'));
+      return false;
+    }
+
+    await refreshComments();
+    return true;
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        actionActor: 'author',
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+    if (!response.ok) {
+      throw new Error(parseErrorMessage(data, '댓글을 삭제하지 못했습니다.'));
+    }
+
+    await refreshComments();
+  };
+
+  const handleArchiveComment = async () => {
+    return;
+  };
+
+  const isAnonymousContent = content?.author.visibility === 'anonymous';
+  const resolvedTags = useMemo(() => (content ? resolveTags(content.tagIds, tags) : []), [content]);
+  const authorDisplay = content ? getAuthorDisplay(content) : '';
+  const authorInitial = content ? getAuthorInitial(content) : '';
+  const publishedAtDisplay = content ? getPublishedAtDisplay(content) : '-';
+
+  const authorOtherPosts = useMemo(() => {
+    if (!content || content.author.visibility === 'anonymous') return [];
+
+    return mockCommunityPosts
+      .filter((item) => item.author.id === content.author.id && item.id !== content.id)
+      .slice(0, 5);
+  }, [content]);
+
+  if (isLoading) {
+    return (
+      <Flex minH="calc(100vh - 160px)" align="center" justify="center" color="#6B7280" gap="10px">
+        <Spinner size="sm" />
+        <Text fontSize="14px">게시글을 불러오는 중입니다.</Text>
+      </Flex>
+    );
+  }
+
+  if (!content) {
+    return (
+      <Flex minH="calc(100vh - 160px)" align="center" justify="center" px="20px">
+        <Box
+          borderWidth="1px"
+          borderColor="#E5E7EB"
+          borderRadius="18px"
+          bg="#FFFFFF"
+          px="28px"
+          py="32px"
+          textAlign="center"
+          maxW="420px"
+          w="100%"
+        >
+          <Text fontSize="22px" fontWeight="700" color="#111827" mb="8px">
+            게시글을 찾을 수 없습니다
+          </Text>
+          <Text fontSize="14px" color="#6B7280" mb="18px">
+            {loadError || '삭제되었거나 존재하지 않는 게시글입니다.'}
+          </Text>
+          <Button asChild bg="#F59E42" color="#FFFFFF" _hover={{ bg: '#EC8A2E' }}>
+            <Link href="/user/community">커뮤니티 홈으로</Link>
+          </Button>
+        </Box>
+      </Flex>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-[1400px] px-4 py-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
-          <aside className="hidden lg:block">
-            <div className="space-y-4">
-              <CommunityProfileCard
-                profileMode={profileMode}
-                onToggleProfileMode={toggleProfileMode}
-                currentUser={currentUser}
-              />
-            </div>
-          </aside>
-          <main className="min-w-0 space-y-4">
-
-
-            <article className="overflow-hidden rounded-lg border border-gray-200 bg-white px-6 pb-6 pt-4">
-              {isPostDeleted ? (
-                <div className="py-10 text-center">
-                  <p className="text-base font-semibold text-gray-700">삭제된 게시글입니다.</p>
-                  <p className="mt-2 text-sm text-gray-500">목록으로 돌아가 다른 글을 확인해보세요.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="mb-2 -mx-1 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => router.back()}
-                      className="-ml-1 inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                      aria-label="뒤로가기"
-                      title="뒤로가기"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                    </button>
-                    {isOwnPost ? (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setIsPostMenuOpen((prev) => !prev)}
-                          className="-mr-1 inline-flex h-7 w-7 items-center justify-center text-gray-400 transition-colors hover:text-gray-600"
-                          aria-label="게시글 더보기"
-                        >
-                          <Ellipsis className="h-5 w-5" />
-                        </button>
-                        {isPostMenuOpen && (
-                          <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPostEditing(true);
-                                setIsPostMenuOpen(false);
-                              }}
-                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              수정
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPostDeleted(true);
-                                setIsPostMenuOpen(false);
-                              }}
-                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              삭제
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsPostMenuOpen(false);
-                              }}
-                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              숨김
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPostAuthorDisplayMode((prev) => (prev === 'nickname' ? 'real' : 'nickname'));
-                                setIsPostMenuOpen(false);
-                              }}
-                              className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                            >
-                              {postAuthorDisplayMode === 'nickname' ? '실명으로 전환' : '닉네임으로 전환'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <h1 className="mb-4 text-xl font-bold leading-snug text-gray-900 sm:text-2xl">
-                    {editedPostTitle}
-                  </h1>
-
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    {post.type === 'notice' && (
-                      <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs">
-                        공지
-                      </span>
-                    )}
-                    {post.type === 'study' && (
-                      <span className="rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-600 sm:px-2.5 sm:py-1 sm:text-xs">
-                        스터디
-                      </span>
-                    )}
-                    {post.isPromotion && (
-                      <span className="rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs">
-                        홍보
-                      </span>
-                    )}
-                  
-                    {(post.tags || []).slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[11px] text-gray-600 sm:px-2.5 sm:py-1 sm:text-xs"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {isPostEditing ? (
-                    <div className="mb-6 rounded-lg bg-gray-50 p-4">
-                      <div className="mb-3">
-                        <label className="mb-1 block text-sm font-medium text-gray-700">제목</label>
-                        <input
-                          type="text"
-                          value={editedPostTitle}
-                          onChange={(event) => setEditedPostTitle(event.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none transition-colors focus:border-orange-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">본문</label>
-                        <textarea
-                          value={editedPostContent}
-                          onChange={(event) => setEditedPostContent(event.target.value)}
-                          rows={8}
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm leading-7 text-gray-700 outline-none transition-colors focus:border-orange-400"
-                        />
-                      </div>
-                      <div className="mt-3 flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsPostEditing(false);
-                            setEditedPostTitle(post.title);
-                            setEditedPostContent(post.content);
-                          }}
-                          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600"
-                        >
-                          취소
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!editedPostTitle.trim() || !editedPostContent.trim()) return;
-                            setEditedPostTitle(editedPostTitle.trim());
-                            setEditedPostContent(editedPostContent.trim());
-                            setIsPostEditing(false);
-                          }}
-                          className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white"
-                        >
-                          저장
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-6 flex items-center gap-2.5 border-b border-gray-200 pb-4 sm:gap-3">
-                        <img
-                          src={post.author.avatar}
-                          alt={post.author.nickname}
-                          className="h-10 w-10 rounded-full object-cover sm:h-12 sm:w-12"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-semibold text-gray-900 sm:text-sm">
-                              {postAuthorDisplayMode === 'real' ? post.author.name : post.author.nickname}
-                            </span>
-                            {postAuthorDisplayMode === 'real' && <BadgeCheck className="h-4 w-4 text-blue-500" />}
-                          </div>
-                          <div className="text-xs text-gray-500 sm:text-sm">
-                            {post.author.position ? `${post.author.position} · ` : ''}
-                            {formatDate(post.createdAt)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {post.studyTitle && (
-                        <div className="mb-4 rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-700">
-                          📚 {post.studyTitle}
-                        </div>
-                      )}
-
-                      <div className="mb-6 whitespace-pre-wrap text-sm leading-7 text-gray-700">
-                        {editedPostContent}
-                      </div>
-                    </>
-                  )}
-
-                  {hasPostImages && !isPostEditing && (
-                    <div className="mb-6">
-                      {postImages.length === 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => openImageModal(0)}
-                          className="block w-full overflow-hidden rounded-lg bg-gray-100"
-                        >
-                          <img
-                            src={postImages[0]}
-                            alt="게시글 이미지"
-                            className="max-h-[520px] w-full object-cover"
-                          />
-                        </button>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-2">
-                          {previewImages.map((image, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => openImageModal(index)}
-                              className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 text-left"
-                            >
-                              <img
-                                src={image}
-                                alt={`게시글 이미지 ${index + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                              {index === 1 && postImages.length > 2 && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-2xl font-bold text-white">
-                                  +{postImages.length - 2}
-                                </div>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between border-t border-gray-200 pt-4 sm:pt-6">
-                    <div className="flex items-center gap-3 text-xs text-gray-600 sm:gap-4 sm:text-sm">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span>{post.views}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsPostLiked((prev) => {
-                            const next = !prev;
-                            setPostLikeCount(next ? post.likes + 1 : post.likes);
-                            return next;
-                          });
-                        }}
-                        className={`flex items-center gap-1.5 transition-colors sm:gap-2 ${
-                          isPostLiked ? 'text-orange-500' : 'text-gray-600 hover:text-orange-500'
-                        }`}
-                        aria-label="좋아요"
-                        title="좋아요 표시"
-                      >
-                        <Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${isPostLiked ? 'fill-current' : ''}`} />
-                        <span>{postLikeCount}</span>
-                      </button>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span>{post.commentCount ?? 0}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        className="text-gray-400 transition-colors hover:text-orange-500"
-                        aria-label="게시글 공유"
-                        title="공유 기능은 추후 연결 예정"
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </button>
-                      {isLoggedIn && (
-                        <button
-                          type="button"
-                          onClick={() => setIsPostBookmarked((prev) => !prev)}
-                          className={`transition-colors ${
-                            isPostBookmarked ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'
-                          }`}
-                          aria-label="북마크"
-                          title="로그인 사용자용 북마크"
-                        >
-                          <Bookmark className={`h-4 w-4 ${isPostBookmarked ? 'fill-current' : ''}`} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </article>
-            {/* 모바일 전용 작성자 영역 */}
-            <div className="space-y-4 lg:hidden">
-              {/* 작성자 카드 */}
-              <AuthorProfileCard
-                author={post.author}
-                displayMode={post.isRealName ? 'real' : 'nickname'}
-                variant="mobile"
-              />
-
-              {/* 작성자 다른 글 (아코디언) */}
-              {authorOtherPosts.length > 0 && (
-                <section className="rounded-lg border border-gray-200 bg-white">
-                  <button
-                    type="button"
-                    onClick={() => setIsOtherPostsOpen(!isOtherPostsOpen)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left"
-                  >
-                    <span className="text-sm font-semibold text-gray-900">
-                      작성자 다른 글 ({authorOtherPosts.length})
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {isOtherPostsOpen ? '닫기' : '열기'}
-                    </span>
-                  </button>
-
-                  {isOtherPostsOpen && (
-                    <div className="border-t border-gray-200 px-4 py-3 space-y-3">
-                      {authorOtherPosts.map((otherPost) => (
-                        <Link
-                          key={otherPost.id}
-                          href={`/user/community/post/${otherPost.id}`}
-                          className="flex items-start gap-3"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 line-clamp-2">
-                              {otherPost.title}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatTimeAgo(otherPost.createdAt)}
-                            </p>
-                          </div>
-                          {otherPost.images && otherPost.images.length > 0 && (
-                            <img
-                              src={otherPost.images[0]}
-                              alt=""
-                              className="h-12 w-12 rounded object-cover"
-                            />
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-            </div>
-
-            <CommunityCommentsSection
-              postId={id}
-              postType={post.type}
-              currentUser={{
-                name: currentUser.name,
-                nickname: currentUser.nickname,
-                avatar: currentUser.avatar,
-              }}
-              profileMode={profileMode}
-              mockComments={require('@/data/mockCommunityPosts').mockComments}
+    <Box minH="100vh" bg="#F9FAFB">
+      <Box maxW="1400px" mx="auto" px={{ base: '16px', md: '24px' }} py={{ base: '20px', md: '28px' }}>
+        <Grid templateColumns={{ base: '1fr', lg: '280px minmax(0, 1fr) 320px' }} gap="24px" alignItems="start">
+          <Box display={{ base: 'none', lg: 'block' }}>
+            <CommunityProfileCard
+              profileMode={defaultCommunityIdentity}
+              onToggleProfileMode={toggleProfileMode}
+              currentUser={COMMUNITY_CURRENT_USER}
             />
-          </main>
+          </Box>
 
-          <aside className="hidden space-y-4 lg:block">
-            <AuthorProfileCard
-              author={post.author}
-              displayMode={post.isRealName ? 'real' : 'nickname'}
-              variant="sidebar"
-            />
-
-            {authorOtherPosts.length > 0 && (
-              <section className="rounded-lg border border-gray-200 bg-white p-5">
-                <h3 className="mb-4 text-base font-bold text-gray-900">작성자 다른 글</h3>
-                <div className="space-y-4">
-                  {authorOtherPosts.map((otherPost) => (
-                    <Link
-                      key={otherPost.id}
-                      href={`/user/community/post/${otherPost.id}`}
-                      className="-m-2 flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
-                    >
-                      <div className="min-w-0 flex-1">
-                        {otherPost.tags && otherPost.tags.length > 0 && (
-                          <div className="mb-2 flex flex-wrap gap-1">
-                            {otherPost.tags.slice(0, 2).map((tag, index) => (
-                              <span
-                                key={tag}
-                                className={`rounded-full border px-1.5 py-0 text-xs ${
-                                  index === 0
-                                    ? 'border-green-200 bg-green-100 text-green-700'
-                                    : 'border-orange-200 bg-orange-100 text-orange-700'
-                                }`}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p className="mb-2 line-clamp-2 text-sm font-medium text-gray-900">
-                          {otherPost.title}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {post.author.nickname} • {formatTimeAgo(otherPost.createdAt)}
-                        </p>
-                      </div>
-                      {otherPost.images && otherPost.images.length > 0 && (
-                        <img
-                          src={otherPost.images[0]}
-                          alt="다른 글 이미지"
-                          className="h-16 w-16 flex-shrink-0 rounded object-cover"
-                        />
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-          </aside>
-        </div>
-      </div>
-      {selectedImage !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 px-4 py-8"
-          onClick={closeImageModal}
-        >
-          <button
-            type="button"
-            onClick={closeImageModal}
-            className="absolute right-4 top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            aria-label="이미지 모달 닫기"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-sm text-white">
-            {selectedImageIndex! + 1} / {postImages.length}
-          </div>
-
-          {postImages.length > 1 && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                goToPrevImage();
-              }}
-              className="absolute left-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-              aria-label="이전 이미지"
-            >
-              <ChevronLeft className="h-7 w-7" />
-            </button>
-          )}
-
-          <div
-            className="relative w-full max-w-6xl px-12 md:px-20"
-            onClick={(event) => event.stopPropagation()}
-            onTouchStart={handleImageTouchStart}
-            onTouchMove={handleImageTouchMove}
-            onTouchEnd={handleImageTouchEnd}
-          >
-            <div className="overflow-hidden rounded-xl bg-black">
-              <img
-                src={selectedImage}
-                alt={`확대 이미지 ${selectedImageIndex! + 1}`}
-                className="max-h-[80vh] w-full object-contain"
-              />
-            </div>
-          </div>
-
-          {postImages.length > 1 && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                goToNextImage();
-              }}
-              className="absolute right-4 z-20 inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-              aria-label="다음 이미지"
-            >
-              <ChevronRight className="h-7 w-7" />
-            </button>
-          )}
-
-          {postImages.length > 1 && (
-            <div
-              className="absolute bottom-6 left-1/2 z-20 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-full bg-black/50 px-4 py-2"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {postImages.map((image, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
-                    index === selectedImageIndex
-                      ? 'scale-110 border-orange-500 opacity-100'
-                      : 'border-white/30 opacity-60 hover:opacity-100'
-                  }`}
-                  aria-label={`${index + 1}번 이미지로 이동`}
+          <Flex direction="column" gap="16px" minW="0">
+            <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
+              <Flex align="center" justify="space-between" mb="10px">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  px="8px"
+                  color="#6B7280"
+                  _hover={{ bg: '#F9FAFB', color: '#111827' }}
                 >
-                  <img
-                    src={image}
-                    alt={`썸네일 ${index + 1}`}
-                    className="h-full w-full object-cover"
+                  <Link href="/user/community">
+                    <Flex align="center" gap="6px">
+                      <ArrowLeft size={16} />
+                      <Text as="span" fontSize="13px" fontWeight="600">
+                        목록으로
+                      </Text>
+                    </Flex>
+                  </Link>
+                </Button>
+              </Flex>
+
+              <Flex align="center" gap="8px" mb="14px" wrap="wrap">
+                {content.flags.isNotice ? (
+                  <Box px="10px" py="4px" borderRadius="9999px" bg="#ECFDF5" color="#047857">
+                    <Text fontSize="12px" fontWeight="700">
+                      공지
+                    </Text>
+                  </Box>
+                ) : null}
+                {content.flags.isPromoted ? (
+                  <Flex align="center" gap="5px" px="10px" py="4px" borderRadius="9999px" bg="#FEF2F2" color="#DC2626">
+                    <Megaphone size={14} />
+                    <Text fontSize="12px" fontWeight="700">
+                      홍보
+                    </Text>
+                  </Flex>
+                ) : null}
+              </Flex>
+
+              <Text fontSize={{ base: '24px', md: '28px' }} fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
+                {content.title}
+              </Text>
+
+              {resolvedTags.length > 0 ? (
+                <Flex wrap="wrap" gap="8px" mb="16px">
+                  {resolvedTags.map((tag) => (
+                    <AdminTagBadge key={tag.id} tag={tag} />
+                  ))}
+                </Flex>
+              ) : null}
+
+              <Flex align="center" gap="12px" borderBottom="1px solid" borderColor="#E5E7EB" pb="18px">
+                <Flex
+                  align="center"
+                  justify="center"
+                  w="44px"
+                  h="44px"
+                  borderRadius="9999px"
+                  bg={isAnonymousContent ? '#111827' : '#F3F4F6'}
+                  color={isAnonymousContent ? '#FFFFFF' : '#6B7280'}
+                  fontSize="16px"
+                  fontWeight="700"
+                  flexShrink={0}
+                >
+                  {authorInitial}
+                </Flex>
+
+                <Box minW="0">
+                  <Flex align="center" gap="6px">
+                    <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
+                      {authorDisplay}
+                    </Text>
+                    {!isAnonymousContent ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+                  </Flex>
+                  <Text mt="2px" fontSize="13px" color="#6B7280">
+                    {isAnonymousContent ? publishedAtDisplay : `실명 프로필 · ${publishedAtDisplay}`}
+                  </Text>
+                </Box>
+              </Flex>
+
+              <Flex direction="column" gap="18px" mt="22px">
+                {content.content.content?.length ? (
+                  content.content.content.map((node, index) => renderBodyNode(node, index))
+                ) : (
+                  <Text fontSize="14px" lineHeight="1.8" color="#6B7280">
+                    본문 내용이 없습니다.
+                  </Text>
+                )}
+              </Flex>
+
+              <Flex align="center" justify="space-between" borderTop="1px solid" borderColor="#E5E7EB" mt="24px" pt="16px">
+                <Flex align="center" gap={{ base: '12px', md: '18px' }} color="#6B7280" wrap="wrap">
+                  <Flex align="center" gap="6px">
+                    <Eye size={16} />
+                    <Text fontSize="13px" fontWeight="600">{content.stats.viewCount}</Text>
+                  </Flex>
+                  <Flex align="center" gap="6px">
+                    <Heart size={16} />
+                    <Text fontSize="13px" fontWeight="600">{content.stats.likeCount}</Text>
+                  </Flex>
+                  <Flex align="center" gap="6px">
+                    <MessageSquare size={16} />
+                    <Text fontSize="13px" fontWeight="600">
+                      {getCommentTotalCount(content.stats.commentCount, content.stats.replyCount)}
+                    </Text>
+                  </Flex>
+                  <Flex align="center" gap="6px">
+                    <Bookmark size={16} />
+                    <Text fontSize="13px" fontWeight="600">{content.stats.saveCount}</Text>
+                  </Flex>
+                </Flex>
+              </Flex>
+            </Box>
+
+            <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF">
+              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }} borderBottom="1px solid" borderColor="#E5E7EB">
+                <Flex align="center" gap="6px" mb="16px">
+                  <Text fontSize="18px" fontWeight="700" color="#111827">
+                    댓글
+                  </Text>
+                  <Text fontSize="13px" color="#6B7280">
+                    {getCommentTotalCount(content.stats.commentCount, content.stats.replyCount)}개
+                  </Text>
+                </Flex>
+
+                {replyTargetId && replyTargetName ? (
+                  <Box mb="12px" px="12px" py="10px" borderRadius="12px" bg="#FFF7ED" borderWidth="1px" borderColor="#FED7AA">
+                    <Text fontSize="12px" color="#9A3412">
+                      현재 <Text as="span" fontWeight="700">{replyTargetName}</Text> 님의 댓글에 답글을 작성 중입니다.
+                    </Text>
+                  </Box>
+                ) : null}
+
+                {content.flags.isNotice ? (
+                  <Text fontSize="13px" color="#6B7280">
+                    공지글에는 댓글을 작성할 수 없습니다.
+                  </Text>
+                ) : !isLoggedIn ? (
+                  <Text fontSize="13px" color="#6B7280">
+                    댓글을 작성하려면 로그인해주세요.
+                  </Text>
+                ) : (
+                  <CommentEditor
+                    value={commentValue}
+                    onChange={setCommentValue}
+                    onSubmit={() => {
+                      void handleCreateComment();
+                    }}
+                    submitLabel="댓글 등록"
+                    isSubmitting={isCommentSubmitting}
+                    placeholder="댓글을 입력하세요."
+                    identity={commentIdentity}
+                    onChangeIdentity={setCommentIdentity}
+                    displayName={COMMUNITY_CURRENT_USER.name}
+                    profileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
                   />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+                )}
+              </Box>
+
+              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
+                {isCommentsLoading ? (
+                  <Flex minH="120px" align="center" justify="center" gap="10px" color="#6B7280">
+                    <Spinner size="sm" />
+                    <Text fontSize="13px">댓글을 불러오는 중입니다.</Text>
+                  </Flex>
+                ) : commentsError ? (
+                  <Box borderWidth="1px" borderColor="#FECACA" bg="#FEF2F2" borderRadius="14px" px="16px" py="14px">
+                    <Text fontSize="13px" color="#B91C1C">
+                      {commentsError}
+                    </Text>
+                  </Box>
+                ) : comments.length > 0 ? (
+                  <Flex direction="column" gap="12px">
+                    {comments.map((comment) => (
+                      <CommentItem
+                        key={comment.id}
+                        comment={comment}
+                        currentUserId={COMMUNITY_CURRENT_USER.accountId}
+                        currentUserRole="user"
+                        currentUserDisplayName={COMMUNITY_CURRENT_USER.name}
+                        currentUserProfileImageUrl={replyIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
+                        replyTargetId={replyTargetId}
+                        replyDraft={replyValue}
+                        replyIdentity={replyIdentity}
+                        isReplySubmitting={isReplySubmitting}
+                        onReplyDraftChange={setReplyValue}
+                        onReplyIdentityChange={setReplyIdentity}
+                        onReplyStart={(targetComment) => {
+                          setReplyTargetId(targetComment.id);
+                          setReplyTargetName(targetComment.author.displayName);
+                          setReplyValue('');
+                          setReplyIdentity(defaultCommunityIdentity);
+                        }}
+                        onReplyCancel={() => {
+                          setReplyTargetId(null);
+                          setReplyTargetName(null);
+                          setReplyValue('');
+                          setReplyIdentity(defaultCommunityIdentity);
+                        }}
+                        onReplySubmit={handleCreateReply}
+                        onUpdateComment={handleUpdateComment}
+                        onArchiveToggle={handleArchiveComment}
+                        onDeleteComment={handleDeleteComment}
+                      />
+                    ))}
+                  </Flex>
+                ) : (
+                  <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="14px" px="16px" py="18px" bg="#F9FAFB">
+                    <Text fontSize="13px" color="#6B7280">
+                      아직 등록된 댓글이 없습니다.
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Flex>
+
+          <Flex direction="column" gap="16px" display={{ base: 'none', lg: 'flex' }}>
+            {!isAnonymousContent ? (
+              <AuthorProfileCard
+                author={{
+                  id: content.author.id,
+                  name: content.author.displayName,
+                  nickname: content.author.displayName,
+                  avatar: COMMUNITY_CURRENT_USER.avatar,
+                }}
+                displayMode="real"
+              />
+            ) : null}
+
+            {!isAnonymousContent && authorOtherPosts.length > 0 ? (
+              <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" px="18px" py="18px">
+                <Text fontSize="15px" fontWeight="700" color="#111827" mb="12px">
+                  작성자의 다른 글
+                </Text>
+                <Flex direction="column" gap="10px">
+                  {authorOtherPosts.map((post) => (
+                    <Box key={post.id} borderBottom="1px solid" borderColor="#F3F4F6" pb="10px" _last={{ borderBottom: 'none', pb: 0 }}>
+                      <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+                        <Link href={`/user/community/post/${post.id}`}>
+                          <Text fontSize="13px" fontWeight="600" color="#111827" lineClamp="2">
+                            {post.title}
+                          </Text>
+                          <Text mt="4px" fontSize="12px" color="#9CA3AF">
+                            {new Date(post.createdAt).toLocaleDateString('ko-KR')}
+                          </Text>
+                        </Link>
+                      </ChakraLink>
+                    </Box>
+                  ))}
+                </Flex>
+              </Box>
+            ) : null}
+          </Flex>
+        </Grid>
+      </Box>
+
+      <BlockedWordAlertModal
+        isOpen={isBlockedWordModalOpen}
+        onClose={() => setIsBlockedWordModalOpen(false)}
+        title={blockedWordModalTitle}
+        description={blockedWordModalDescription}
+        matchedKeywords={matchedBlockedKeywords}
+        sourceText={blockedWordSourceText}
+      />
+    </Box>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { X } from 'lucide-react';
+import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
 import { useMobileNav } from '@/app/user/components/providers/MobileNavProvider';
 
 export default function MobileNavDrawer() {
@@ -10,63 +11,116 @@ export default function MobileNavDrawer() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] lg:hidden">
-      <button
+    <Box position="fixed" inset="0" zIndex="100" display={{ lg: 'none' }}>
+      <Button
         type="button"
         aria-label="메뉴 닫기"
         onClick={closeNav}
-        className="absolute inset-0 bg-black/30"
+        position="absolute"
+        inset="0"
+        bg="blackAlpha.300"
+        _hover={{ bg: 'blackAlpha.300' }}
+        _active={{ bg: 'blackAlpha.300' }}
       />
 
-      <div className="absolute left-0 top-0 flex h-full w-[320px] max-w-[85vw] flex-col border-r border-gray-200 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <div>
-            <p className="text-sm font-medium text-gray-400">Orange Park</p>
-            <h2 className="mt-1 text-lg font-semibold text-gray-900">메뉴</h2>
-          </div>
+      <Flex
+        position="absolute"
+        top="0"
+        left="0"
+        h="full"
+        w="320px"
+        maxW="85vw"
+        direction="column"
+        borderRightWidth="1px"
+        borderColor="gray.200"
+        bg="white"
+        boxShadow="2xl"
+      >
+        <Flex align="center" justify="space-between" borderBottomWidth="1px" borderColor="gray.200" px="5" py="4">
+          <Box>
+            <Text fontSize="sm" fontWeight="500" color="gray.400">
+              Orange Park
+            </Text>
+            <Text mt="1" fontSize="lg" fontWeight="600" color="gray.900">
+              메뉴
+            </Text>
+          </Box>
 
-          <button
+          <Button
             type="button"
             onClick={closeNav}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+            minW="9"
+            h="9"
+            rounded="full"
+            borderWidth="1px"
+            borderColor="gray.200"
+            bg="white"
+            p="0"
+            color="gray.500"
+            _hover={{ bg: 'gray.50', color: 'gray.700' }}
             aria-label="닫기"
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+            <Icon as={X} boxSize="4" />
+          </Button>
+        </Flex>
 
-        <nav className="flex-1 px-4 py-5">
-          <ul className="space-y-2">
-            <li>
+        <Box as="nav" flex="1" px="4" py="5">
+          <Flex as="ul" direction="column" gap="2">
+            <Box as="li">
               <Link
                 href="/user/community"
                 onClick={closeNav}
-                className="flex items-center rounded-xl px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-orange-600"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#374151',
+                }}
               >
                 커뮤니티
               </Link>
-            </li>
-            <li>
-              <button
+            </Box>
+            <Box as="li">
+              <Button
                 type="button"
                 onClick={closeNav}
-                className="flex w-full items-center rounded-xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-orange-600"
+                justifyContent="flex-start"
+                w="full"
+                rounded="xl"
+                bg="transparent"
+                px="4"
+                py="3"
+                fontSize="sm"
+                fontWeight="500"
+                color="gray.700"
+                _hover={{ bg: 'gray.50', color: 'orange.600' }}
               >
                 캠퍼스
-              </button>
-            </li>
-            <li>
+              </Button>
+            </Box>
+            <Box as="li">
               <Link
                 href="/user/article"
                 onClick={closeNav}
-                className="flex items-center rounded-xl px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-orange-600"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: '#374151',
+                }}
               >
                 아티클
               </Link>
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </div>
+            </Box>
+          </Flex>
+        </Box>
+      </Flex>
+    </Box>
   );
 }

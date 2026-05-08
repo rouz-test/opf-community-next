@@ -1,9 +1,12 @@
 'use client';
 
+import { Box, Button, Flex, Grid, Link as ChakraLink, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, LogOut, MessageSquareText, School, Settings } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
+
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 
 const sidebarItems = [
@@ -33,164 +36,256 @@ const settingsTabs = [
   { label: '알림', href: '/user/mypage/settings/notifications' },
 ];
 
-export default function MyPageLayout({ children }: { children: React.ReactNode }) {
+type SidebarItem = (typeof sidebarItems)[number];
+
+function SidebarLink({
+  item,
+  isActive,
+}: {
+  item: SidebarItem;
+  isActive: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+      <Link href={item.href}>
+        <Flex
+          align="center"
+          gap="12px"
+          px="16px"
+          py="12px"
+          borderRadius="14px"
+          bg={isActive ? '#FFF7ED' : 'transparent'}
+          color={isActive ? '#F97316' : '#4B5563'}
+          fontSize="14px"
+          fontWeight="600"
+          transition="background-color 0.2s ease, color 0.2s ease"
+          _hover={{ bg: '#F9FAFB', color: '#111827' }}
+        >
+          <Icon size={16} />
+          <Text as="span" flex="1">
+            {item.label}
+          </Text>
+        </Flex>
+      </Link>
+    </ChakraLink>
+  );
+}
+
+export default function MyPageLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { setIsLoggedIn } = useAuth();
   const [isCampusOpen, setIsCampusOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isSettingsRoute = pathname.startsWith('/user/mypage/settings');
+  const isCampusRoute = pathname.startsWith('/user/mypage/campus');
 
   return (
-    <main className="min-h-screen bg-[#f3f4f6]">
-      <div className="w-full bg-white lg:border-r lg:border-gray-200">
-        <div className="mx-auto flex max-w-[1400px]">
-          <aside className="hidden min-h-screen w-[220px] shrink-0 bg-white lg:block">
-            <div className="border-b border-gray-200 px-6 py-5">
-              <h1 className="text-lg font-semibold text-gray-900">마이페이지</h1>
-            </div>
+    <Box minH="100vh" bg="#F3F4F6">
+      <Grid maxW="1400px" mx="auto" templateColumns={{ base: '1fr', lg: '220px minmax(0, 1fr)' }}>
+        <Box
+          display={{ base: 'none', lg: 'block' }}
+          minH="100vh"
+          bg="#FFFFFF"
+          borderRight="1px solid"
+          borderColor="#E5E7EB"
+        >
+          <Box px="24px" py="20px" borderBottom="1px solid" borderColor="#E5E7EB">
+            <Text fontSize="18px" fontWeight="700" color="#111827">
+              마이페이지
+            </Text>
+          </Box>
 
-            <nav className="px-4 py-5">
-              <ul className="space-y-2">
-                {sidebarItems.map((item) => {
-                  const isExpandableItem = item.label === '캠퍼스' || item.label === '설정';
-                  const isCampusItem = item.label === '캠퍼스';
-                  const isSettingsItem = item.label === '설정';
-                  const isLogoutItem = item.isLogout;
-                  const isActive = !isExpandableItem && !isLogoutItem && pathname === item.href;
+          <Box px="16px" py="20px">
+            <Flex as="ul" direction="column" gap="8px">
+              {sidebarItems.map((item) => {
+                const isExpandableItem = item.label === '캠퍼스' || item.label === '설정';
+                const isCampusItem = item.label === '캠퍼스';
+                const isSettingsItem = item.label === '설정';
+                const isLogoutItem = item.isLogout;
+                const isActive = !isExpandableItem && !isLogoutItem && pathname === item.href;
+                const isExpanded =
+                  (isCampusItem && (isCampusOpen || isCampusRoute)) ||
+                  (isSettingsItem && (isSettingsOpen || isSettingsRoute));
+                const Icon = item.icon;
+
+                return (
+                  <Box as="li" key={item.label}>
+                    {isExpandableItem ? (
+                      <Button
+                        type="button"
+                        unstyled
+                        display="flex"
+                        w="100%"
+                        alignItems="center"
+                        gap="12px"
+                        px="16px"
+                        py="12px"
+                        borderRadius="14px"
+                        color="#4B5563"
+                        fontSize="14px"
+                        fontWeight="600"
+                        textAlign="left"
+                        transition="background-color 0.2s ease, color 0.2s ease"
+                        _hover={{ bg: '#F9FAFB', color: '#111827' }}
+                        onClick={() => {
+                          if (isCampusItem) setIsCampusOpen((prev) => !prev);
+                          if (isSettingsItem) setIsSettingsOpen((prev) => !prev);
+                        }}
+                      >
+                        <Icon size={16} />
+                        <Text as="span" flex="1">
+                          {item.label}
+                        </Text>
+                        <Box
+                          transition="transform 0.2s ease"
+                          transform={isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'}
+                        >
+                          <ChevronDown size={16} />
+                        </Box>
+                      </Button>
+                    ) : isLogoutItem ? (
+                      <Button
+                        type="button"
+                        unstyled
+                        display="flex"
+                        w="100%"
+                        alignItems="center"
+                        gap="12px"
+                        px="16px"
+                        py="12px"
+                        borderRadius="14px"
+                        color="#4B5563"
+                        fontSize="14px"
+                        fontWeight="600"
+                        textAlign="left"
+                        transition="background-color 0.2s ease, color 0.2s ease"
+                        _hover={{ bg: '#F9FAFB', color: '#111827' }}
+                        onClick={() => {
+                          setIsLoggedIn(false);
+                          router.push('/user/community');
+                        }}
+                      >
+                        <Icon size={16} />
+                        <Text as="span" flex="1">
+                          {item.label}
+                        </Text>
+                      </Button>
+                    ) : (
+                      <SidebarLink item={item} isActive={isActive} />
+                    )}
+
+                    {isExpandableItem && isExpanded ? (
+                      <Flex as="ul" direction="column" gap="4px" mt="8px" pl="44px">
+                        {item.children?.map((child) => {
+                          if (typeof child === 'string') {
+                            return (
+                              <Box as="li" key={child}>
+                                <Button
+                                  type="button"
+                                  unstyled
+                                  display="block"
+                                  w="100%"
+                                  px="12px"
+                                  py="10px"
+                                  borderRadius="10px"
+                                  textAlign="left"
+                                  fontSize="14px"
+                                  color="#6B7280"
+                                  _hover={{ bg: '#F9FAFB', color: '#111827' }}
+                                >
+                                  {child}
+                                </Button>
+                              </Box>
+                            );
+                          }
+
+                          const isChildActive = pathname === child.href;
+
+                          return (
+                            <Box as="li" key={child.href}>
+                              <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+                                <Link href={child.href}>
+                                  <Box
+                                    px="12px"
+                                    py="10px"
+                                    borderRadius="10px"
+                                    bg={isChildActive ? '#FFF7ED' : 'transparent'}
+                                    color={isChildActive ? '#F97316' : '#6B7280'}
+                                    fontSize="14px"
+                                    transition="background-color 0.2s ease, color 0.2s ease"
+                                    _hover={{ bg: '#F9FAFB', color: '#111827' }}
+                                  >
+                                    {child.label}
+                                  </Box>
+                                </Link>
+                              </ChakraLink>
+                            </Box>
+                          );
+                        })}
+                      </Flex>
+                    ) : null}
+                  </Box>
+                );
+              })}
+            </Flex>
+          </Box>
+        </Box>
+
+        <Box
+          minW="0"
+          px={{ base: '16px', sm: '24px', lg: '40px' }}
+          py={isSettingsRoute ? { base: '0', lg: '32px' } : { base: '24px', lg: '32px' }}
+          borderLeft={{ base: 'none', lg: '1px solid' }}
+          borderColor="#E5E7EB"
+          bg="#F3F4F6"
+        >
+          {isSettingsRoute ? (
+            <Box
+              display={{ base: 'block', lg: 'none' }}
+              mx={{ base: '-16px', sm: '-24px' }}
+              px={{ base: '16px', sm: '24px' }}
+              bg="#FFFFFF"
+              borderBottom="1px solid"
+              borderColor="#E5E7EB"
+            >
+              <Grid templateColumns="repeat(3, minmax(0, 1fr))">
+                {settingsTabs.map((tab) => {
+                  const isActive = pathname === tab.href;
 
                   return (
-                    <li key={item.label}>
-                      {isExpandableItem ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isCampusItem) {
-                              setIsCampusOpen((prev) => !prev);
-                            }
-
-                            if (isSettingsItem) {
-                              setIsSettingsOpen((prev) => !prev);
-                            }
-                          }}
-                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                    <ChakraLink key={tab.href} asChild _hover={{ textDecoration: 'none' }}>
+                      <Link href={tab.href}>
+                        <Flex
+                          position="relative"
+                          justify="center"
+                          px="4px"
+                          py="16px"
+                          fontSize="14px"
+                          fontWeight="700"
+                          color={isActive ? '#F97316' : '#6B7280'}
+                          transition="color 0.2s ease"
+                          _hover={{ color: '#111827' }}
                         >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1">{item.label}</span>
-                          <ChevronDown
-                            className={`h-4 w-4 shrink-0 transition-transform ${
-                              (isCampusItem && isCampusOpen) || (isSettingsItem && isSettingsOpen)
-                                ? 'rotate-180'
-                                : ''
-                            }`}
-                          />
-                        </button>
-                      ) : isLogoutItem ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsLoggedIn(false);
-                            router.push('/user/community');
-                          }}
-                          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1">{item.label}</span>
-                        </button>
-                      ) : (
-                        <Link
-                          href={item.href}
-                          className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition-colors ${
-                            isActive
-                              ? 'bg-orange-50 text-orange-500'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        >
-                          <item.icon className="h-4 w-4 shrink-0" />
-                          <span className="flex-1">{item.label}</span>
-                        </Link>
-                      )}
-
-                      {isExpandableItem && ((isCampusItem && isCampusOpen) || (isSettingsItem && isSettingsOpen)) ? (
-                        <ul className="mt-2 space-y-1 pl-11">
-                          {item.children?.map((child) => {
-                            if (typeof child === 'string') {
-                              return (
-                                <li key={child}>
-                                  <button
-                                    type="button"
-                                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
-                                  >
-                                    {child}
-                                  </button>
-                                </li>
-                              );
-                            }
-
-                            const isChildActive = pathname === child.href;
-
-                            return (
-                              <li key={child.href}>
-                                <Link
-                                  href={child.href}
-                                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                                    isChildActive
-                                      ? 'bg-orange-50 text-orange-500'
-                                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                                  }`}
-                                >
-                                  {child.label}
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
-                    </li>
+                          {tab.label}
+                          {isActive ? (
+                            <Box position="absolute" insetX="0" bottom="0" h="2px" bg="#F97316" />
+                          ) : null}
+                        </Flex>
+                      </Link>
+                    </ChakraLink>
                   );
                 })}
-              </ul>
-            </nav>
-          </aside>
+              </Grid>
+            </Box>
+          ) : null}
 
-          <section
-            className={`min-w-0 flex-1 border-l border-gray-200 bg-[#f3f4f6] px-4 sm:px-6 lg:px-10 lg:py-8 ${
-              isSettingsRoute ? 'pt-0 pb-6 sm:pb-6' : 'py-6'
-            }`}
-          >
-            {isSettingsRoute ? (
-              <div className="-mx-4 border-b border-gray-200 bg-white px-4 sm:-mx-6 sm:px-6 lg:hidden">
-                <nav className="grid grid-cols-3 items-center">
-                  {settingsTabs.map((tab) => {
-                    const isActive = pathname === tab.href;
-
-                    return (
-                      <Link
-                        key={tab.href}
-                        href={tab.href}
-                        className={`relative inline-flex w-full justify-center px-1 py-4 text-sm font-semibold transition-colors ${
-                          isActive
-                            ? 'text-orange-500'
-                            : 'text-gray-500 hover:text-gray-900'
-                        }`}
-                      >
-                        {tab.label}
-                        {isActive ? (
-                          <span className="absolute inset-x-0 bottom-0 h-[2px] bg-orange-500" />
-                        ) : null}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-            ) : null}
-
-            {isSettingsRoute ? <div className="h-6 lg:hidden" /> : null}
-
-            {children}
-          </section>
-        </div>
-      </div>
-    </main>
+          {isSettingsRoute ? <Box h={{ base: '24px', lg: '0' }} /> : null}
+          {children}
+        </Box>
+      </Grid>
+    </Box>
   );
 }

@@ -1,21 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Box, Button, Flex, Grid, Text } from '@chakra-ui/react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { useMemo, useState } from 'react';
+
+import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
+import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
+import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
+import { CommunityTagFilter } from '@/app/user/components/community/CommunityTagFilter';
+import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
+import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import {
-  mockCommunityPosts,
+  COMMUNITY_CURRENT_USER,
   mockComments,
+  mockCommunityPosts,
   type CommunityPost,
   type HighlightedComment,
-} from '@/data/mockCommunityPosts';
-import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
-import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
-import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
-import { CommunityTagFilter } from '@/app/user/components/community/CommunityTagFilter';
-import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
-import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
+} from '@/app/user/lib/community-content-data';
 
 const formatRelativeDate = (dateString?: string) => {
   if (!dateString) return '방금 전';
@@ -37,20 +41,6 @@ const formatRelativeDate = (dateString?: string) => {
   return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 };
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
-
-const COMMUNITY_CURRENT_USER = {
-  id: 'current-user',
-  name: '박민수',
-  nickname: 'StartupHero',
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-  position: '스타트업 개발자',
-  postsCount: 12,
-  commentsCount: 45,
-};
-
 const getProfileActorId = (authorLike?: { id?: string; profileId?: string }) =>
   authorLike?.profileId ?? authorLike?.id ?? '';
 
@@ -62,36 +52,75 @@ type AuthorCommentEntry = {
   activityDate?: string;
 };
 
-const highlightMatchedText = (text: string, searchQuery: string) => {
-  const keyword = searchQuery.trim();
+type MockComment = (typeof mockComments)[number];
 
-  if (!keyword) return text;
+function flattenComments(comments: readonly MockComment[]): MockComment[] {
+  return comments.flatMap((comment) => [
+    comment,
+    ...(comment.replies ? flattenComments(comment.replies) : []),
+  ]);
+}
 
-  const regex = new RegExp(`(${escapeRegExp(keyword)})`, 'gi');
-  const parts = text.split(regex);
-
-  return parts.map((part, index) => {
-    if (part.toLowerCase() === keyword.toLowerCase()) {
-      return (
-        <mark key={`${part}-${index}`} className="rounded bg-yellow-200 px-0.5 text-inherit">
-          {part}
-        </mark>
-      );
-    }
-
-    return part;
-  });
-};
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <Flex minH="100vh" bg="#F9FAFB" align="center" justify="center" px="16px">
+      <Box
+        maxW="720px"
+        w="100%"
+        borderWidth="1px"
+        borderStyle="dashed"
+        borderColor="#D1D5DB"
+        borderRadius="20px"
+        bg="#FFFFFF"
+        px="24px"
+        py="40px"
+        textAlign="center"
+      >
+        <Text fontSize="16px" fontWeight="700" color="#111827">
+          {title}
+        </Text>
+        <Text mt="8px" fontSize="14px" color="#6B7280">
+          {description}
+        </Text>
+        <Button
+          asChild
+          mt="20px"
+          h="42px"
+          px="16px"
+          borderRadius="12px"
+          bg="#111827"
+          color="#FFFFFF"
+          fontSize="14px"
+          fontWeight="600"
+          _hover={{ bg: '#1F2937' }}
+        >
+          <Link href="/user/community">
+            <Flex align="center" gap="8px">
+              <ArrowLeft size={16} />
+              <Text as="span">커뮤니티로 돌아가기</Text>
+            </Flex>
+          </Link>
+        </Button>
+      </Box>
+    </Flex>
+  );
+}
 
 export default function CommunityAuthorPage() {
   const params = useParams<{ id: string }>();
   const authorId = typeof params?.id === 'string' ? params.id : '';
+  const { defaultCommunityIdentity, setDefaultCommunityIdentity } = useAuth();
 
   const [activityTab, setActivityTab] = useState<'posts' | 'comments'>('posts');
   const [viewMode, setViewMode] = useState<'feed' | 'board'>('feed');
   const [sortBy, setSortBy] = useState<'recommended' | 'latest'>('latest');
   const [searchQuery, setSearchQuery] = useState('');
-  const [profileMode, setProfileMode] = useState<'real' | 'nickname'>('nickname');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
@@ -104,17 +133,20 @@ export default function CommunityAuthorPage() {
   const authorCommentEntries = useMemo<AuthorCommentEntry[]>(() => {
     const entries = new Map<string | number, AuthorCommentEntry>();
     const postMap = new Map(mockCommunityPosts.map((post) => [post.id, post]));
-  
-    mockComments.forEach((comment) => {
+
+    flattenComments(mockComments).forEach((comment) => {
       if (getProfileActorId(comment.author) !== authorId) return;
-  
+
       const post = postMap.get(comment.postId);
       if (!post) return;
-  
+
       const latestComment: AuthorCommentPreview = {
         id: comment.id,
         author: {
           id: comment.author.id,
+          accountId: comment.author.accountId,
+          profileId: comment.author.profileId,
+          mode: comment.author.mode,
           name: comment.author.name,
           nickname: comment.author.nickname,
           avatar: comment.author.avatar,
@@ -125,7 +157,7 @@ export default function CommunityAuthorPage() {
         likes: comment.likes,
         replyCount: comment.replies?.length ?? 0,
       };
-  
+
       const entry: AuthorCommentEntry = {
         post: {
           ...post,
@@ -134,21 +166,21 @@ export default function CommunityAuthorPage() {
         comment: latestComment,
         activityDate: latestComment.createdAt ?? post.createdAt,
       };
-  
+
       const existingEntry = entries.get(post.id);
       if (!existingEntry) {
         entries.set(post.id, entry);
         return;
       }
-  
+
       const existingTime = new Date(existingEntry.activityDate || 0).getTime();
       const nextTime = new Date(entry.activityDate || 0).getTime();
-  
+
       if (nextTime > existingTime) {
         entries.set(post.id, entry);
       }
     });
-  
+
     return Array.from(entries.values());
   }, [authorId]);
 
@@ -180,78 +212,6 @@ export default function CommunityAuthorPage() {
     () => Array.from(new Set(activeSourcePosts.flatMap((post) => post.tags || []))),
     [activeSourcePosts],
   );
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
-    );
-  };
-
-  const clearSelectedTags = () => {
-    setSelectedTags([]);
-  };
-
-  const toggleFilterOpen = () => {
-    setIsFilterOpen((prev) => !prev);
-  };
-
-  const closeFilterOpen = () => {
-    setIsFilterOpen(false);
-  };
-
-  const toggleTagFilterOpen = () => {
-    setIsTagFilterOpen((prev) => !prev);
-  };
-
-  const syncProfileMode = (nextMode: 'real' | 'nickname') => {
-    setProfileMode(nextMode);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY, nextMode);
-      window.dispatchEvent(
-        new CustomEvent('community-profile-mode-change', {
-          detail: { mode: nextMode },
-        }),
-      );
-    }
-  };
-
-  const toggleProfileMode = () => {
-    syncProfileMode(profileMode === 'real' ? 'nickname' : 'real');
-  };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const savedMode = window.localStorage.getItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY);
-    if (savedMode === 'real' || savedMode === 'nickname') {
-      setProfileMode(savedMode);
-    }
-
-    const handleProfileModeChange = (event: Event) => {
-      const customEvent = event as CustomEvent<{ mode?: 'real' | 'nickname' }>;
-      const nextMode = customEvent.detail?.mode;
-
-      if (nextMode === 'real' || nextMode === 'nickname') {
-        setProfileMode(nextMode);
-      }
-    };
-
-    window.addEventListener('community-profile-mode-change', handleProfileModeChange as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        'community-profile-mode-change',
-        handleProfileModeChange as EventListener,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    setSelectedTags([]);
-    setIsFilterOpen(false);
-    setIsTagFilterOpen(false);
-  }, [activityTab]);
 
   const visiblePosts = useMemo(() => {
     let posts = [...activeSourcePosts];
@@ -293,42 +253,59 @@ export default function CommunityAuthorPage() {
     }
 
     return posts;
-  }, [activeSourcePosts, selectedTags, searchQuery, sortBy, activityTab, commentEntryMap]);
+  }, [activeSourcePosts, commentEntryMap, searchQuery, selectedTags, sortBy, activityTab]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
+    );
+  };
+
+  const clearSelectedTags = () => {
+    setSelectedTags([]);
+  };
+
+  const toggleProfileMode = () => {
+    setDefaultCommunityIdentity(defaultCommunityIdentity === 'real' ? 'anonymous' : 'real');
+  };
+
+  const changeActivityTab = (nextTab: 'posts' | 'comments') => {
+    setActivityTab(nextTab);
+    setSelectedTags([]);
+    setIsFilterOpen(false);
+    setIsTagFilterOpen(false);
+  };
 
   if (!author) {
     return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="mx-auto max-w-[1200px] px-4 py-10">
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
-            <p className="text-base font-semibold text-gray-900">작성자 정보를 찾을 수 없습니다.</p>
-            <p className="mt-2 text-sm text-gray-500">존재하지 않거나 게시글이 없는 작성자입니다.</p>
-            <Link
-              href="/user/community"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              커뮤니티로 돌아가기
-            </Link>
-          </div>
-        </div>
-      </main>
+      <EmptyState
+        title="작성자 정보를 찾을 수 없습니다."
+        description="존재하지 않거나 게시글이 없는 작성자입니다."
+      />
     );
   }
 
-  const displayMode: 'real' | 'nickname' = author.name === author.nickname ? 'real' : 'nickname';
+  if (author.mode !== 'real') {
+    return (
+      <EmptyState
+        title="익명 작성자의 프로필은 제공되지 않습니다."
+        description="익명 게시글과 댓글은 작성자 정보와 팔로우 정보를 노출하지 않습니다."
+      />
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-[1400px] px-4 py-6">
-        <div className="space-y-4 lg:hidden">
-          <AuthorProfileCard author={author} displayMode={displayMode} variant="mobile" />
-        </div>
+    <Box minH="100vh" bg="#F9FAFB">
+      <Box maxW="1400px" mx="auto" px={{ base: '16px', md: '24px' }} py={{ base: '20px', md: '24px' }}>
+        <Box display={{ base: 'block', lg: 'none' }}>
+          <AuthorProfileCard author={author} displayMode="real" variant="mobile" />
+        </Box>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-          <aside className="hidden xl:block">
-            <div className="sticky top-4 space-y-4">
+        <Grid templateColumns={{ base: '1fr', xl: '280px minmax(0, 1fr) 320px' }} gap="24px" mt={{ base: '20px', lg: '24px' }}>
+          <Box display={{ base: 'none', xl: 'block' }}>
+            <Flex direction="column" gap="16px" position="sticky" top="16px">
               <CommunityProfileCard
-                profileMode={profileMode}
+                profileMode={defaultCommunityIdentity}
                 onToggleProfileMode={toggleProfileMode}
                 currentUser={COMMUNITY_CURRENT_USER}
               />
@@ -339,14 +316,14 @@ export default function CommunityAuthorPage() {
                 onToggleTag={toggleTag}
                 onClearTags={clearSelectedTags}
               />
-            </div>
-          </aside>
+            </Flex>
+          </Box>
 
-          <section className="min-w-0 space-y-5 overflow-hidden">
+          <Flex direction="column" gap="20px" minW="0">
             <CommunityToolbar
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
-              searchPlaceholder={`${displayMode === 'real' ? author.name : author.nickname}님의 ${activityTab === 'posts' ? '글' : '댓글'} 검색하기`}
+              searchPlaceholder={`${author.name}님의 ${activityTab === 'posts' ? '글' : '댓글'} 검색하기`}
               showFollowingOnly={false}
               onToggleFollowingOnly={() => {}}
               sortBy={sortBy}
@@ -354,10 +331,10 @@ export default function CommunityAuthorPage() {
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               isFilterOpen={isFilterOpen}
-              onToggleFilterOpen={toggleFilterOpen}
-              onCloseFilterOpen={closeFilterOpen}
+              onToggleFilterOpen={() => setIsFilterOpen((prev) => !prev)}
+              onCloseFilterOpen={() => setIsFilterOpen(false)}
               isTagFilterOpen={isTagFilterOpen}
-              onToggleTagFilterOpen={toggleTagFilterOpen}
+              onToggleTagFilterOpen={() => setIsTagFilterOpen((prev) => !prev)}
               allTags={allTags}
               selectedTags={selectedTags}
               onToggleTag={toggleTag}
@@ -365,98 +342,137 @@ export default function CommunityAuthorPage() {
               showFollowingFilter={false}
             />
 
-            <div className="space-y-2">
-              {/* Mobile: segmented control */}
-              <div className="sm:hidden">
-                <div className="inline-flex rounded-lg bg-gray-100 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setActivityTab('posts')}
-                    className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                      activityTab === 'posts'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    게시글
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActivityTab('comments')}
-                    className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                      activityTab === 'comments'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    댓글
-                  </button>
-                </div>
-              </div>
-
-              {/* Desktop: tab */}
-              <div className="hidden sm:flex items-center gap-6 border-b border-gray-200">
-                <button
+            <Box>
+              <Flex
+                display={{ base: 'inline-flex', sm: 'none' }}
+                p="4px"
+                borderRadius="12px"
+                bg="#F3F4F6"
+                gap="4px"
+              >
+                <Button
                   type="button"
-                  onClick={() => setActivityTab('posts')}
-                  className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
-                    activityTab === 'posts'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-800'
-                  }`}
+                  h="34px"
+                  px="16px"
+                  borderRadius="10px"
+                  bg={activityTab === 'posts' ? '#FFFFFF' : 'transparent'}
+                  color={activityTab === 'posts' ? '#111827' : '#6B7280'}
+                  fontSize="14px"
+                  fontWeight="600"
+                  boxShadow={activityTab === 'posts' ? 'sm' : 'none'}
+                  _hover={{ bg: activityTab === 'posts' ? '#FFFFFF' : '#E5E7EB' }}
+                  onClick={() => changeActivityTab('posts')}
                 >
                   게시글
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => setActivityTab('comments')}
-                  className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
-                    activityTab === 'comments'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-800'
-                  }`}
+                  h="34px"
+                  px="16px"
+                  borderRadius="10px"
+                  bg={activityTab === 'comments' ? '#FFFFFF' : 'transparent'}
+                  color={activityTab === 'comments' ? '#111827' : '#6B7280'}
+                  fontSize="14px"
+                  fontWeight="600"
+                  boxShadow={activityTab === 'comments' ? 'sm' : 'none'}
+                  _hover={{ bg: activityTab === 'comments' ? '#FFFFFF' : '#E5E7EB' }}
+                  onClick={() => changeActivityTab('comments')}
                 >
                   댓글
-                </button>
-              </div>
+                </Button>
+              </Flex>
 
-              <section className="space-y-4">
-                {visiblePosts.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+              <Flex
+                display={{ base: 'none', sm: 'flex' }}
+                align="center"
+                gap="24px"
+                borderBottom="1px solid"
+                borderColor="#E5E7EB"
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  h="auto"
+                  px="4px"
+                  pb="12px"
+                  borderBottom="2px solid"
+                  borderColor={activityTab === 'posts' ? '#F97316' : 'transparent'}
+                  borderRadius="0"
+                  color={activityTab === 'posts' ? '#EA580C' : '#6B7280'}
+                  fontSize="14px"
+                  fontWeight="600"
+                  _hover={{ bg: 'transparent', color: '#111827' }}
+                  onClick={() => changeActivityTab('posts')}
+                >
+                  게시글
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  h="auto"
+                  px="4px"
+                  pb="12px"
+                  borderBottom="2px solid"
+                  borderColor={activityTab === 'comments' ? '#F97316' : 'transparent'}
+                  borderRadius="0"
+                  color={activityTab === 'comments' ? '#EA580C' : '#6B7280'}
+                  fontSize="14px"
+                  fontWeight="600"
+                  _hover={{ bg: 'transparent', color: '#111827' }}
+                  onClick={() => changeActivityTab('comments')}
+                >
+                  댓글
+                </Button>
+              </Flex>
+            </Box>
+
+            <Flex direction="column" gap="16px">
+              {visiblePosts.length === 0 ? (
+                <Box
+                  borderWidth="1px"
+                  borderStyle="dashed"
+                  borderColor="#D1D5DB"
+                  borderRadius="18px"
+                  bg="#FFFFFF"
+                  px="24px"
+                  py="40px"
+                  textAlign="center"
+                >
+                  <Text fontSize="14px" color="#6B7280">
                     {activityTab === 'posts'
                       ? '작성한 게시글이 없거나 검색 결과가 없습니다.'
                       : '작성한 댓글이 없거나 검색 결과가 없습니다.'}
-                  </div>
-                ) : viewMode === 'feed' ? (
-                  visiblePosts.map((post) => (
-                    <FeedPostCard
-                      key={post.id}
-                      post={post}
-                      formatDate={formatRelativeDate}
-                      searchQuery={searchQuery}
-                    />
-                  ))
-                ) : (
-                  visiblePosts.map((post) => (
-                    <BoardPostRow
-                      key={post.id}
-                      post={post}
-                      formatDate={formatRelativeDate}
-                      searchQuery={searchQuery}
-                    />
-                  ))
-                )}
-              </section>
-            </div>
-          </section>
+                  </Text>
+                </Box>
+              ) : viewMode === 'feed' ? (
+                visiblePosts.map((post) => (
+                  <FeedPostCard
+                    key={post.id}
+                    post={post}
+                    formatDate={formatRelativeDate}
+                    searchQuery={searchQuery}
+                  />
+                ))
+              ) : (
+                visiblePosts.map((post) => (
+                  <BoardPostRow
+                    key={post.id}
+                    post={post}
+                    formatDate={formatRelativeDate}
+                    searchQuery={searchQuery}
+                  />
+                ))
+              )}
+            </Flex>
+          </Flex>
 
-          <aside className="hidden lg:block">
-            <div className="sticky top-4">
-              <AuthorProfileCard author={author} displayMode={displayMode} variant="sidebar" />
-            </div>
-          </aside>
-        </div>
-      </div>
-    </main>
+          <Box display={{ base: 'none', lg: 'block' }}>
+            <Box position="sticky" top="16px">
+              <AuthorProfileCard author={author} displayMode="real" variant="sidebar" />
+            </Box>
+          </Box>
+        </Grid>
+      </Box>
+    </Box>
   );
 }

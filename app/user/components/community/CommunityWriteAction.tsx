@@ -1,5 +1,6 @@
 'use client';
 
+import { Button, IconButton } from '@chakra-ui/react';
 import { SquarePen } from 'lucide-react';
 
 export type CommunityWriteActionProps = {
@@ -13,26 +14,56 @@ export function CommunityWriteAction({
 }: CommunityWriteActionProps) {
   if (variant === 'sidebar') {
     return (
-      <button
+      <Button
         type="button"
         onClick={onClick}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+        mt="4"
+        w="full"
+        gap="2"
+        rounded="lg"
+        bg="#F97316"
+        px="4"
+        py="3"
+        fontSize="sm"
+        fontWeight="600"
+        color="white"
+        _hover={{ bg: '#EA580C' }}
       >
-        <SquarePen className="h-4 w-4" />
-        <span>글쓰기</span>
-      </button>
+        <SquarePen size={16} />
+        글쓰기
+      </Button>
     );
   }
 
   return (
-    <button
+    <IconButton
       type="button"
       onClick={onClick}
-      className="fixed bottom-6 right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-[0_12px_30px_rgba(0,0,0,0.25)] ring-1 ring-black/5 transition-all duration-200 hover:scale-105 hover:shadow-[0_16px_36px_rgba(0,0,0,0.3)] active:scale-95 active:translate-y-[1px] lg:hidden"
       aria-label="글쓰기"
       title="글쓰기"
+      position="fixed"
+      right="4"
+      bottom="6"
+      zIndex="30"
+      display={{ base: 'inline-flex', lg: 'none' }}
+      h="14"
+      w="14"
+      rounded="full"
+      bgGradient="linear(to-br, orange.400, orange.500)"
+      color="white"
+      boxShadow="0 12px 30px rgba(0,0,0,0.25)"
+      borderWidth="1px"
+      borderColor="blackAlpha.50"
+      transition="all 0.2s"
+      _hover={{
+        transform: 'scale(1.05)',
+        boxShadow: '0 16px 36px rgba(0,0,0,0.3)',
+      }}
+      _active={{
+        transform: 'translateY(1px) scale(0.95)',
+      }}
     >
-      <SquarePen className="h-5 w-5" />
-    </button>
+      <SquarePen size={20} />
+    </IconButton>
   );
 }

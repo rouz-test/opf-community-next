@@ -5,54 +5,48 @@ import Image from 'next/image';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Bell, Menu } from 'lucide-react';
+import { Box, Button, Flex, HStack, Icon, Image as ChakraImage, Link as ChakraLink, Text } from '@chakra-ui/react';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { useMobileNav } from '@/app/user/components/providers/MobileNavProvider';
 import { useProfileMenu } from '@/app/user/components/providers/ProfileMenuProvider';
 import { communityAuthors } from '@/data/mockCommunityPosts';
+import { getCommunityIdentityLabel } from '@/app/user/lib/community-identity';
 
 export default function Header() {
-  const [communityProfileMode, setCommunityProfileMode] = useState<'real' | 'nickname'>('nickname');
   const [profileModeToast, setProfileModeToast] = useState<string | null>(null);
   const pathname = usePathname();
-  const { isLoggedIn, setIsLoggedIn } = useAuth();
+  const {
+    isLoggedIn,
+    setIsLoggedIn,
+    defaultCommunityIdentity,
+    setDefaultCommunityIdentity,
+  } = useAuth();
   const { openNav } = useMobileNav();
   const { openProfileMenu } = useProfileMenu();
-  const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
 
   const mobileCommunityProfileTriggerRef = useRef<HTMLDivElement | null>(null);
   const desktopProfileTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const hasInitializedProfileModeRef = useRef(false);
 
-  const isCommunityRoute = pathname.startsWith('/community');
+  const isCommunityRoute = pathname.startsWith('/user/community');
 
-  const syncCommunityProfileMode = (nextMode: 'real' | 'nickname') => {
-    setCommunityProfileMode(nextMode);
+  const switchCommunityProfileMode = () => {
+    const nextIdentity = defaultCommunityIdentity === 'real' ? 'anonymous' : 'real';
+    setDefaultCommunityIdentity(nextIdentity);
 
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY, nextMode);
-      window.dispatchEvent(
-        new CustomEvent('community-profile-mode-change', {
-          detail: { mode: nextMode },
-        }),
-      );
+    if (isCommunityRoute) {
+      setProfileModeToast(`${getCommunityIdentityLabel(nextIdentity)} 기본값으로 전환되었습니다.`);
     }
   };
 
-  const switchCommunityProfileMode = (nextMode: 'real' | 'nickname') => {
-    syncCommunityProfileMode(nextMode);
-  };
-
   const accountUser1RealProfile = communityAuthors.startupDreamerReal;
-  const accountUser1NicknameProfile = communityAuthors.startupDreamer;
-
   const mobileCommunityHeaderProfileUser = {
-    ...(communityProfileMode === 'real' ? accountUser1RealProfile : accountUser1NicknameProfile),
+    ...accountUser1RealProfile,
     postsCount: 12,
     commentsCount: 45,
   };
 
-  const headerProfileAvatar = accountUser1NicknameProfile.avatar;
+  const headerProfileAvatar = accountUser1RealProfile.avatar;
 
   const getProfileMenuAnchor = (element: HTMLElement | null) => {
     if (!element) return undefined;
@@ -66,48 +60,6 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const savedMode = window.localStorage.getItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY);
-    if (savedMode === 'real' || savedMode === 'nickname') {
-      setCommunityProfileMode(savedMode);
-    }
-
-    const handleProfileModeChange = (event: Event) => {
-      const customEvent = event as CustomEvent<{ mode?: 'real' | 'nickname' }>;
-      const nextMode = customEvent.detail?.mode;
-
-      if (nextMode === 'real' || nextMode === 'nickname') {
-        setCommunityProfileMode(nextMode);
-      }
-    };
-
-    window.addEventListener('community-profile-mode-change', handleProfileModeChange as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        'community-profile-mode-change',
-        handleProfileModeChange as EventListener,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isCommunityRoute) return;
-
-    if (!hasInitializedProfileModeRef.current) {
-      hasInitializedProfileModeRef.current = true;
-      return;
-    }
-
-    setProfileModeToast(
-      communityProfileMode === 'real'
-        ? '실명 계정으로 전환되었습니다.'
-        : '닉네임 계정으로 전환되었습니다.',
-    );
-  }, [communityProfileMode, isCommunityRoute]);
-
-  useEffect(() => {
     if (!profileModeToast) return;
 
     const toastTimer = window.setTimeout(() => {
@@ -119,108 +71,129 @@ export default function Header() {
     };
   }, [profileModeToast]);
 
-
   return (
     <Fragment>
       {profileModeToast ? (
-        <div className="pointer-events-none fixed bottom-6 right-4 z-[140] flex max-w-[calc(100vw-2rem)] justify-end">
-          <div className="rounded-2xl bg-gray-900/92 px-4 py-3 text-sm font-medium text-white shadow-2xl backdrop-blur">
+        <Flex position="fixed" right="4" bottom="6" zIndex="140" maxW="calc(100vw - 2rem)" justify="flex-end" pointerEvents="none">
+          <Box rounded="2xl" bg="rgba(17,24,39,0.92)" px="4" py="3" fontSize="sm" fontWeight="500" color="white" boxShadow="2xl" backdropFilter="blur(8px)">
             {profileModeToast}
-          </div>
-        </div>
+          </Box>
+        </Flex>
       ) : null}
 
-      <header className="sticky top-0 z-40 w-full overflow-hidden border-b border-gray-200 bg-white/90 backdrop-blur">
-        <div className="relative mx-auto flex h-14 max-w-[1200px] items-center justify-between px-4">
-          {/* Left: Mobile menu / Desktop logo */}
-          <div className="flex items-center gap-2">
-            <button
+      <Box as="header" position="sticky" top="0" zIndex="40" w="full" overflow="hidden" borderBottomWidth="1px" borderColor="gray.200" bg="rgba(255,255,255,0.9)" backdropFilter="blur(8px)">
+        <Flex position="relative" mx="auto" h="14" maxW="1200px" align="center" justify="space-between" px="4">
+          <HStack gap="2">
+            <Button
               type="button"
               onClick={openNav}
-              className="inline-flex h-9 w-9 items-center justify-center text-gray-600 transition-colors hover:text-gray-900 lg:hidden"
+              display={{ base: 'inline-flex', lg: 'none' }}
+              minW="9"
+              h="9"
+              rounded="full"
+              bg="transparent"
+              p="0"
+              color="gray.600"
+              _hover={{ color: 'gray.900', bg: 'transparent' }}
               aria-label="메뉴 열기"
             >
-              <Menu className="h-5 w-5" />
-            </button>
+              <Icon as={Menu} boxSize="5" />
+            </Button>
 
-            <Link href="/user" className="hidden items-center sm:flex">
-              <Image
-                src="/logo.webp"
-                alt="Orange Park"
-                width={140}
-                height={40}
-                className="h-9 w-auto"
-                priority
-              />
-            </Link>
-          </div>
+            <ChakraLink asChild display={{ base: 'none', sm: 'inline-flex' }} alignItems="center" _hover={{ textDecoration: 'none' }}>
+              <Link href="/user">
+                <Image
+                  src="/logo.webp"
+                  alt="Orange Park"
+                  width={140}
+                  height={40}
+                  style={{ height: '36px', width: 'auto' }}
+                  priority
+                />
+              </Link>
+            </ChakraLink>
+          </HStack>
 
-          {/* Center: Nav */}
-          <nav className="hidden items-center gap-6 text-sm text-gray-700 md:flex">
-            <Link href="/user/community" className="font-medium text-gray-900 hover:text-orange-600">
-              커뮤니티
-            </Link>
-            <button className="inline-flex items-center gap-1 hover:text-orange-600">
+          <Flex as="nav" display={{ base: 'none', md: 'flex' }} align="center" gap="6" fontSize="sm" color="gray.700">
+            <ChakraLink asChild fontWeight="600" color="#111827" _hover={{ color: '#EA580C', textDecoration: 'none' }}>
+              <Link href="/user/community">커뮤니티</Link>
+            </ChakraLink>
+            <Button
+              type="button"
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              fontSize="sm"
+              fontWeight="400"
+              color="inherit"
+              _hover={{ bg: 'transparent', color: '#EA580C' }}
+            >
               캠퍼스
-              <span className="text-xs">▾</span>
-            </button>
-            <Link href="/user/article" className="hover:text-orange-600">
-              아티클
-            </Link>
-          </nav>
+              <Text as="span" ml="1" fontSize="xs">
+                ▾
+              </Text>
+            </Button>
+            <ChakraLink asChild _hover={{ color: '#EA580C', textDecoration: 'none' }}>
+              <Link href="/user/article">아티클</Link>
+            </ChakraLink>
+          </Flex>
 
-          <Link href="/user" className="absolute left-1/2 -translate-x-1/2 sm:hidden">
-            <Image
-              src="/logo-mobile.webp"
-              alt="Orange Park"
-              width={40}
-              height={40}
-              className="h-9 w-auto"
-              priority
-            />
-          </Link>
+          <Box position="absolute" left="50%" transform="translateX(-50%)" display={{ base: 'block', sm: 'none' }}>
+            <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+              <Link href="/user">
+                <Image
+                  src="/logo-mobile.webp"
+                  alt="Orange Park"
+                  width={40}
+                  height={40}
+                  style={{ height: '36px', width: 'auto' }}
+                  priority
+                />
+              </Link>
+            </ChakraLink>
+          </Box>
 
-          {/* Right: Auth */}
-          <div className="relative flex items-center gap-2">
+          <Box position="relative">
             {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <button
+              <HStack gap="2">
+                <Button
                   type="button"
-                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                  position="relative"
+                  minW="9"
+                  h="9"
+                  rounded="full"
+                  bg="transparent"
+                  p="0"
+                  color="gray.600"
+                  _hover={{ bg: 'gray.100', color: 'gray.800' }}
                   aria-label="알림"
                   title="알림 기능 예정"
                 >
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-orange-500" />
-                </button>
+                  <Icon as={Bell} boxSize="5" />
+                  <Box position="absolute" top="2" right="2" h="2" w="2" rounded="full" bg="orange.500" />
+                </Button>
 
                 {isCommunityRoute ? (
-                  <div ref={mobileCommunityProfileTriggerRef} className="lg:hidden">
+                  <Box ref={mobileCommunityProfileTriggerRef} display={{ base: 'block', lg: 'none' }}>
                     <CommunityProfileCard
                       variant="header"
-                      profileMode={communityProfileMode}
-                      onToggleProfileMode={() =>
-                        switchCommunityProfileMode(
-                          communityProfileMode === 'real' ? 'nickname' : 'real',
-                        )
-                      }
+                      profileMode={defaultCommunityIdentity}
+                      onToggleProfileMode={switchCommunityProfileMode}
                       onProfileClick={() =>
                         openProfileMenu({
                           showCommunitySwitch: true,
-                          onToggleProfileMode: () =>
-                            switchCommunityProfileMode(
-                              communityProfileMode === 'real' ? 'nickname' : 'real',
-                            ),
+                          onToggleProfileMode: switchCommunityProfileMode,
                           anchor: getProfileMenuAnchor(mobileCommunityProfileTriggerRef.current),
                         })
                       }
                       currentUser={mobileCommunityHeaderProfileUser}
                     />
-                  </div>
+                  </Box>
                 ) : null}
 
                 {!isCommunityRoute ? (
-                  <button
+                  <Button
                     ref={desktopProfileTriggerRef}
                     type="button"
                     onClick={() =>
@@ -228,52 +201,79 @@ export default function Header() {
                         anchor: getProfileMenuAnchor(desktopProfileTriggerRef.current),
                       })
                     }
-                    className="inline-flex cursor-pointer items-center transition-transform hover:scale-105"
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    transition="transform 0.2s"
+                    _hover={{ transform: 'scale(1.05)', bg: 'transparent' }}
                     aria-label="마이페이지로 이동"
                     title="마이페이지 진입 예정"
                   >
-                    <img
+                    <ChakraImage
                       src={headerProfileAvatar}
                       alt="사용자 프로필"
-                      className="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200"
+                      h="9"
+                      w="9"
+                      rounded="full"
+                      objectFit="cover"
+                      borderWidth="1px"
+                      borderColor="gray.200"
                     />
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
                     ref={desktopProfileTriggerRef}
                     type="button"
+                    display={{ base: 'none', lg: 'inline-flex' }}
                     onClick={() =>
                       openProfileMenu({
                         anchor: getProfileMenuAnchor(desktopProfileTriggerRef.current),
                       })
                     }
-                    className="hidden cursor-pointer items-center transition-transform hover:scale-105 lg:inline-flex"
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    transition="transform 0.2s"
+                    _hover={{ transform: 'scale(1.05)', bg: 'transparent' }}
                     aria-label="마이페이지로 이동"
                     title="마이페이지 진입 예정"
                   >
-                    <img
+                    <ChakraImage
                       src={headerProfileAvatar}
                       alt="사용자 프로필"
-                      className="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200"
+                      h="9"
+                      w="9"
+                      rounded="full"
+                      objectFit="cover"
+                      borderWidth="1px"
+                      borderColor="gray.200"
                     />
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </HStack>
             ) : (
-              <div className="flex items-center gap-2">
-                <button
+              <HStack gap="2">
+                <Button
                   type="button"
                   onClick={() => setIsLoggedIn(true)}
-                  className="text-sm font-medium text-orange-600 hover:underline"
+                  minW="auto"
+                  h="auto"
+                  bg="transparent"
+                  p="0"
+                  fontSize="sm"
+                  fontWeight="600"
+                  color="orange.600"
+                  _hover={{ bg: 'transparent', textDecoration: 'underline' }}
                 >
                   로그인
-                </button>
-              </div>
+                </Button>
+              </HStack>
             )}
-
-          </div>
-        </div>
-      </header>
+          </Box>
+        </Flex>
+      </Box>
     </Fragment>
   );
 }

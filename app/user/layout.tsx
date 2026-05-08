@@ -7,6 +7,7 @@ import { MobileNavProvider } from '@/app/user/components/providers/MobileNavProv
 import MobileNavDrawer from '@/app/user/components/layout/MobileNavDrawer';
 import { ProfileMenuProvider } from '@/app/user/components/providers/ProfileMenuProvider';
 import ProfileMenuLayer from '@/app/user/components/layout/ProfileMenuLayer';
+import UserChakraProvider from '@/app/user/components/user-chakra-provider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,20 +30,22 @@ export default function UserLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <AuthProvider>
-      <MobileNavProvider>
-        <ProfileMenuProvider>
-          <div
-            className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
-          >
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <MobileNavDrawer />
-            <ProfileMenuLayer />
-          </div>
-        </ProfileMenuProvider>
-      </MobileNavProvider>
-    </AuthProvider>
+    <UserChakraProvider>
+      <AuthProvider>
+        <MobileNavProvider>
+          <ProfileMenuProvider>
+            <div
+              className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
+            >
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <MobileNavDrawer />
+              <ProfileMenuLayer />
+            </div>
+          </ProfileMenuProvider>
+        </MobileNavProvider>
+      </AuthProvider>
+    </UserChakraProvider>
   );
 }

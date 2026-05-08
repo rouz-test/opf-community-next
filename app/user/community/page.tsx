@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Box, Flex, Grid, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
   getPopularPosts,
   orangePickArticles,
-  communityAuthors,
   type CommunityPost,
-} from '@/data/mockCommunityPosts';
+  COMMUNITY_CURRENT_USER,
+} from '@/app/user/lib/community-content-data';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/app/user/components/community/HighlightCarousel';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
@@ -20,27 +21,6 @@ import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
 import { CommunityWriteAction } from '@/app/user/components/community/CommunityWriteAction';
-type PostCardBaseProps = {
-  post: CommunityPost;
-  formatDate: (dateString?: string) => string;
-  searchQuery: string;
-};
-
-
-const COMMUNITY_CURRENT_USER = {
-  real: {
-    ...communityAuthors.startupDreamerReal,
-    postsCount: 7,
-    commentsCount: 10,
-  },
-  nickname: {
-    ...communityAuthors.startupDreamer,
-    postsCount: 7,
-    commentsCount: 10,
-  },
-};
-
-const COMMUNITY_PROFILE_MODE_STORAGE_KEY = 'community-profile-mode';
 
 type CommunityPageState = {
   selectedTags: string[];
@@ -113,33 +93,7 @@ const formatRelativeDate = (dateString?: string) => {
   return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
 };
 
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const highlightMatchedText = (text: string, searchQuery: string) => {
-  const keyword = searchQuery.trim();
-
-  if (!keyword) return text;
-
-  const regex = new RegExp(`(${escapeRegExp(keyword)})`, 'gi');
-  const parts = text.split(regex);
-
-  return parts.map((part, index) => {
-    if (part.toLowerCase() === keyword.toLowerCase()) {
-      return (
-        <mark key={`${part}-${index}`} className="rounded bg-yellow-200 px-0.5 text-inherit">
-          {part}
-        </mark>
-      );
-    }
-
-    return part;
-  });
-};
-
-
-
 export default function CommunityPage() {
-  const [profileMode, setProfileMode] = useState<'real' | 'nickname'>('nickname');
   const [viewMode, setViewMode] = useState<'feed' | 'board'>('feed');
   const [sortBy, setSortBy] = useState<'recommended' | 'latest'>('recommended');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -148,7 +102,11 @@ export default function CommunityPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const { isLoggedIn } = useAuth();
+  const {
+    isLoggedIn,
+    defaultCommunityIdentity,
+    setDefaultCommunityIdentity,
+  } = useAuth();
 
   const allTags = useMemo(() => getAllTags(mockCommunityPosts), []);
 
@@ -169,8 +127,6 @@ export default function CommunityPage() {
       }),
     [searchQuery, selectedTags, showFollowingOnly, sortBy],
   );
-  const communityCurrentUser =
-    profileMode === 'real' ? COMMUNITY_CURRENT_USER.real : COMMUNITY_CURRENT_USER.nickname;
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -178,21 +134,8 @@ export default function CommunityPage() {
     );
   };
 
-  const syncProfileMode = (nextMode: 'real' | 'nickname') => {
-    setProfileMode(nextMode);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY, nextMode);
-      window.dispatchEvent(
-        new CustomEvent('community-profile-mode-change', {
-          detail: { mode: nextMode },
-        }),
-      );
-    }
-  };
-
   const toggleProfileMode = () => {
-    syncProfileMode(profileMode === 'real' ? 'nickname' : 'real');
+    setDefaultCommunityIdentity(defaultCommunityIdentity === 'real' ? 'anonymous' : 'real');
   };
 
   const toggleFollowingOnly = () => {
@@ -216,33 +159,6 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const savedMode = window.localStorage.getItem(COMMUNITY_PROFILE_MODE_STORAGE_KEY);
-    if (savedMode === 'real' || savedMode === 'nickname') {
-      setProfileMode(savedMode);
-    }
-
-    const handleProfileModeChange = (event: Event) => {
-      const customEvent = event as CustomEvent<{ mode?: 'real' | 'nickname' }>;
-      const nextMode = customEvent.detail?.mode;
-
-      if (nextMode === 'real' || nextMode === 'nickname') {
-        setProfileMode(nextMode);
-      }
-    };
-
-    window.addEventListener('community-profile-mode-change', handleProfileModeChange as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        'community-profile-mode-change',
-        handleProfileModeChange as EventListener,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
     const isMobileViewport = window.innerWidth < 768;
 
     if (isWriteModalOpen || (isMobileViewport && (isMobileTagFilterOpen || isFilterOpen))) {
@@ -257,18 +173,18 @@ export default function CommunityPage() {
   }, [isMobileTagFilterOpen, isFilterOpen, isWriteModalOpen]);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-[1400px] overflow-x-hidden px-4 py-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
-          <aside className="hidden lg:block">
-            <div className="sticky top-4 space-y-4">
+    <Box as="main" minH="screen" bg="gray.50">
+      <Box mx="auto" maxW="1400px" overflowX="hidden" px="4" py="6">
+        <Grid templateColumns={{ base: '1fr', lg: '280px minmax(0, 1fr) 320px' }} gap="6">
+          <Box as="aside" display={{ base: 'none', lg: 'block' }}>
+            <StackColumn top="4">
               {isLoggedIn ? (
                 <CommunityProfileCard
-                  profileMode={profileMode}
+                  profileMode={defaultCommunityIdentity}
                   onToggleProfileMode={toggleProfileMode}
                   onWriteClick={() => setIsWriteModalOpen(true)}
                   showWriteButton
-                  currentUser={communityCurrentUser}
+                  currentUser={COMMUNITY_CURRENT_USER}
                 />
               ) : null}
 
@@ -278,38 +194,36 @@ export default function CommunityPage() {
                 onToggleTag={toggleTag}
                 onClearTags={clearSelectedTags}
               />
-            </div>
-          </aside>
+            </StackColumn>
+          </Box>
 
-          <section className="min-w-0 space-y-6 overflow-hidden">
-          
+          <Box as="section" minW="0" overflow="hidden">
+            <Flex direction="column" gap="6">
 
-          <CommunityToolbar
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            showFollowingOnly={showFollowingOnly}
-            onToggleFollowingOnly={toggleFollowingOnly}
-            sortBy={sortBy}
-            onSortByChange={setSortBy}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            isFilterOpen={isFilterOpen}
-            onToggleFilterOpen={toggleFilterOpen}
-            onCloseFilterOpen={closeFilterOpen}
-            isTagFilterOpen={isMobileTagFilterOpen}
-            onToggleTagFilterOpen={toggleMobileTagFilterOpen}
-            allTags={allTags}
-            selectedTags={selectedTags}
-            onToggleTag={toggleTag}
-            onClearTags={clearSelectedTags}
-          />
+              <CommunityToolbar
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                showFollowingOnly={showFollowingOnly}
+                onToggleFollowingOnly={toggleFollowingOnly}
+                sortBy={sortBy}
+                onSortByChange={setSortBy}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                isFilterOpen={isFilterOpen}
+                onToggleFilterOpen={toggleFilterOpen}
+                onCloseFilterOpen={closeFilterOpen}
+                isTagFilterOpen={isMobileTagFilterOpen}
+                onToggleTagFilterOpen={toggleMobileTagFilterOpen}
+                allTags={allTags}
+                selectedTags={selectedTags}
+                onToggleTag={toggleTag}
+                onClearTags={clearSelectedTags}
+              />
 
+              {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} /> : null}
 
-            {highlightPosts.length > 0 && <HighlightCarousel posts={highlightPosts} />}
-
-            <section className="space-y-4">
-              {visiblePosts.map(
-                (post) => {
+              <Flex as="section" direction="column" gap="4">
+                {visiblePosts.map((post) => {
                   if (viewMode === 'board') {
                     return (
                       <BoardPostRow
@@ -329,31 +243,47 @@ export default function CommunityPage() {
                       searchQuery={searchQuery}
                     />
                   );
-                }
-              )}
+                })}
 
-              {visiblePosts.length === 0 && (
-                <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-                  검색 결과가 없습니다.
-                </div>
-              )}
-            </section>
-          </section>
+                {visiblePosts.length === 0 ? (
+                  <Box rounded="lg" borderWidth="1px" borderStyle="dashed" borderColor="gray.300" bg="white" p="10" textAlign="center">
+                    <Text fontSize="sm" color="gray.500">
+                      검색 결과가 없습니다.
+                    </Text>
+                  </Box>
+                ) : null}
+              </Flex>
+            </Flex>
+          </Box>
 
-          <aside className="hidden space-y-4 lg:block">
+          <Flex as="aside" display={{ base: 'none', lg: 'flex' }} direction="column" gap="4">
             <PopularPostsWidget popularPosts={popularPosts} />
             <OrangePickWidget articles={orangePickArticles} />
-          </aside>
-        </div>
-      </div>
+          </Flex>
+        </Grid>
+      </Box>
 
       <CommunityWriteAction onClick={() => setIsWriteModalOpen(true)} />
-        
+
       <WritePostModal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}
-        currentUser={communityCurrentUser}
+        currentUser={COMMUNITY_CURRENT_USER}
       />
-    </main>
+    </Box>
+  );
+}
+
+function StackColumn({
+  children,
+  top,
+}: {
+  children: React.ReactNode;
+  top: string;
+}) {
+  return (
+    <Flex position="sticky" top={top} direction="column" gap="4">
+      {children}
+    </Flex>
   );
 }

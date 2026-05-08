@@ -1,3 +1,13 @@
+'use client';
+
+import {
+  Box,
+  Flex,
+  Heading,
+  HStack,
+  Icon,
+  Text,
+} from '@chakra-ui/react';
 import { Heart, MessageSquare, TrendingUp } from 'lucide-react';
 
 type PopularPost = {
@@ -13,47 +23,71 @@ type PopularPostsWidgetProps = {
 
 export function PopularPostsWidget({ popularPosts }: PopularPostsWidgetProps) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <TrendingUp className="h-4 w-4 text-orange-500" />
-        <h3 className="text-sm font-semibold text-gray-900">이번달 인기 게시글 TOP5</h3>
-      </div>
+    <Box rounded="lg" borderWidth="1px" borderColor="gray.200" bg="white" p="4">
+      <HStack mb="4" gap="2">
+        <Icon as={TrendingUp} boxSize="4" color="orange.500" />
+        <Heading as="h3" size="sm" color="gray.900">
+          이번달 인기 게시글 TOP5
+        </Heading>
+      </HStack>
 
-      <div className="space-y-3">
+      <Flex direction="column" gap="3">
         {popularPosts.map((post, index) => (
-          <div key={post.id} className="flex gap-3">
-            <span
-              className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-sm font-bold ${
+          <Flex key={post.id} gap="3">
+            <Flex
+              h="6"
+              w="6"
+              flexShrink={0}
+              align="center"
+              justify="center"
+              rounded="md"
+              fontSize="sm"
+              fontWeight="700"
+              bg={
                 index === 0
-                  ? 'bg-orange-500 text-white'
+                  ? 'orange.500'
                   : index === 1
-                    ? 'bg-orange-100 text-orange-600'
+                    ? 'orange.100'
                     : index === 2
-                      ? 'bg-orange-50 text-orange-600'
-                      : 'text-gray-400'
-              }`}
+                      ? 'orange.50'
+                      : 'transparent'
+              }
+              color={
+                index === 0
+                  ? 'white'
+                  : index === 1 || index === 2
+                    ? 'orange.600'
+                    : 'gray.400'
+              }
             >
               {index + 1}
-            </span>
+            </Flex>
 
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm font-medium text-gray-900 transition-colors hover:text-orange-500">
+            <Box minW="0" flex="1">
+              <Text
+                lineClamp="2"
+                fontSize="sm"
+                fontWeight="500"
+                color="gray.900"
+                transition="color 0.2s"
+                _hover={{ color: 'orange.500' }}
+              >
                 {post.title}
-              </p>
-              <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Heart className="h-3 w-3" />
+              </Text>
+              <HStack mt="1.5" gap="3" fontSize="xs" color="gray.500">
+                <HStack gap="1">
+                  <Icon as={Heart} boxSize="3" />
                   {post.likes}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare className="h-3 w-3" />
+                </HStack>
+                <HStack gap="1">
+                  <Icon as={MessageSquare} boxSize="3" />
                   {post.commentCount ?? 0}
-                </span>
-              </div>
-            </div>
-          </div>
+                </HStack>
+              </HStack>
+            </Box>
+          </Flex>
         ))}
-      </div>
-    </section>
+      </Flex>
+    </Box>
   );
 }

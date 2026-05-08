@@ -1,34 +1,26 @@
-
-
 'use client';
 
+import { Box, Button, Flex, Grid, Image, Input, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import {
+  BadgeCheck,
+  Check,
   ChevronDown,
   LayoutGrid,
   List,
-  Check,
   Search,
-  BadgeCheck,
 } from 'lucide-react';
-import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
-import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  mockCommunityPosts,
-  mockComments,
-  communityAccounts,
-  communityAuthors,
-  type CommunityPost,
-} from '@/data/mockCommunityPosts';
 
-type CommunityPostWithHighlight = CommunityPost & {
-  highlightedComment?: {
-    author: CommunityPost['author'];
-    content: string;
-    createdAt: string;
-  };
-};
+import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
+import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
+import {
+  COMMUNITY_CURRENT_USER,
+  mockComments,
+  mockCommunityPosts,
+  type HighlightedComment,
+  type CommunityPost,
+} from '@/app/user/lib/community-content-data';
 
 function ProfileSummaryCard({
   title,
@@ -46,48 +38,91 @@ function ProfileSummaryCard({
   onEditClick?: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm transition-all hover:border-gray-300 hover:shadow-md sm:p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full ring-1 ring-gray-200 sm:h-12 sm:w-12">
+    <Box
+      borderWidth="1px"
+      borderColor="#E5E7EB"
+      borderRadius="20px"
+      bg="#FFFFFF"
+      px={{ base: '14px', sm: '16px' }}
+      py={{ base: '14px', sm: '16px' }}
+      boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
+    >
+      <Flex align="center" justify="space-between" gap="12px">
+        <Flex minW="0" align="center" gap={{ base: '12px', sm: '16px' }}>
+          <Box
+            position="relative"
+            boxSize={{ base: '40px', sm: '48px' }}
+            overflow="hidden"
+            rounded="full"
+            borderWidth="1px"
+            borderColor="#E5E7EB"
+          >
             {avatar ? (
-              <img src={avatar} alt={title} className="h-full w-full object-cover" />
+              <Image src={avatar} alt={title} w="100%" h="100%" objectFit="cover" />
             ) : (
-              <div className="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300" />
+              <Box w="100%" h="100%" bgGradient="linear(to-br, gray.200, gray.300)" />
             )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h3 className="truncate text-[15px] font-semibold text-gray-900 sm:text-base">{title}</h3>
-              {badge ? <BadgeCheck className="h-4 w-4 text-blue-500" /> : null}
-            </div>
-            <p className="truncate text-[11px] text-gray-500 sm:text-xs">{subtitle}</p>
-          </div>
-        </div>
-        <button
+          </Box>
+          <Box minW="0">
+            <Flex align="center" gap="6px">
+              <Text fontSize={{ base: '15px', sm: '16px' }} fontWeight="700" color="#111827" lineClamp="1">
+                {title}
+              </Text>
+              {badge ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+            </Flex>
+            <Text mt="2px" fontSize={{ base: '11px', sm: '12px' }} color="#6B7280" lineClamp="1">
+              {subtitle}
+            </Text>
+          </Box>
+        </Flex>
+
+        <Button
           type="button"
           onClick={onEditClick}
-          className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 sm:text-sm"
+          h={{ base: '32px', sm: '36px' }}
+          px="14px"
+          borderRadius="10px"
+          borderWidth="1px"
+          borderColor="#E5E7EB"
+          bg="#FFFFFF"
+          color="#6B7280"
+          fontSize={{ base: '12px', sm: '14px' }}
+          fontWeight="600"
+          _hover={{ bg: '#F9FAFB', color: '#374151', borderColor: '#D1D5DB' }}
         >
           수정하기
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-50 px-3 py-2 text-center sm:p-3">
-        <div>
-          <p className="text-lg font-semibold text-gray-900 sm:text-xl">892</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-400 sm:text-[11px] sm:tracking-[0.18em]">팔로워</p>
-        </div>
-        <button
+      <Grid mt="14px" templateColumns="repeat(2, minmax(0, 1fr))" gap="8px" borderRadius="16px" bg="#F9FAFB" px="12px" py="12px" textAlign="center">
+        <Box>
+          <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+            892
+          </Text>
+          <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+            팔로워
+          </Text>
+        </Box>
+        <Button
           type="button"
+          variant="ghost"
+          h="auto"
+          p="0"
+          borderRadius="12px"
+          _hover={{ bg: '#F3F4F6' }}
           onClick={onFollowingClick}
-          className="rounded-lg transition-colors hover:bg-gray-100/70"
         >
-          <p className="text-lg font-semibold text-gray-900 sm:text-xl">124</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-400 sm:text-[11px] sm:tracking-[0.18em]">팔로잉</p>
-        </button>
-      </div>
-    </div>
+          <Box w="100%">
+            <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+              124
+            </Text>
+            <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+              팔로잉
+            </Text>
+          </Box>
+        </Button>
+      </Grid>
+    </Box>
   );
 }
 
@@ -95,18 +130,17 @@ export default function MyPageCommunityPage() {
   const router = useRouter();
   const [communityViewMode, setCommunityViewMode] = useState<'feed' | 'board'>('feed');
   const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments'>('posts');
-  const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'nickname'>('all');
+  const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
-  const [followingModalProfile, setFollowingModalProfile] = useState<'real' | 'nickname'>('real');
 
   const filterRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isFilterOpen) return;
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!filterRef.current?.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!filterRef.current?.contains(event.target as Node)) {
         setIsFilterOpen(false);
       }
     };
@@ -131,26 +165,18 @@ export default function MyPageCommunityPage() {
     };
   }, [isFollowingModalOpen]);
 
-  const mypageAccount = useMemo(
-    () => communityAccounts.find((account) => account.accountId === 'account-user-1'),
+  const mypagePosts = useMemo(
+    () =>
+      mockCommunityPosts.filter(
+        (post) => post.author.accountId === COMMUNITY_CURRENT_USER.accountId,
+      ),
     [],
   );
 
-  const mypagePosts = useMemo(() => {
-    if (!mypageAccount) return [];
-
-    return mockCommunityPosts.filter((post) => {
-      const authorProfileId = post.author.profileId ?? post.author.id;
-      return mypageAccount.profileIds.includes(authorProfileId);
-    });
-  }, [mypageAccount]);
-
-  const mypageCommentedPosts = useMemo<CommunityPostWithHighlight[]>(() => {
+  const mypageCommentedPosts = useMemo<CommunityPost[]>(() => {
     const ownComments = mockComments
-      .filter((comment) => comment.author.accountId === 'account-user-1')
-      .sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      .filter((comment) => comment.author.accountId === COMMUNITY_CURRENT_USER.accountId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const latestCommentByPostId = new Map<string, (typeof ownComments)[number]>();
 
@@ -160,32 +186,34 @@ export default function MyPageCommunityPage() {
       }
     });
 
-    return Array.from(latestCommentByPostId.entries()).reduce<CommunityPostWithHighlight[]>((acc, [postId, comment]) => {
-      const post = mockCommunityPosts.find((item) => item.id === postId) as CommunityPost | undefined;
+    return Array.from(latestCommentByPostId.entries()).reduce<CommunityPost[]>(
+      (acc, [postId, comment]) => {
+        const post = mockCommunityPosts.find((item) => item.id === postId);
+        if (!post) return acc;
 
-      if (!post) return acc;
-
-      const highlightedPost: CommunityPostWithHighlight = {
-        ...post,
-        highlightedComment: {
+        const highlightedComment: HighlightedComment = {
           id: comment.id,
-          author: comment.author as CommunityPost['author'],
+          author: comment.author,
           content: comment.content,
           createdAt: comment.createdAt,
           likes: comment.likes ?? 0,
-          replyCount: 0,
-        },
-      };
+          replyCount: comment.replies?.length ?? 0,
+        };
 
-      acc.push(highlightedPost);
+        acc.push({
+          ...post,
+          highlightedComment,
+        });
 
-      return acc;
-    }, []);
+        return acc;
+      },
+      [],
+    );
   }, []);
 
-  const baseCommunityPosts: CommunityPostWithHighlight[] =
+  const baseCommunityPosts =
     activeCommunityTab === 'posts'
-      ? (mypagePosts as CommunityPostWithHighlight[])
+      ? mypagePosts
       : mypageCommentedPosts;
 
   const activeCommunityPosts = useMemo(() => {
@@ -200,10 +228,7 @@ export default function MyPageCommunityPage() {
     if (!dateString) return '';
 
     const date = new Date(dateString);
-
-    if (Number.isNaN(date.getTime())) {
-      return dateString;
-    }
+    if (Number.isNaN(date.getTime())) return dateString;
 
     return new Intl.DateTimeFormat('ko-KR', {
       month: 'short',
@@ -211,86 +236,84 @@ export default function MyPageCommunityPage() {
     }).format(date);
   };
 
-  const realProfile = communityAuthors.startupDreamerReal;
-  const nicknameProfile = communityAuthors.startupDreamer;
-
+  const realProfile = COMMUNITY_CURRENT_USER;
   const followerCount = 892;
   const followingCount = 124;
 
-  const followingProfiles = {
-    real: [
-      communityAuthors.spaceHunterReal,
-      communityAuthors.eventMasterReal,
-      communityAuthors.bizModelPro,
-      communityAuthors.techFounder,
-      communityAuthors.growthHacker,
-    ],
-    nickname: [
-      communityAuthors.happyLearnerNickname,
-      communityAuthors.mvpExpertNickname,
-      communityAuthors.designSprinterNickname,
-      communityAuthors.newbieFounderNickname,
-      communityAuthors.devExpertNickname,
-    ],
-  } satisfies Record<'real' | 'nickname', CommunityPost['author'][]>;
+  const followingProfiles = useMemo(() => {
+    const seen = new Set<string>();
 
-  const activeFollowingProfiles = followingProfiles[followingModalProfile];
+    return mockCommunityPosts
+      .map((post) => post.author)
+      .filter((author) => {
+        if (author.accountId === COMMUNITY_CURRENT_USER.accountId) return false;
+        if (author.mode !== 'real') return false;
+        if (seen.has(author.accountId || author.id)) return false;
+
+        seen.add(author.accountId || author.id);
+        return true;
+      })
+      .slice(0, 5);
+  }, []);
 
   return (
-    <div className="mx-auto w-full max-w-[1120px]">
-      <header className="space-y-3">
-      <h1 className="text-2xl font-semibold text-gray-900">커뮤니티</h1>
-      </header>
+    <Box mx="auto" w="100%" maxW="1120px">
+      <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
+        커뮤니티
+      </Text>
 
-      <div className="mt-4 grid items-start gap-3 sm:gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_200px]">
-        <div>
-          <p className="mb-2 text-sm font-medium text-gray-500">실명</p>
+      <Grid mt="16px" gap="16px" alignItems="start" templateColumns={{ base: '1fr', xl: 'minmax(0, 1fr) 220px' }}>
+        <Box>
+          <Text mb="8px" fontSize="14px" fontWeight="600" color="#6B7280">
+            내 프로필
+          </Text>
           <ProfileSummaryCard
             title={realProfile.name}
             subtitle={realProfile.position ?? '직무'}
             badge="✓"
             avatar={realProfile.avatar}
-            onFollowingClick={() => {
-              setFollowingModalProfile('real');
-              setIsFollowingModalOpen(true);
-            }}
-            onEditClick={() => router.push('/user/mypage/settings/profile?tab=real')}
+            onFollowingClick={() => setIsFollowingModalOpen(true)}
+            onEditClick={() => router.push('/user/mypage/settings/profile')}
           />
-        </div>
-        <div>
-          <p className="mb-2 text-sm font-medium text-gray-500">닉네임</p>
-          <ProfileSummaryCard
-            title={nicknameProfile.nickname}
-            subtitle={nicknameProfile.position ?? '직무'}
-            avatar={nicknameProfile.avatar}
-            onFollowingClick={() => {
-              setFollowingModalProfile('nickname');
-              setIsFollowingModalOpen(true);
-            }}
-            onEditClick={() => router.push('/user/mypage/settings/profile?tab=nickname')}
-          />
-        </div>
-        <div>
-          <p className="mb-2 text-sm font-medium text-gray-500">전체 연결</p>
-          <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm sm:p-4">
-            <div className="flex h-full items-center justify-center">
-              <div className="grid w-full grid-cols-2 gap-2 text-center sm:gap-4">
-                <div>
-                  <p className="text-lg font-semibold text-gray-900 sm:text-xl">{followerCount}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-400 sm:text-[11px] sm:tracking-[0.18em]">팔로워</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold text-gray-900 sm:text-xl">{followingCount}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-gray-400 sm:text-[11px] sm:tracking-[0.18em]">팔로잉</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </Box>
 
-      <section className="mt-10 border-b border-gray-200">
-        <div className="flex items-center gap-2">
+        <Box>
+          <Text mb="8px" fontSize="14px" fontWeight="600" color="#6B7280">
+            팔로우 현황
+          </Text>
+          <Box
+            borderWidth="1px"
+            borderColor="#E5E7EB"
+            borderRadius="20px"
+            bg="#FFFFFF"
+            px={{ base: '14px', sm: '16px' }}
+            py={{ base: '14px', sm: '16px' }}
+            boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
+          >
+            <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap={{ base: '8px', sm: '16px' }} textAlign="center">
+              <Box>
+                <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+                  {followerCount}
+                </Text>
+                <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+                  팔로워
+                </Text>
+              </Box>
+              <Box>
+                <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+                  {followingCount}
+                </Text>
+                <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+                  팔로잉
+                </Text>
+              </Box>
+            </Grid>
+          </Box>
+        </Box>
+      </Grid>
+
+      <Box mt="40px" borderBottom="1px solid" borderColor="#E5E7EB">
+        <Flex align="center" gap="4px" wrap="wrap">
           {['게시글', '댓글', '좋아요', '저장', '숨김'].map((tab, index) => {
             const isPostsTab = index === 0;
             const isCommentsTab = index === 1;
@@ -300,9 +323,21 @@ export default function MyPageCommunityPage() {
               (isCommentsTab && activeCommunityTab === 'comments');
 
             return (
-              <button
+              <Button
                 key={tab}
                 type="button"
+                variant="ghost"
+                h="48px"
+                px="16px"
+                borderRadius="0"
+                position="relative"
+                color={
+                  isActive ? '#111827' : isClickable ? '#6B7280' : '#D1D5DB'
+                }
+                fontSize="14px"
+                fontWeight="600"
+                cursor={isClickable ? 'pointer' : 'default'}
+                _hover={isClickable ? { bg: 'transparent', color: '#111827' } : { bg: 'transparent' }}
                 onClick={
                   isPostsTab
                     ? () => setActiveCommunityTab('posts')
@@ -310,101 +345,151 @@ export default function MyPageCommunityPage() {
                       ? () => setActiveCommunityTab('comments')
                       : undefined
                 }
-                className={`relative px-4 py-3 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'text-gray-900'
-                    : isClickable
-                      ? 'text-gray-500 hover:text-gray-900'
-                      : 'cursor-default text-gray-300'
-                }`}
               >
                 {tab}
-
                 {isActive ? (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-orange-500" />
+                  <Box position="absolute" bottom="0" insetX="0" h="2px" bg="#F97316" />
                 ) : null}
-              </button>
+              </Button>
             );
           })}
-        </div>
-      </section>
+        </Flex>
+      </Box>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div ref={filterRef} className="relative">
-          <button
+      <Flex mt="16px" wrap="wrap" align="center" gap="12px">
+        <Box ref={filterRef} position="relative">
+          <Button
             type="button"
             onClick={() => setIsFilterOpen((prev) => !prev)}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
+            h="40px"
+            px="16px"
+            borderRadius="14px"
+            borderWidth="1px"
+            borderColor="#E5E7EB"
+            bg="#FFFFFF"
+            color="#4B5563"
+            fontSize="14px"
+            fontWeight="600"
+            _hover={{ borderColor: '#D1D5DB', bg: '#F9FAFB' }}
           >
-            {profileFilter === 'all'
-              ? '전체 보기'
-              : profileFilter === 'real'
-                ? '실명만'
-                : '닉네임만'}
-            <ChevronDown className="h-4 w-4" />
-          </button>
+            <Flex align="center" gap="8px">
+              <Text as="span">
+                {profileFilter === 'all'
+                  ? '전체 보기'
+                  : profileFilter === 'real'
+                    ? '실명만'
+                    : '익명만'}
+              </Text>
+              <ChevronDown size={16} />
+            </Flex>
+          </Button>
 
           {isFilterOpen ? (
-            <div className="absolute left-0 z-20 mt-2 w-[180px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+            <Box
+              position="absolute"
+              left="0"
+              mt="8px"
+              zIndex="20"
+              w="180px"
+              overflow="hidden"
+              borderWidth="1px"
+              borderColor="#E5E7EB"
+              borderRadius="14px"
+              bg="#FFFFFF"
+              py="6px"
+              boxShadow="0 16px 32px rgba(15, 23, 42, 0.12)"
+            >
               {[
                 { label: '전체 보기', value: 'all' },
                 { label: '실명만 보기', value: 'real' },
-                { label: '닉네임만 보기', value: 'nickname' },
+                { label: '익명만 보기', value: 'anonymous' },
               ].map((option) => (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  unstyled
+                  display="flex"
+                  w="100%"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  px="12px"
+                  py="10px"
+                  fontSize="14px"
+                  color="#374151"
+                  _hover={{ bg: '#F9FAFB' }}
                   onClick={() => {
-                    setProfileFilter(option.value as 'all' | 'real' | 'nickname');
+                    setProfileFilter(option.value as 'all' | 'real' | 'anonymous');
                     setIsFilterOpen(false);
                   }}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  <span>{option.label}</span>
+                  <Text as="span">{option.label}</Text>
                   {profileFilter === option.value ? (
-                    <Check className="h-4 w-4 text-orange-500" />
+                    <Check size={16} color="#F97316" />
                   ) : null}
-                </button>
+                </Button>
               ))}
-            </div>
+            </Box>
           ) : null}
-        </div>
+        </Box>
 
-        <div className="inline-flex overflow-hidden rounded-xl border border-gray-200 bg-white">
-          <button
+        <Flex overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="14px" bg="#FFFFFF">
+          <Button
             type="button"
             onClick={() => setCommunityViewMode('feed')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
-              communityViewMode === 'feed'
-                ? 'bg-orange-50 text-orange-700'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            h="40px"
+            px="16px"
+            borderRadius="0"
+            borderRight="1px solid"
+            borderColor="#E5E7EB"
+            bg={communityViewMode === 'feed' ? '#FFF7ED' : '#FFFFFF'}
+            color={communityViewMode === 'feed' ? '#C2410C' : '#4B5563'}
+            fontSize="14px"
+            fontWeight="600"
+            _hover={{ bg: communityViewMode === 'feed' ? '#FFF7ED' : '#F9FAFB' }}
           >
-            <LayoutGrid className="h-4 w-4" />
-            피드뷰
-          </button>
-          <button
+            <Flex align="center" gap="8px">
+              <LayoutGrid size={16} />
+              <Text as="span">피드뷰</Text>
+            </Flex>
+          </Button>
+          <Button
             type="button"
             onClick={() => setCommunityViewMode('board')}
-            className={`flex items-center gap-2 border-l border-gray-200 px-4 py-2 text-sm font-medium transition-colors ${
-              communityViewMode === 'board'
-                ? 'bg-orange-50 text-orange-700'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            h="40px"
+            px="16px"
+            borderRadius="0"
+            bg={communityViewMode === 'board' ? '#FFF7ED' : '#FFFFFF'}
+            color={communityViewMode === 'board' ? '#C2410C' : '#4B5563'}
+            fontSize="14px"
+            fontWeight="600"
+            _hover={{ bg: communityViewMode === 'board' ? '#FFF7ED' : '#F9FAFB' }}
           >
-            <List className="h-4 w-4" />
-            게시판뷰
-          </button>
-        </div>
-      </div>
+            <Flex align="center" gap="8px">
+              <List size={16} />
+              <Text as="span">게시판뷰</Text>
+            </Flex>
+          </Button>
+        </Flex>
+      </Flex>
 
-      <div className="mt-4 space-y-4">
+      <Flex mt="16px" direction="column" gap="16px">
         {activeCommunityPosts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-sm text-gray-500">
-            {activeCommunityTab === 'posts'
-              ? '작성한 게시글이 아직 없습니다.'
-              : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
-          </div>
+          <Box
+            borderWidth="1px"
+            borderStyle="dashed"
+            borderColor="#D1D5DB"
+            borderRadius="20px"
+            bg="#FFFFFF"
+            px="24px"
+            py="48px"
+            textAlign="center"
+          >
+            <Text fontSize="14px" color="#6B7280">
+              {activeCommunityTab === 'posts'
+                ? '작성한 게시글이 아직 없습니다.'
+                : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
+            </Text>
+          </Box>
         ) : communityViewMode === 'feed' ? (
           activeCommunityPosts.map((post) => (
             <FeedPostCard key={post.id} post={post} formatDate={formatDate} searchQuery="" />
@@ -414,121 +499,137 @@ export default function MyPageCommunityPage() {
             <BoardPostRow key={post.id} post={post} formatDate={formatDate} searchQuery="" />
           ))
         )}
-      </div>
+      </Flex>
 
       {isFollowingModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <button
+        <Flex position="fixed" inset="0" zIndex="50" align="center" justify="center" bg="rgba(0, 0, 0, 0.5)" px="16px">
+          <Button
             type="button"
             aria-label="팔로잉 목록 닫기"
-            className="absolute inset-0"
+            position="absolute"
+            inset="0"
+            variant="ghost"
             onClick={() => setIsFollowingModalOpen(false)}
           />
 
-          <div className="relative z-10 max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-900">팔로잉 목록</h3>
-              <button
+          <Box
+            position="relative"
+            zIndex="1"
+            maxH="80vh"
+            w="100%"
+            maxW="448px"
+            overflowY="auto"
+            borderRadius="20px"
+            bg="#FFFFFF"
+            px="20px"
+            py="20px"
+            boxShadow="0 24px 64px rgba(15, 23, 42, 0.24)"
+          >
+            <Flex align="center" justify="space-between" mb="16px">
+              <Text fontSize="16px" fontWeight="700" color="#111827">
+                팔로잉 목록
+              </Text>
+              <Button
                 type="button"
+                variant="ghost"
+                minW="auto"
+                h="28px"
+                px="4px"
+                color="#9CA3AF"
+                _hover={{ bg: 'transparent', color: '#4B5563' }}
                 onClick={() => setIsFollowingModalOpen(false)}
-                className="text-xl leading-none text-gray-400 transition-colors hover:text-gray-600"
                 aria-label="팔로잉 목록 닫기"
               >
                 ×
-              </button>
-            </div>
+              </Button>
+            </Flex>
 
-            <div className="flex border-b border-gray-200">
-              <button
-                type="button"
-                onClick={() => setFollowingModalProfile('real')}
-                className={`relative flex-1 pb-3 text-center text-xs font-medium transition-colors ${
-                  followingModalProfile === 'real'
-                    ? 'text-orange-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <span>{realProfile.name}</span>
-                <span className="ml-2">{followingCount}</span>
-                {followingModalProfile === 'real' ? (
-                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-orange-500" />
-                ) : null}
-              </button>
-              <button
-                type="button"
-                onClick={() => setFollowingModalProfile('nickname')}
-                className={`relative flex-1 pb-3 text-center text-xs font-medium transition-colors ${
-                  followingModalProfile === 'nickname'
-                    ? 'text-orange-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <span>{nicknameProfile.nickname}</span>
-                <span className="ml-2">{followingCount}</span>
-                {followingModalProfile === 'nickname' ? (
-                  <span className="absolute inset-x-0 bottom-0 h-[2px] bg-orange-500" />
-                ) : null}
-              </button>
-            </div>
+            <Text borderRadius="14px" bg="#F9FAFB" px="12px" py="10px" fontSize="12px" color="#6B7280">
+              팔로우와 팔로잉은 실명 프로필 기준으로만 제공됩니다. 익명 작성은 별도 팔로우를 만들지 않습니다.
+            </Text>
 
-            <div className="relative mt-4">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
+            <Box position="relative" mt="16px">
+              <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" color="#9CA3AF">
+                <Search size={16} />
+              </Box>
+              <Input
+                h="44px"
+                pl="40px"
+                pr="16px"
+                borderRadius="12px"
+                borderColor="#E5E7EB"
                 placeholder="사용자 검색..."
-                className="w-full rounded-lg border border-gray-200 py-2.5 pl-10 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-orange-500"
+                _placeholder={{ color: '#9CA3AF' }}
+                _focus={{
+                  borderColor: '#FDBA74',
+                  boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.14)',
+                }}
               />
-            </div>
+            </Box>
 
-            <div className="mt-4 space-y-3">
-              {activeFollowingProfiles.map((profile) => {
-                const displayName = profile.mode === 'real'
-                  ? ('name' in profile && profile.name ? profile.name : profile.nickname)
-                  : profile.nickname;
+            <Flex mt="16px" direction="column" gap="12px">
+              {followingProfiles.map((profile) => {
+                const displayName =
+                  profile.mode === 'real'
+                    ? ('name' in profile && profile.name ? profile.name : profile.nickname)
+                    : profile.name;
                 const profilePosition = 'position' in profile ? profile.position : undefined;
 
                 return (
-                  <div
+                  <Flex
                     key={profile.profileId}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3"
+                    align="center"
+                    justify="space-between"
+                    gap="12px"
+                    borderWidth="1px"
+                    borderColor="#E5E7EB"
+                    borderRadius="16px"
+                    bg="#FFFFFF"
+                    px="16px"
+                    py="14px"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <img
-                        src={profile.avatar}
-                        alt={displayName}
-                        className="h-10 w-10 rounded-full object-cover ring-1 ring-gray-200"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="truncate text-sm font-semibold text-gray-900">{displayName}</p>
-                          {profile.mode === 'real' ? (
-                            <BadgeCheck className="h-3.5 w-3.5 text-blue-500" />
-                          ) : null}
-                        </div>
-                        <p className="truncate text-[11px] text-gray-500">
+                    <Flex minW="0" align="center" gap="12px">
+                      <Box position="relative" boxSize="40px" overflow="hidden" rounded="full" borderWidth="1px" borderColor="#E5E7EB">
+                        <Image src={profile.avatar} alt={displayName} w="100%" h="100%" objectFit="cover" />
+                      </Box>
+                      <Box minW="0">
+                        <Flex align="center" gap="4px">
+                          <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
+                            {displayName}
+                          </Text>
+                          {profile.mode === 'real' ? <BadgeCheck size={14} color="#3B82F6" /> : null}
+                        </Flex>
+                        <Text mt="2px" fontSize="11px" color="#6B7280" lineClamp="1">
                           {profilePosition ?? '커뮤니티 활동 중'}
-                        </p>
-                        <p className="truncate text-[11px] text-gray-400">
+                        </Text>
+                        <Text mt="2px" fontSize="11px" color="#9CA3AF" lineClamp="1">
                           {profile.mode === 'real'
                             ? '인증된 실명 프로필입니다.'
-                            : '커뮤니티에서 활동 중입니다.'}
-                        </p>
-                      </div>
-                    </div>
+                            : '실명 프로필로 활동 중입니다.'}
+                        </Text>
+                      </Box>
+                    </Flex>
 
-                    <button
+                    <Button
                       type="button"
-                      className="shrink-0 rounded-md bg-gray-100 px-2.5 py-1.5 text-[11px] font-medium text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700"
+                      h="32px"
+                      px="10px"
+                      borderRadius="10px"
+                      bg="#F3F4F6"
+                      color="#6B7280"
+                      fontSize="11px"
+                      fontWeight="600"
+                      _hover={{ bg: '#E5E7EB', color: '#374151' }}
                     >
                       팔로잉
-                    </button>
-                  </div>
+                    </Button>
+                  </Flex>
                 );
               })}
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Box>
+        </Flex>
       ) : null}
-    </div>
+    </Box>
   );
 }

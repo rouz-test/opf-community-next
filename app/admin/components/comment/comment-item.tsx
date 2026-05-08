@@ -12,10 +12,14 @@ type CommentItemProps = {
   depth?: 0 | 1;
   currentUserId?: string;
   currentUserRole?: 'admin' | 'user';
+  currentUserDisplayName?: string;
+  currentUserProfileImageUrl?: string;
   replyTargetId: string | null;
   replyDraft: string;
+  replyIdentity?: 'real' | 'anonymous';
   isReplySubmitting: boolean;
   onReplyDraftChange: (value: string) => void;
+  onReplyIdentityChange?: (value: 'real' | 'anonymous') => void;
   onReplyStart: (comment: CommunityComment) => void;
   onReplyCancel: () => void;
   onReplySubmit: (comment: CommunityComment) => Promise<void>;
@@ -67,10 +71,14 @@ export default function CommentItem({
   depth = 0,
   currentUserId,
   currentUserRole = 'user',
+  currentUserDisplayName = '사용자',
+  currentUserProfileImageUrl,
   replyTargetId,
   replyDraft,
+  replyIdentity = 'real',
   isReplySubmitting,
   onReplyDraftChange,
+  onReplyIdentityChange,
   onReplyStart,
   onReplyCancel,
   onReplySubmit,
@@ -92,6 +100,7 @@ export default function CommentItem({
   const isDeleted = comment.status === 'deleted';
   const isArchived = comment.status === 'archived';
   const isReplyComposerOpen = replyTargetId === comment.id;
+  const canArchive = currentUserRole === 'admin';
 
   const isMine = currentUserId ? comment.author.id === currentUserId : comment.author.type === 'admin';
   const canManage = !isDeleted && (isMine || currentUserRole === 'admin');
@@ -276,28 +285,30 @@ export default function CommentItem({
                           boxShadow="0 12px 24px rgba(15, 23, 42, 0.12)"
                           py="6px"
                         >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            justifyContent="flex-start"
-                            w="100%"
-                            h="34px"
-                            px="12px"
-                            borderRadius="0"
-                            fontSize="13px"
-                            fontWeight="600"
-                            color="#374151"
-                            disabled={isArchiving}
-                            _hover={{ bg: '#F9FAFB' }}
-                            onClick={() => {
-                              void handleArchiveToggle();
-                            }}
-                          >
-                            <Flex align="center" gap="8px">
-                              <Archive size={14} />
-                              <Text as="span">{isArchived ? '노출 전환' : '보관'}</Text>
-                            </Flex>
-                          </Button>
+                          {canArchive ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              justifyContent="flex-start"
+                              w="100%"
+                              h="34px"
+                              px="12px"
+                              borderRadius="0"
+                              fontSize="13px"
+                              fontWeight="600"
+                              color="#374151"
+                              disabled={isArchiving}
+                              _hover={{ bg: '#F9FAFB' }}
+                              onClick={() => {
+                                void handleArchiveToggle();
+                              }}
+                            >
+                              <Flex align="center" gap="8px">
+                                <Archive size={14} />
+                                <Text as="span">{isArchived ? '노출 전환' : '보관'}</Text>
+                              </Flex>
+                            </Button>
+                          ) : null}
 
                           {!isArchived ? (
                             <Button
@@ -449,6 +460,10 @@ export default function CommentItem({
                 isSubmitting={isReplySubmitting}
                 placeholder="답글을 입력하세요."
                 autoFocus
+                identity={replyIdentity}
+                onChangeIdentity={onReplyIdentityChange}
+                displayName={currentUserDisplayName}
+                profileImageUrl={currentUserProfileImageUrl}
               />
             </Box>
           ) : null}
@@ -462,10 +477,14 @@ export default function CommentItem({
                   depth={1}
                   currentUserId={currentUserId}
                   currentUserRole={currentUserRole}
+                  currentUserDisplayName={currentUserDisplayName}
+                  currentUserProfileImageUrl={currentUserProfileImageUrl}
                   replyTargetId={replyTargetId}
                   replyDraft={replyDraft}
+                  replyIdentity={replyIdentity}
                   isReplySubmitting={isReplySubmitting}
                   onReplyDraftChange={onReplyDraftChange}
+                  onReplyIdentityChange={onReplyIdentityChange}
                   onReplyStart={onReplyStart}
                   onReplyCancel={onReplyCancel}
                   onReplySubmit={onReplySubmit}

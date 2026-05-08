@@ -1,6 +1,6 @@
-
-
 'use client';
+
+import { Box, Button, Flex, Input, Text } from '@chakra-ui/react';
 
 const productKinds = [
   '헬스케어',
@@ -67,103 +67,159 @@ const productCategories = [
   '배송·운송 서비스',
 ];
 
+function Field({
+  label,
+  placeholder,
+  helper = '0/100',
+  optional = false,
+}: {
+  label: string;
+  placeholder: string;
+  helper?: string;
+  optional?: boolean;
+}) {
+  return (
+    <Box>
+      <Text mb="8px" fontSize="14px" fontWeight="700" color="#111827">
+        {label} {optional ? <Text as="span" color="#9CA3AF" fontWeight="500">(선택)</Text> : null}
+      </Text>
+      <Input
+        h="48px"
+        borderRadius="14px"
+        borderColor="#E5E7EB"
+        bg="#FFFFFF"
+        px="16px"
+        fontSize="14px"
+        color="#111827"
+        placeholder={placeholder}
+        _placeholder={{ color: '#9CA3AF' }}
+        _focus={{
+          borderColor: '#FDBA74',
+          boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.14)',
+        }}
+      />
+      <Text mt="8px" textAlign="right" fontSize="12px" color="#9CA3AF">
+        {helper}
+      </Text>
+    </Box>
+  );
+}
+
+function ChipGroup({
+  title,
+  items,
+  activeLabel,
+}: {
+  title: string;
+  items: string[];
+  activeLabel: string;
+}) {
+  return (
+    <Box>
+      <Text mb="12px" fontSize="14px" fontWeight="700" color="#111827">
+        {title}
+      </Text>
+      <Flex wrap="wrap" gap="8px">
+        {items.map((item, index) => {
+          const isActive = item === activeLabel;
+
+          return (
+            <Button
+              key={`${item}-${index}`}
+              type="button"
+              h="36px"
+              px="14px"
+              borderRadius="9999px"
+              borderWidth="1px"
+              borderColor={isActive ? '#F97316' : '#D1D5DB'}
+              bg={isActive ? '#F97316' : '#FFFFFF'}
+              color={isActive ? '#FFFFFF' : '#374151'}
+              fontSize="12px"
+              fontWeight="600"
+              _hover={{
+                bg: isActive ? '#EA580C' : '#F9FAFB',
+                borderColor: isActive ? '#EA580C' : '#9CA3AF',
+              }}
+            >
+              {item}
+            </Button>
+          );
+        })}
+      </Flex>
+    </Box>
+  );
+}
+
 export default function MyPageSettingsProductPage() {
   return (
-    <div className="mx-auto w-full max-w-[960px]">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-gray-900">프로덕트</h1>
-      </header>
+    <Box mx="auto" w="100%" maxW="960px">
+      <Box>
+        <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
+          프로덕트
+        </Text>
+        <Text mt="4px" fontSize="14px" color="#6B7280">
+          커뮤니티와 프로필에 노출될 프로덕트 정보를 관리합니다.
+        </Text>
+      </Box>
 
-      <section className="mt-6 rounded-[28px] bg-white px-7 py-8 shadow-sm ring-1 ring-gray-200 sm:px-8 sm:py-9">
-        <div className="space-y-8">
-          <section>
-            <label className="mb-2 block text-sm font-semibold text-gray-900">프로덕트 명</label>
-            <input
-              type="text"
-              placeholder="프로덕트 명을 입력해 주세요."
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange-300"
-            />
-            <p className="mt-2 text-right text-xs text-gray-400">0/100</p>
-          </section>
+      <Box
+        mt="24px"
+        borderWidth="1px"
+        borderColor="#E5E7EB"
+        borderRadius="28px"
+        bg="#FFFFFF"
+        px={{ base: '20px', sm: '32px' }}
+        py={{ base: '24px', sm: '36px' }}
+        boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
+      >
+        <Flex direction="column" gap="32px">
+          <Field label="프로덕트 명" placeholder="프로덕트 명을 입력해 주세요." />
 
-          <section>
-            <label className="mb-2 block text-sm font-semibold text-gray-900">프로덕트 한 줄 소개</label>
-            <input
-              type="text"
-              placeholder="프로덕트 한 줄 소개를 입력해 주세요."
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange-300"
-            />
-            <p className="mt-2 text-right text-xs text-gray-400">0/200</p>
-          </section>
+          <Field
+            label="프로덕트 한 줄 소개"
+            placeholder="프로덕트 한 줄 소개를 입력해 주세요."
+            helper="0/200"
+          />
 
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">프로덕트 산업</h2>
-            <div className="flex flex-wrap gap-2">
-              {productKinds.map((kind, index) => {
-                const isActive = kind === '비오·제약';
+          <ChipGroup
+            title="프로덕트 산업"
+            items={productKinds}
+            activeLabel="비오·제약"
+          />
 
-                return (
-                  <button
-                    key={`${kind}-${index}`}
-                    type="button"
-                    className={`rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
-                      isActive
-                        ? 'border-orange-500 bg-orange-500 text-white'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    {kind}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <ChipGroup
+            title="프로덕트 카테고리"
+            items={productCategories}
+            activeLabel="글로벌·비상관형 솔루션"
+          />
 
-          <section>
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">프로덕트 카테고리</h2>
-            <div className="flex flex-wrap gap-2">
-              {productCategories.map((category, index) => {
-                const isActive = category === '글로벌·비상관형 솔루션';
+          <Field
+            label="프로덕트 링크"
+            placeholder="프로덕트 링크를 입력해 주세요."
+            helper="0/200"
+            optional
+          />
 
-                return (
-                  <button
-                    key={`${category}-${index}`}
-                    type="button"
-                    className={`rounded-full border px-3.5 py-2 text-xs font-medium transition-colors ${
-                      isActive
-                        ? 'border-orange-500 bg-orange-500 text-white'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section>
-            <label className="mb-2 block text-sm font-semibold text-gray-900">
-              프로덕트 링크 <span className="text-gray-400">(선택)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="프로덕트 링크를 입력해 주세요."
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-orange-300"
-            />
-            <p className="mt-2 text-right text-xs text-gray-400">0/200</p>
-          </section>
-
-          <div className="flex justify-end">
-            <button
+          <Flex justify="flex-end">
+            <Button
               type="button"
-              className="min-w-[92px] rounded-xl border border-orange-300 bg-orange-50 px-5 py-2.5 text-sm font-semibold text-orange-500 transition-colors hover:bg-orange-100"
+              minW="92px"
+              h="42px"
+              px="20px"
+              borderRadius="12px"
+              borderWidth="1px"
+              borderColor="#FDBA74"
+              bg="#FFF7ED"
+              color="#F97316"
+              fontSize="14px"
+              fontWeight="700"
+              _hover={{ bg: '#FFEDD5' }}
             >
               저장
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
+            </Button>
+          </Flex>
+        </Flex>
+      </Box>
+    </Box>
   );
 }

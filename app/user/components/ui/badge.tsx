@@ -1,28 +1,52 @@
-import * as React from 'react';
+import { Text, type TextProps } from '@chakra-ui/react';
+import type { ReactNode } from 'react';
 
 type BadgeVariant = 'default' | 'outline';
 
-type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
+type BadgeProps = Omit<TextProps, 'variant'> & {
   variant?: BadgeVariant;
+  children?: ReactNode;
+};
+
+const variantStyles: Record<BadgeVariant, TextProps> = {
+  default: {
+    borderColor: 'transparent',
+    bg: '#F97316',
+    color: '#FFFFFF',
+  },
+  outline: {
+    borderColor: '#E5E7EB',
+    bg: '#FFFFFF',
+    color: '#374151',
+  },
 };
 
 export function Badge({
   variant = 'default',
-  className = '',
+  children,
+  borderRadius = '9999px',
+  fontSize = '12px',
+  fontWeight = '500',
+  px = '8px',
+  py = '2px',
   ...props
 }: BadgeProps) {
-  const baseStyle =
-    'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium';
-
-  const variantStyle =
-    variant === 'outline'
-      ? 'border-gray-200 bg-white text-gray-700'
-      : 'border-transparent bg-orange-500 text-white';
-
   return (
-    <span
-      className={`${baseStyle} ${variantStyle} ${className}`}
+    <Text
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      borderWidth="1px"
+      borderRadius={borderRadius}
+      fontSize={fontSize}
+      fontWeight={fontWeight}
+      lineHeight="1.2"
+      px={px}
+      py={py}
+      {...variantStyles[variant]}
       {...props}
-    />
+    >
+      {children}
+    </Text>
   );
 }

@@ -3090,5 +3090,29 @@
     "createdAt": "2026-04-28T07:03:08.533Z",
     "updatedAt": "2026-04-28T07:18:42.395Z",
     "deletedAt": "2026-04-28T07:18:42.395Z"
+  },
+  {
+    "id": "community-comment-1778136600509",
+    "contentId": "post-102",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": ""
+    },
+    "content": "댓글 작성",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-05-07T06:50:00.509Z",
+    "updatedAt": "2026-05-07T06:50:00.509Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
   }
 ]

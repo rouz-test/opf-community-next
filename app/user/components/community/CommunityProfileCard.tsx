@@ -1,8 +1,21 @@
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Heading,
+  HStack,
+  Icon,
+  IconButton,
+  Image,
+  Text,
+} from '@chakra-ui/react';
 import { BadgeCheck, RefreshCw } from 'lucide-react';
 import { CommunityWriteAction } from '@/app/user/components/community/CommunityWriteAction';
+import { getCommunityIdentityLabel } from '@/app/user/lib/community-identity';
 
 export type CommunityProfileCardProps = {
-  profileMode: 'real' | 'nickname';
+  profileMode: 'real' | 'anonymous' | 'nickname';
   onToggleProfileMode: () => void;
   onProfileClick?: () => void;
   onWriteClick?: () => void;
@@ -18,6 +31,8 @@ export type CommunityProfileCardProps = {
   };
 };
 
+const isAnonymousMode = (mode: CommunityProfileCardProps['profileMode']) => mode !== 'real';
+
 export function CommunityProfileCard({
   profileMode,
   onToggleProfileMode,
@@ -27,105 +42,258 @@ export function CommunityProfileCard({
   currentUser,
   variant = 'sidebar',
 }: CommunityProfileCardProps) {
-  return variant === 'header' ? (
-    <button
-      type="button"
-      onClick={onProfileClick}
-      className="relative shrink-0"
-      aria-label="프로필 메뉴 열기"
-      title="프로필 메뉴"
-    >
-      <img
-        src={currentUser.avatar}
-        alt={profileMode === 'real' ? currentUser.name : currentUser.nickname}
-        className="h-9 w-9 rounded-full object-cover ring-1 ring-gray-200"
-      />
+  const anonymousMode = isAnonymousMode(profileMode);
+  const displayedName = anonymousMode ? '익명' : currentUser.name;
+  const displayedAvatar = anonymousMode ? '' : currentUser.avatar;
+  const identityLabel = getCommunityIdentityLabel(anonymousMode ? 'anonymous' : 'real');
 
-      {profileMode === 'real' ? (
-        <span className="absolute -right-1 -top-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200">
-          <BadgeCheck className="h-3 w-3 text-blue-500" />
-        </span>
-      ) : (
-        <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-gray-900 px-1 text-[9px] font-semibold leading-none text-white shadow-sm ring-1 ring-white">
-          N
-        </span>
-      )}
-    </button>
-  ) : (
-    <section className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="relative h-24 bg-gradient-to-br from-orange-400 to-orange-500">
-        <div className="absolute right-3 top-3 rounded-full border px-2 py-0.5 text-xs font-medium backdrop-blur-sm">
-          {profileMode === 'real' ? (
-            <span className="text-blue-700">✓ 실명 인증</span>
+  if (variant === 'header') {
+    return (
+      <Box position="relative" flexShrink={0}>
+        <IconButton
+          type="button"
+          onClick={onProfileClick}
+          aria-label="프로필 메뉴 열기"
+          title="프로필 메뉴"
+          rounded="full"
+          p="0"
+          minW="auto"
+          h="9"
+          w="9"
+          bg="transparent"
+          _hover={{ bg: 'transparent' }}
+          _active={{ bg: 'transparent' }}
+        >
+          {displayedAvatar ? (
+            <Image
+              src={displayedAvatar}
+              alt={displayedName}
+              h="9"
+              w="9"
+              rounded="full"
+              objectFit="cover"
+              ring="1px"
+              ringColor="gray.200"
+            />
           ) : (
-            <span className="text-gray-700">닉네임</span>
+            <Flex
+              h="9"
+              w="9"
+              align="center"
+              justify="center"
+              rounded="full"
+              bg="gray.900"
+              fontSize="xs"
+              fontWeight="700"
+              color="white"
+              ring="1px"
+              ringColor="gray.200"
+            >
+              익명
+            </Flex>
           )}
-        </div>
-      </div>
+        </IconButton>
 
-      <div className="relative px-6">
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-          <button
+        {!anonymousMode ? (
+          <Flex
+            position="absolute"
+            top="-1"
+            right="-1"
+            h="4"
+            w="4"
+            align="center"
+            justify="center"
+            rounded="full"
+            bg="white"
+            boxShadow="sm"
+            ring="1px"
+            ringColor="gray.200"
+          >
+            <Icon as={BadgeCheck} boxSize="3" color="blue.500" />
+          </Flex>
+        ) : (
+          <Flex
+            position="absolute"
+            top="-1"
+            right="-1"
+            minW="4"
+            h="4"
+            align="center"
+            justify="center"
+            rounded="full"
+            bg="gray.900"
+            px="1"
+            fontSize="9px"
+            fontWeight="700"
+            lineHeight="none"
+            color="white"
+            boxShadow="sm"
+            ring="1px"
+            ringColor="white"
+          >
+            N
+          </Flex>
+        )}
+      </Box>
+    );
+  }
+
+  return (
+    <Box overflow="hidden" rounded="lg" borderWidth="1px" borderColor="gray.200" bg="white" boxShadow="sm">
+      <Box position="relative" h="24" bgGradient="linear(to-br, orange.400, orange.500)">
+        <Flex
+          position="absolute"
+          top="3"
+          right="3"
+          rounded="full"
+          borderWidth="1px"
+          borderColor="whiteAlpha.500"
+          bg="whiteAlpha.700"
+          px="2"
+          py="0.5"
+          fontSize="xs"
+          fontWeight="500"
+          backdropFilter="blur(8px)"
+        >
+          {!anonymousMode ? (
+            <Text color="blue.700">✓ 실명 인증</Text>
+          ) : (
+            <Text color="gray.700">익명 기본값</Text>
+          )}
+        </Flex>
+      </Box>
+
+      <Box position="relative" px="6">
+        <Flex position="absolute" top="-12" left="50%" transform="translateX(-50%)">
+          <IconButton
             type="button"
             onClick={onProfileClick}
             aria-label="프로필 메뉴 열기"
             title="프로필 메뉴"
+            rounded="full"
+            p="0"
+            minW="auto"
+            h="24"
+            w="24"
+            bg="transparent"
+            _hover={{ bg: 'transparent' }}
+            _active={{ bg: 'transparent' }}
           >
-            <img
-              src={currentUser.avatar}
-              alt={profileMode === 'real' ? currentUser.name : currentUser.nickname}
-              className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-lg"
-            />
-          </button>
-        </div>
-      </div>
+            {displayedAvatar ? (
+              <Image
+                src={displayedAvatar}
+                alt={displayedName}
+                h="24"
+                w="24"
+                rounded="full"
+                borderWidth="4px"
+                borderColor="white"
+                objectFit="cover"
+                boxShadow="lg"
+              />
+            ) : (
+              <Flex
+                h="24"
+                w="24"
+                align="center"
+                justify="center"
+                rounded="full"
+                borderWidth="4px"
+                borderColor="white"
+                bg="gray.900"
+                fontSize="sm"
+                fontWeight="700"
+                color="white"
+                boxShadow="lg"
+              >
+                익명
+              </Flex>
+            )}
+          </IconButton>
+        </Flex>
+      </Box>
 
-      <div className="px-6 pb-5 pt-14 text-center">
-        <div className="mb-1 flex items-center justify-center gap-2">
-          <h2 className="text-base font-semibold text-gray-900">
-            {profileMode === 'real' ? currentUser.name : currentUser.nickname}
-          </h2>
-          {profileMode === 'real' && <BadgeCheck className="h-4 w-4 text-blue-500" />}
-        </div>
-        <p className="text-sm text-gray-600">{currentUser.position}</p>
+      <Box px="6" pb="5" pt="14" textAlign="center">
+        <HStack mb="1" justify="center" gap="2">
+          <Heading size="sm" color="gray.900">
+            {displayedName}
+          </Heading>
+          {!anonymousMode ? <Icon as={BadgeCheck} boxSize="4" color="blue.500" /> : null}
+        </HStack>
+
+        <Text fontSize="sm" color="gray.600">
+          {anonymousMode ? '게시글과 댓글 작성 시 익명으로 기본 설정됩니다.' : currentUser.position}
+        </Text>
 
         {showWriteButton && onWriteClick ? (
           <>
             <CommunityWriteAction variant="sidebar" onClick={onWriteClick} />
 
-            <button
+            <Button
               type="button"
               onClick={onToggleProfileMode}
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-100"
+              mt="3"
+              w="full"
+              gap="2"
+              rounded="lg"
+              borderWidth="1px"
+              borderColor="gray.200"
+              bg="gray.50"
+              px="4"
+              py="2.5"
+              fontSize="sm"
+              fontWeight="600"
+              color="gray.700"
+              _hover={{ borderColor: 'gray.300', bg: 'gray.100' }}
             >
-              <RefreshCw className="h-4 w-4" />
-              <span>계정 전환</span>
-            </button>
+              <Icon as={RefreshCw} boxSize="4" />
+              <Text>{identityLabel} 기본값</Text>
+            </Button>
           </>
         ) : (
           <>
-            <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-gray-50 p-3 text-sm">
-              <div>
-                <p className="font-semibold text-gray-900">{currentUser.postsCount}</p>
-                <p className="text-xs text-gray-500">작성 글</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900">{currentUser.commentsCount}</p>
-                <p className="text-xs text-gray-500">댓글</p>
-              </div>
-            </div>
+            <Grid mt="4" templateColumns="repeat(2, minmax(0, 1fr))" gap="2" rounded="lg" bg="gray.50" p="3">
+              <Box>
+                <Text fontWeight="600" color="gray.900">
+                  {currentUser.postsCount}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  작성 글
+                </Text>
+              </Box>
+              <Box>
+                <Text fontWeight="600" color="gray.900">
+                  {currentUser.commentsCount}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  댓글
+                </Text>
+              </Box>
+            </Grid>
 
-            <button
+            <Button
               type="button"
               onClick={onToggleProfileMode}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-100"
+              mt="4"
+              w="full"
+              gap="2"
+              rounded="lg"
+              borderWidth="1px"
+              borderColor="gray.200"
+              bg="gray.50"
+              px="4"
+              py="2.5"
+              fontSize="sm"
+              fontWeight="600"
+              color="gray.700"
+              _hover={{ borderColor: 'gray.300', bg: 'gray.100' }}
             >
-              <RefreshCw className="h-4 w-4" />
-              <span>계정 전환</span>
-            </button>
+              <Icon as={RefreshCw} boxSize="4" />
+              <Text>{identityLabel} 기본값</Text>
+            </Button>
           </>
         )}
-      </div>
-    </section>
+      </Box>
+    </Box>
   );
 }

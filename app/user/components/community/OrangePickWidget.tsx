@@ -1,3 +1,4 @@
+import { Box, Flex, Grid, Icon, Image, Text } from '@chakra-ui/react';
 import { Sparkles } from 'lucide-react';
 
 type OrangePickArticle = {
@@ -14,32 +15,61 @@ type OrangePickWidgetProps = {
 
 export function OrangePickWidget({ articles }: OrangePickWidgetProps) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <div className="flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br from-orange-400 to-orange-600">
-          <Sparkles className="h-3 w-3 text-white" />
-        </div>
-        <h3 className="text-sm font-semibold text-gray-900">오렌지픽</h3>
-      </div>
+    <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" p="16px">
+      <Flex align="center" gap="8px" mb="16px">
+        <Flex
+          h="20px"
+          w="20px"
+          align="center"
+          justify="center"
+          borderRadius="6px"
+          bgGradient="linear(to-br, orange.400, orange.600)"
+        >
+          <Icon as={Sparkles} boxSize="12px" color="#FFFFFF" />
+        </Flex>
+        <Text fontSize="14px" fontWeight="700" color="#111827">
+          오렌지픽
+        </Text>
+      </Flex>
 
-      <div className="space-y-4">
+      <Grid gap="16px">
         {articles.map((article) => (
-          <div key={article.id} className="group cursor-pointer">
-            <div className="mb-2 aspect-video overflow-hidden rounded-lg bg-gray-100">
-              <img
+          <Box
+            key={article.id}
+            role="group"
+            cursor="pointer"
+          >
+            <Box mb="8px" aspectRatio="16 / 9" overflow="hidden" borderRadius="12px" bg="#F3F4F6">
+              <Image
                 src={article.thumbnail}
                 alt={article.title}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                h="100%"
+                w="100%"
+                objectFit="cover"
+                transition="transform 0.3s ease"
+                _groupHover={{ transform: 'scale(1.05)' }}
               />
-            </div>
-            <h4 className="mb-1 line-clamp-2 text-sm font-medium text-gray-900 transition-colors group-hover:text-orange-500">
+            </Box>
+            <Text
+              mb="4px"
+              lineClamp={2}
+              fontSize="14px"
+              fontWeight="600"
+              color="#111827"
+              transition="color 0.2s ease"
+              _groupHover={{ color: '#F97316' }}
+            >
               {article.title}
-            </h4>
-            <p className="mb-2 line-clamp-2 text-xs text-gray-500">{article.excerpt}</p>
-            <div className="text-xs text-gray-400">{article.author}</div>
-          </div>
+            </Text>
+            <Text mb="8px" lineClamp={2} fontSize="12px" color="#6B7280">
+              {article.excerpt}
+            </Text>
+            <Text fontSize="12px" color="#9CA3AF">
+              {article.author}
+            </Text>
+          </Box>
         ))}
-      </div>
-    </section>
+      </Grid>
+    </Box>
   );
 }
