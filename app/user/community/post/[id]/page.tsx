@@ -31,13 +31,13 @@ import {
   type ReactNode,
 } from 'react';
 
-import CommentEditor from '@/app/admin/components/comment/comment-editor';
-import CommentItem from '@/app/admin/components/comment/comment-item';
-import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
-import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import CommentEditor from '@/app/user/components/comment/comment-editor';
+import CommentItem from '@/app/user/components/comment/comment-item';
+import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
+import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import {
   COMMUNITY_CURRENT_USER,
   mockCommunityPosts,
@@ -946,12 +946,12 @@ export default function CommunityPostDetailPage() {
               </Text>
 
               {resolvedTags.length > 0 ? (
-                <Flex wrap="wrap" gap="8px" mb="16px">
-                  {resolvedTags.map((tag) => (
-                    <AdminTagBadge key={tag.id} tag={tag} />
-                  ))}
-                </Flex>
-              ) : null}
+              <Flex wrap="wrap" gap="8px" mb="16px">
+                {resolvedTags.map((tag) => (
+                  <UserTagBadge key={tag.id} tag={tag} />
+                ))}
+              </Flex>
+            ) : null}
 
               <Flex align="center" gap="12px" borderBottom="1px solid" borderColor="#E5E7EB" pb="18px">
                 <Flex

@@ -19,7 +19,7 @@ export function CommunityTagFilter({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <Box rounded="lg" borderWidth="1px" borderColor="gray.200" bg="white">
+    <Box borderRadius="20px" bg="white" boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)">
       <Box display={{ base: 'block', sm: 'none' }}>
         <Button
           type="button"

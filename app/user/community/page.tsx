@@ -5,7 +5,6 @@ import { Box, Flex, Grid, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
-  getPopularPosts,
   orangePickArticles,
   type CommunityPost,
   COMMUNITY_CURRENT_USER,
@@ -14,7 +13,6 @@ import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/app/user/components/community/HighlightCarousel';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
 import { CommunityTagFilter } from '@/app/user/components/community/CommunityTagFilter';
-import { PopularPostsWidget } from '@/app/user/components/community/PopularPostsWidget';
 import { OrangePickWidget } from '@/app/user/components/community/OrangePickWidget';
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
@@ -33,7 +31,7 @@ const getAllTags = (posts: CommunityPost[]) =>
   Array.from(new Set(posts.flatMap((post) => post.tags || [])));
 
 const getHighlightPosts = (posts: CommunityPost[], notices: CommunityPost[]) =>
-  [...notices, ...posts].filter((post) => post.isHighlight);
+  [...notices, ...posts].filter((post) => post.isNotice || post.isPinned);
 
 const filterPosts = (
   posts: CommunityPost[],
@@ -115,8 +113,6 @@ export default function CommunityPage() {
     [],
   );
 
-  const popularPosts = useMemo(() => getPopularPosts(undefined, 5), []);
-
   const visiblePosts = useMemo(
     () =>
       filterPosts(mockCommunityPosts, {
@@ -174,10 +170,10 @@ export default function CommunityPage() {
 
   return (
     <Box as="main" minH="screen" bg="gray.50">
-      <Box mx="auto" maxW="1400px" overflowX="hidden" px="4" py="6">
+      <Box mx="auto" maxW="1400px" px="4" py="6">
         <Grid templateColumns={{ base: '1fr', lg: '280px minmax(0, 1fr) 320px' }} gap="6">
           <Box as="aside" display={{ base: 'none', lg: 'block' }}>
-            <StackColumn top="4">
+            <Flex direction="column" gap="4">
               {isLoggedIn ? (
                 <CommunityProfileCard
                   profileMode={defaultCommunityIdentity}
@@ -194,33 +190,34 @@ export default function CommunityPage() {
                 onToggleTag={toggleTag}
                 onClearTags={clearSelectedTags}
               />
-            </StackColumn>
+            </Flex>
           </Box>
 
-          <Box as="section" minW="0" overflow="hidden">
+          <Box as="section" minW="0" overflow="visible">
             <Flex direction="column" gap="6">
+              <Flex direction="column" gap="2.5">
+                {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} /> : null}
 
-              <CommunityToolbar
-                searchQuery={searchQuery}
-                onSearchQueryChange={setSearchQuery}
-                showFollowingOnly={showFollowingOnly}
-                onToggleFollowingOnly={toggleFollowingOnly}
-                sortBy={sortBy}
-                onSortByChange={setSortBy}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                isFilterOpen={isFilterOpen}
-                onToggleFilterOpen={toggleFilterOpen}
-                onCloseFilterOpen={closeFilterOpen}
-                isTagFilterOpen={isMobileTagFilterOpen}
-                onToggleTagFilterOpen={toggleMobileTagFilterOpen}
-                allTags={allTags}
-                selectedTags={selectedTags}
-                onToggleTag={toggleTag}
-                onClearTags={clearSelectedTags}
-              />
-
-              {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} /> : null}
+                <CommunityToolbar
+                  searchQuery={searchQuery}
+                  onSearchQueryChange={setSearchQuery}
+                  showFollowingOnly={showFollowingOnly}
+                  onToggleFollowingOnly={toggleFollowingOnly}
+                  sortBy={sortBy}
+                  onSortByChange={setSortBy}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  isFilterOpen={isFilterOpen}
+                  onToggleFilterOpen={toggleFilterOpen}
+                  onCloseFilterOpen={closeFilterOpen}
+                  isTagFilterOpen={isMobileTagFilterOpen}
+                  onToggleTagFilterOpen={toggleMobileTagFilterOpen}
+                  allTags={allTags}
+                  selectedTags={selectedTags}
+                  onToggleTag={toggleTag}
+                  onClearTags={clearSelectedTags}
+                />
+              </Flex>
 
               <Flex as="section" direction="column" gap="4">
                 {visiblePosts.map((post) => {
@@ -257,7 +254,6 @@ export default function CommunityPage() {
           </Box>
 
           <Flex as="aside" display={{ base: 'none', lg: 'flex' }} direction="column" gap="4">
-            <PopularPostsWidget popularPosts={popularPosts} />
             <OrangePickWidget articles={orangePickArticles} />
           </Flex>
         </Grid>
@@ -271,19 +267,5 @@ export default function CommunityPage() {
         currentUser={COMMUNITY_CURRENT_USER}
       />
     </Box>
-  );
-}
-
-function StackColumn({
-  children,
-  top,
-}: {
-  children: React.ReactNode;
-  top: string;
-}) {
-  return (
-    <Flex position="sticky" top={top} direction="column" gap="4">
-      {children}
-    </Flex>
   );
 }

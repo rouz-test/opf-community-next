@@ -15,7 +15,12 @@ type OrangePickWidgetProps = {
 
 export function OrangePickWidget({ articles }: OrangePickWidgetProps) {
   return (
-    <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" p="16px">
+    <Box
+      borderRadius="20px"
+      bg="#FFFFFF"
+      p="16px"
+      boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+    >
       <Flex align="center" gap="8px" mb="16px">
         <Flex
           h="20px"

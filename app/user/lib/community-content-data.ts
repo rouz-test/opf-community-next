@@ -52,6 +52,8 @@ export interface CommunityPost {
   isLikedByMe: boolean;
   tags?: string[];
   images?: string[];
+  isNotice?: boolean;
+  isPinned?: boolean;
   isHighlight?: boolean;
   isPromotion?: boolean;
   isRealName?: boolean;
@@ -289,7 +291,9 @@ function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
     isLikedByMe: false,
     tags: resolvedTags,
     images: extractImageSources(content.content),
-    isHighlight: content.flags.isNotice || content.flags.isPinned || content.flags.isPromoted,
+    isNotice: content.flags.isNotice,
+    isPinned: content.flags.isPinned,
+    isHighlight: content.flags.isNotice || content.flags.isPinned,
     isPromotion: content.flags.isPromoted,
     isRealName: author.mode === 'real',
     highlightedComment: buildHighlightedComment(content.id),
@@ -308,19 +312,6 @@ export const mockCommunityPosts = mappedPosts.filter((post) => post.type !== 'no
 export const mockComments = publishedContents.flatMap((content) =>
   buildCommunityCommentThreads(commentEntities, content.id).map(mapThreadComment),
 );
-
-export const getPopularPosts = (
-  type?: 'study' | 'community',
-  limit = 5,
-): CommunityPost[] => {
-  let posts = mockCommunityPosts;
-
-  if (type) {
-    posts = posts.filter((post) => post.type === type);
-  }
-
-  return [...posts].sort((left, right) => right.likes - left.likes).slice(0, limit);
-};
 
 export function getCommunityPostById(postId: string) {
   return [...mockNotices, ...mockCommunityPosts].find((post) => post.id === postId);

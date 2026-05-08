@@ -3,22 +3,28 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Button, Flex, Grid, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { Eye, Heart, MessageSquare } from 'lucide-react';
+import { Box, Button, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
+import { BadgeCheck, Bookmark, Heart, MessageSquare, MoreHorizontal, Share2 } from 'lucide-react';
+import tagsData from '@/data/mock/tags.json';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
+import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import { resolveTags } from '@/lib/tags';
+import type { Tag } from '@/types/tag';
 
-const chunkPosts = <T,>(items: T[], size: number) => {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
-};
+const tags = tagsData as Tag[];
 
 function HighlightPostCard({ post }: { post: CommunityPost }) {
   const router = useRouter();
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
+  const resolvedTags = useMemo(() => {
+    const sourceNames = post.tags ?? [];
+    const tagIds = sourceNames
+      .map((name) => tags.find((tag) => tag.name === name)?.id)
+      .filter((tagId): tagId is string => Boolean(tagId));
+
+    return resolveTags(tagIds, tags);
+  }, [post.tags]);
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -32,39 +38,25 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
       <Box
         as="article"
         display="flex"
-        h="200px"
+        h="280px"
         flexDirection="column"
-        rounded="lg"
-        borderWidth="2px"
-        borderColor="orange.200"
-        bgGradient="linear(to-br, orange.50, white)"
-        p="4"
+        rounded="3xl"
+        bg="white"
+        p="20px"
         transition="all 0.2s"
-        _hover={{ borderColor: 'orange.300', boxShadow: 'md' }}
       >
-        <HStack mb="2" gap="2">
-          <Flex rounded="full" bg="orange.500" px="2.5" py="1" fontSize="xs" fontWeight="700" color="white">
-            {post.type === 'notice' ? '공지' : '추천'}
-          </Flex>
-        </HStack>
-
-        <Text mb="2" lineClamp="2" fontSize="sm" fontWeight="700" color="gray.900" transition="color 0.2s" _groupHover={{ color: 'orange.600' }}>
-          {post.title}
-        </Text>
-        <Text mb="3" lineClamp="3" flex="1" fontSize="xs" lineHeight="6" color="gray.600">
-          {post.content}
-        </Text>
-
-        <Flex mt="auto" align="center" justify="space-between" fontSize="xs" color="gray.500">
+        <Flex h="40px" align="center" justify="space-between" gap="3">
           <Button
             type="button"
             onClick={handleAuthorAvatarClick}
+            display="flex"
+            alignItems="center"
             gap="2"
-            minW="auto"
+            minW="0"
             h="auto"
             bg="transparent"
             p="0"
-            fontWeight="500"
+            textAlign="left"
             color="inherit"
             _hover={{ bg: 'transparent' }}
             _active={{ bg: 'transparent' }}
@@ -80,30 +72,76 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
                 align="center"
                 justify="center"
                 rounded="full"
-                bg={isAnonymousPost ? 'gray.900' : 'gray.200'}
-                fontSize="9px"
+                bg={isAnonymousPost ? 'gray.900' : '#FF6900'}
+                fontSize="10px"
                 fontWeight="700"
-                color={isAnonymousPost ? 'white' : 'transparent'}
+                color="white"
+                flexShrink={0}
               >
-                {isAnonymousPost ? '익명' : '·'}
+                {isAnonymousPost ? '익명' : 'OP'}
               </Flex>
             )}
-            <Text>{authorName}</Text>
+
+            <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">
+              <Flex align="center" gap="1">
+                <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
+                  {authorName}
+                </Text>
+                {!isAnonymousPost ? <Icon as={BadgeCheck} boxSize="16px" color="cyan.400" /> : null}
+              </Flex>
+              <Text mt="4px" fontSize="12px" color="gray.500" lineHeight="12px">
+                코마소프트 · 디자이너 · 3월 18일
+              </Text>
+            </Box>
           </Button>
 
-          <HStack gap="3">
-            <HStack gap="1">
-              <Icon as={Eye} boxSize="3.5" />
-              <Text>{post.views}</Text>
+          <Icon as={MoreHorizontal} boxSize="24px" color="gray.500" flexShrink={0} />
+        </Flex>
+
+        <HStack mt="25px" gap="3" wrap="wrap">
+          {post.type === 'notice' ? (
+            <Flex
+              align="center"
+              justify="center"
+              h="20px"
+              borderRadius="10px"
+              bg="#FF6900"
+              px="10px"
+              fontSize="11px"
+              fontWeight="600"
+              color="white"
+            >
+              공지
+            </Flex>
+          ) : null}
+          {post.type === 'notice' && resolvedTags.length > 0 ? <Box h="6" w="1px" bg="gray.200" /> : null}
+          {resolvedTags.map((tag) => (
+            <UserTagBadge key={tag.id} tag={tag} />
+          ))}
+        </HStack>
+
+        <Text mt="12px" lineClamp="1" fontSize="16px" fontWeight="700" color="gray.900" lineHeight="16px">
+          {post.title}
+        </Text>
+        <Text mt="4" lineClamp={{ base: 3, md: 3 }} flex="1" fontSize="14px" lineHeight="1.65" color="gray.600">
+          {post.content}
+        </Text>
+
+        <Flex mt="25px" align="center" justify="space-between" color="gray.500">
+          <HStack gap="4">
+            <HStack gap="1.5">
+              <Icon as={Heart} boxSize="20px" />
+              <Text fontSize="14px">{post.likes}</Text>
             </HStack>
-            <HStack gap="1">
-              <Icon as={Heart} boxSize="3.5" />
-              <Text>{post.likes}</Text>
+            <HStack gap="1.5">
+              <Icon as={MessageSquare} boxSize="20px" />
+              <Text fontSize="14px">{post.commentCount ?? 0}</Text>
             </HStack>
-            <HStack gap="1">
-              <Icon as={MessageSquare} boxSize="3.5" />
-              <Text>{post.commentCount ?? 0}</Text>
-            </HStack>
+          </HStack>
+
+          <HStack gap="4">
+            <Icon as={Share2} boxSize="20px" />
+            <Icon as={Bookmark} boxSize="20px" />
           </HStack>
         </Flex>
       </Box>
@@ -113,22 +151,11 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
 
 export function HighlightCarousel({ posts }: { posts: CommunityPost[] }) {
   const [currentPage, setCurrentPage] = useState(0);
-  const [slidesPerPage, setSlidesPerPage] = useState(2);
   const touchStartXRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
   const swipeThreshold = 50;
 
-  useEffect(() => {
-    const updateSlidesPerPage = () => {
-      if (window.innerWidth < 768) setSlidesPerPage(1);
-      else setSlidesPerPage(2);
-    };
-    updateSlidesPerPage();
-    window.addEventListener('resize', updateSlidesPerPage);
-    return () => window.removeEventListener('resize', updateSlidesPerPage);
-  }, []);
-
-  const pages = useMemo(() => chunkPosts(posts, slidesPerPage), [posts, slidesPerPage]);
+  const pages = useMemo(() => posts.map((post) => [post]), [posts]);
   const safeCurrentPage = pages.length === 0 ? 0 : Math.min(currentPage, pages.length - 1);
 
   useEffect(() => {
@@ -171,40 +198,54 @@ export function HighlightCarousel({ posts }: { posts: CommunityPost[] }) {
   };
 
   return (
-    <Box position="relative" overflow="hidden">
-      <Flex
-        touchAction="pan-y"
-        transition="transform 0.5s ease-out"
-        transform={`translateX(-${safeCurrentPage * 100}%)`}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+    <Box
+      position="relative"
+      overflow="visible"
+      px={{ base: '3', md: '4' }}
+      pt="0"
+      pb={{ base: '3', md: '4' }}
+      mx={{ base: '-3', md: '-4' }}
+    >
+      <Box
+        overflow="visible"
+        filter="drop-shadow(0 10px 30px rgba(255, 105, 0, 0.12))"
+        transition="filter 0.2s"
+        _hover={{ filter: 'drop-shadow(0 14px 34px rgba(255, 105, 0, 0.16))' }}
       >
-        {pages.map((pagePosts, pageIndex) => (
-          <Box key={pageIndex} w="full" flexShrink={0}>
-            <Grid gap="4" templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }}>
-              {pagePosts.map((post) => (
-                <HighlightPostCard key={post.id} post={post} />
-              ))}
-            </Grid>
-          </Box>
-        ))}
-      </Flex>
+        <Box overflow="hidden" rounded="3xl">
+          <Flex
+            touchAction="pan-y"
+            transition="transform 0.5s ease-out"
+            transform={`translateX(-${safeCurrentPage * 100}%)`}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {pages.map((pagePosts, pageIndex) => (
+              <Box key={pageIndex} w="full" flexShrink={0}>
+                {pagePosts.map((post) => (
+                  <HighlightPostCard key={post.id} post={post} />
+                ))}
+              </Box>
+            ))}
+          </Flex>
+        </Box>
+      </Box>
 
       {pages.length > 1 ? (
-        <Flex mt="4" align="center" justify="center" gap="2">
+        <Flex mt="4" align="center" justify="center" gap="3">
           {pages.map((_, pageIndex) => (
             <Button
               key={pageIndex}
               type="button"
               onClick={() => setCurrentPage(pageIndex)}
               h="2.5"
-              minW={safeCurrentPage === pageIndex ? '8' : '2.5'}
+              minW="2.5"
               rounded="full"
-              bg={safeCurrentPage === pageIndex ? 'orange.500' : 'gray.300'}
+              bg={safeCurrentPage === pageIndex ? 'gray.600' : 'gray.300'}
               p="0"
               transition="all 0.2s"
-              _hover={{ bg: safeCurrentPage === pageIndex ? 'orange.500' : 'gray.400' }}
+              _hover={{ bg: safeCurrentPage === pageIndex ? 'gray.600' : 'gray.400' }}
               aria-label={`${pageIndex + 1}번 하이라이트로 이동`}
             />
           ))}
