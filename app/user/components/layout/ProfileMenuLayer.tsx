@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, Button, Text } from '@chakra-ui/react';
+import { Box, Button, Portal, Text } from '@chakra-ui/react';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { useProfileMenu } from '@/app/user/components/providers/ProfileMenuProvider';
 
@@ -11,6 +11,7 @@ export default function ProfileMenuLayer() {
   const { setIsLoggedIn } = useAuth();
   const { isOpen, anchor, closeProfileMenu, showCommunitySwitch, onToggleProfileMode } =
     useProfileMenu();
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -28,6 +29,24 @@ export default function ProfileMenuLayer() {
     };
   }, [isOpen, closeProfileMenu]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (menuRef.current?.contains(target)) return;
+
+      closeProfileMenu();
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isOpen, closeProfileMenu]);
+
   const menuWidth = 180;
   const defaultTop = 64;
   const defaultLeft = typeof window !== 'undefined' ? window.innerWidth - 24 : 0;
@@ -39,84 +58,76 @@ export default function ProfileMenuLayer() {
   if (!isOpen) return null;
 
   return (
-    <Box position="fixed" inset="0" zIndex="110">
-      <Button
-        type="button"
-        aria-label="프로필 메뉴 닫기"
-        onClick={closeProfileMenu}
-        position="absolute"
-        inset="0"
-        bg="blackAlpha.200"
-        _hover={{ bg: 'blackAlpha.200' }}
-        _active={{ bg: 'blackAlpha.200' }}
-      />
+    <Portal>
+      <Box position="fixed" inset="0" zIndex="110">
+        <Box
+          ref={menuRef}
+          position="absolute"
+          top={`${computedTop}px`}
+          left={`${computedLeft}px`}
+          w="180px"
+          overflow="hidden"
+          rounded="2xl"
+          borderWidth="1px"
+          borderColor="gray.200"
+          bg="white"
+          py="2"
+          boxShadow="lg"
+        >
+          {showCommunitySwitch ? (
+            <>
+              <MenuButton
+                onClick={() => {
+                  closeProfileMenu();
+                  onToggleProfileMode?.();
+                }}
+              >
+                실명/익명 전환
+              </MenuButton>
+              <Box my="2" h="1px" bg="gray.100" />
+            </>
+          ) : null}
 
-      <Box
-        position="absolute"
-        top={`${computedTop}px`}
-        left={`${computedLeft}px`}
-        w="180px"
-        overflow="hidden"
-        rounded="2xl"
-        borderWidth="1px"
-        borderColor="gray.200"
-        bg="white"
-        py="2"
-        boxShadow="lg"
-      >
-        {showCommunitySwitch ? (
-          <>
-            <MenuButton
-              onClick={() => {
-                closeProfileMenu();
-                onToggleProfileMode?.();
-              }}
-            >
-              실명/익명 전환
-            </MenuButton>
-            <Box my="2" h="1px" bg="gray.100" />
-          </>
-        ) : null}
-
-        <MenuButton
-          onClick={() => {
-            closeProfileMenu();
-            router.push('/user/mypage');
-          }}
-        >
-          커뮤니티
-        </MenuButton>
-        <MenuButton
-          onClick={() => {
-            closeProfileMenu();
-            router.push('/user/mypage');
-          }}
-        >
-          캠퍼스
-        </MenuButton>
-        <MenuButton
-          onClick={() => {
-            closeProfileMenu();
-            router.push('/user/mypage/settings');
-          }}
-        >
-          설정
-        </MenuButton>
-        <Box my="2" h="1px" bg="gray.100" />
-        <MenuButton
-          color="red.500"
-          hoverBg="red.50"
-          hoverColor="red.600"
-          onClick={() => {
-            closeProfileMenu();
-            setIsLoggedIn(false);
-            router.push('/user/community');
-          }}
-        >
-          로그아웃
-        </MenuButton>
+          <MenuButton
+            onClick={() => {
+              closeProfileMenu();
+              router.push('/user/mypage');
+            }}
+          >
+            커뮤니티
+          </MenuButton>
+          <MenuButton
+            onClick={() => {
+              closeProfileMenu();
+              router.push('/user/mypage');
+            }}
+          >
+            캠퍼스
+          </MenuButton>
+          <MenuButton
+            onClick={() => {
+              closeProfileMenu();
+              router.push('/user/mypage/settings');
+            }}
+          >
+            설정
+          </MenuButton>
+          <Box my="2" h="1px" bg="gray.100" />
+          <MenuButton
+            color="red.500"
+            hoverBg="red.50"
+            hoverColor="red.600"
+            onClick={() => {
+              closeProfileMenu();
+              setIsLoggedIn(false);
+              router.push('/user/community');
+            }}
+          >
+            로그아웃
+          </MenuButton>
+        </Box>
       </Box>
-    </Box>
+    </Portal>
   );
 }
 

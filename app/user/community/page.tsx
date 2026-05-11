@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Box, Flex, Grid, Text } from '@chakra-ui/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
@@ -26,6 +26,8 @@ type CommunityPageState = {
   showFollowingOnly: boolean;
   sortBy: 'recommended' | 'latest';
 };
+
+const POSTS_PAGE_SIZE = 20;
 
 const getAllTags = (posts: CommunityPost[]) =>
   Array.from(new Set(posts.flatMap((post) => post.tags || [])));
@@ -100,6 +102,8 @@ export default function CommunityPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [renderedPostCount, setRenderedPostCount] = useState(POSTS_PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
     defaultCommunityIdentity,
@@ -123,8 +127,14 @@ export default function CommunityPage() {
       }),
     [searchQuery, selectedTags, showFollowingOnly, sortBy],
   );
+  const renderedPosts = useMemo(
+    () => visiblePosts.slice(0, renderedPostCount),
+    [renderedPostCount, visiblePosts],
+  );
+  const hasMorePosts = renderedPostCount < visiblePosts.length;
 
   const toggleTag = (tag: string) => {
+    setRenderedPostCount(POSTS_PAGE_SIZE);
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
     );
@@ -135,10 +145,12 @@ export default function CommunityPage() {
   };
 
   const toggleFollowingOnly = () => {
+    setRenderedPostCount(POSTS_PAGE_SIZE);
     setShowFollowingOnly((prev) => !prev);
   };
 
   const clearSelectedTags = () => {
+    setRenderedPostCount(POSTS_PAGE_SIZE);
     setSelectedTags([]);
   };
 
@@ -167,6 +179,28 @@ export default function CommunityPage() {
       document.body.style.overflow = '';
     };
   }, [isMobileTagFilterOpen, isFilterOpen, isWriteModalOpen]);
+
+  useEffect(() => {
+    if (!hasMorePosts) return;
+    if (!loadMoreRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (!firstEntry?.isIntersecting) return;
+        setRenderedPostCount((prev) => Math.min(prev + POSTS_PAGE_SIZE, visiblePosts.length));
+      },
+      {
+        rootMargin: '240px 0px',
+      },
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMorePosts, visiblePosts.length]);
 
   return (
     <Box as="main" minH="screen" bg="gray.50">
@@ -200,13 +234,22 @@ export default function CommunityPage() {
 
                 <CommunityToolbar
                   searchQuery={searchQuery}
-                  onSearchQueryChange={setSearchQuery}
+                  onSearchQueryChange={(value) => {
+                    setRenderedPostCount(POSTS_PAGE_SIZE);
+                    setSearchQuery(value);
+                  }}
                   showFollowingOnly={showFollowingOnly}
                   onToggleFollowingOnly={toggleFollowingOnly}
                   sortBy={sortBy}
-                  onSortByChange={setSortBy}
+                  onSortByChange={(value) => {
+                    setRenderedPostCount(POSTS_PAGE_SIZE);
+                    setSortBy(value);
+                  }}
                   viewMode={viewMode}
-                  onViewModeChange={setViewMode}
+                  onViewModeChange={(value) => {
+                    setRenderedPostCount(POSTS_PAGE_SIZE);
+                    setViewMode(value);
+                  }}
                   isFilterOpen={isFilterOpen}
                   onToggleFilterOpen={toggleFilterOpen}
                   onCloseFilterOpen={closeFilterOpen}
@@ -220,7 +263,7 @@ export default function CommunityPage() {
               </Flex>
 
               <Flex as="section" direction="column" gap="4">
-                {visiblePosts.map((post) => {
+                {renderedPosts.map((post) => {
                   if (viewMode === 'board') {
                     return (
                       <BoardPostRow
@@ -248,6 +291,12 @@ export default function CommunityPage() {
                       검색 결과가 없습니다.
                     </Text>
                   </Box>
+                ) : null}
+
+                {hasMorePosts ? (
+                  <Flex ref={loadMoreRef} align="center" justify="center" py="6">
+                    <Spinner size="sm" color="#FF6900" />
+                  </Flex>
                 ) : null}
               </Flex>
             </Flex>

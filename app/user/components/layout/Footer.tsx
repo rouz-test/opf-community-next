@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { Box, Flex, Grid, HStack, Select, Text, createListCollection } from '@chakra-ui/react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -30,10 +31,17 @@ const partnerLabels = [
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
   const familySiteCollection = useMemo(() => createListCollection({ items: familySites }), []);
+  const isCommunityRoute = pathname.startsWith('/user/community');
 
   return (
-    <Box as="footer" mt="20" bg="white">
+    <Box
+      as="footer"
+      mt="20"
+      bg="white"
+      display={isCommunityRoute ? { base: 'none', md: 'block' } : 'block'}
+    >
       <Box bg="#FF6900">
         <Flex
           mx="auto"

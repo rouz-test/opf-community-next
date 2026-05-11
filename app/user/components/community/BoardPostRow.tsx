@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Button,
   Flex,
   HStack,
   Icon,
-  Image,
   Text,
 } from '@chakra-ui/react';
 import {
@@ -17,6 +16,7 @@ import {
   Heart,
   MessageSquare,
   Bookmark,
+  Share2,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -24,12 +24,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
+import tagsData from '@/data/mock/tags.json';
+import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import { resolveTags } from '@/lib/tags';
+import type { Tag as CommunityTag } from '@/types/tag';
 
 type Props = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
 };
+
+const tags = tagsData as CommunityTag[];
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -64,12 +70,6 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
 export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
-  const highlightedCommentAuthorName = post.highlightedComment
-    ? post.highlightedComment.author.mode === 'real'
-      ? post.highlightedComment.author.name
-      : '익명'
-    : '';
-  const isHighlightedCommentRealName = post.highlightedComment?.author.mode === 'real';
   const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const likeCount = post.likes;
@@ -78,6 +78,14 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
   const [isPostBookmarked, setIsPostBookmarked] = useState(false);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
+  const resolvedTags = useMemo(() => {
+    const sourceNames = post.tags ?? [];
+    const tagIds = sourceNames
+      .map((name) => tags.find((tag) => tag.name === name)?.id)
+      .filter((tagId): tagId is string => Boolean(tagId));
+
+    return resolveTags(tagIds, tags);
+  }, [post.tags]);
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -107,189 +115,190 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
       <Box
         as="article"
         position="relative"
-        rounded="lg"
-        borderWidth="1px"
-        borderColor="gray.200"
+        overflow="hidden"
+        rounded={{ base: 'none', md: '3xl' }}
         bg="white"
-        transition="all 0.2s"
-        _hover={{ borderColor: 'gray.300', boxShadow: 'sm' }}
+        borderBottomWidth={{ base: '1px', md: '0' }}
+        borderColor={{ base: 'gray.200', md: 'transparent' }}
+        boxShadow={{ base: 'none', md: '0 12px 30px rgba(223, 223, 223, 0.9)' }}
+        transition={{ md: 'transform 0.2s, box-shadow 0.2s' }}
+        _hover={{
+          transform: { md: 'translateY(-2px)' },
+          boxShadow: { md: '0 16px 36px rgba(223, 223, 223, 0.98)' },
+        }}
       >
-        {post.highlightedComment ? (
-          <Flex borderBottomWidth="1px" borderColor="gray.100" px="5" pb="3" pt="3" align="center" gap="2" fontSize="sm" color="gray.600">
-            {post.highlightedComment.author.avatar ? (
-              <Image src={post.highlightedComment.author.avatar} alt={highlightedCommentAuthorName} h="7" w="7" rounded="full" objectFit="cover" />
-            ) : (
-              <Box h="7" w="7" rounded="full" bg="gray.200" />
-            )}
-            <HStack minW="0" gap="1.5" fontSize="sm" color="gray.600">
-              <Text truncate fontWeight="500" color="gray.800">
-                {highlightedCommentAuthorName}
-              </Text>
-              {isHighlightedCommentRealName ? <Icon as={BadgeCheck} boxSize="3.5" color="blue.500" /> : null}
-              <Text flexShrink={0}>님이 댓글을 남김</Text>
-            </HStack>
-          </Flex>
-        ) : null}
-
-        <Flex gap="4" p="5">
-          <Box minW="0" flex="1">
-            <HStack mb="2.5" flexWrap="wrap" gap="1.5">
-              {(post.tags || []).slice(0, 2).map((tag, index) => (
-                <Flex
-                  key={tag}
-                  rounded="full"
-                  borderWidth="1px"
-                  borderColor={index === 0 ? 'green.200' : 'blue.200'}
-                  bg={index === 0 ? 'green.100' : 'blue.100'}
-                  px="2"
-                  py="0.5"
-                  fontSize="xs"
-                  fontWeight="600"
-                  color={index === 0 ? 'green.700' : 'blue.700'}
-                >
-                  {tag}
-                </Flex>
-              ))}
-            </HStack>
-
-            <Text lineClamp="2" fontSize="base" fontWeight="600" color="gray.900" transition="color 0.2s" _hover={{ color: 'orange.500' }}>
-              {highlightMatchedText(post.title, searchQuery)}
-            </Text>
-          </Box>
-
-          <Flex display={{ base: 'none', md: 'flex' }} minW="220px" flexShrink={0} direction="column" align="flex-end" justify="space-between">
-            <HStack gap="1.5">
-              <Button
-                type="button"
-                onClick={handleAuthorAvatarClick}
-                gap="2"
-                minW="auto"
-                h="auto"
-                bg="transparent"
-                p="0"
-                _hover={{ bg: 'transparent' }}
-                _active={{ bg: 'transparent' }}
-                aria-label={isAnonymousPost ? `${authorName} 작성자 정보` : `${authorName} 작성자 페이지로 이동`}
-                disabled={isAnonymousPost}
+        <Flex direction="column" gap={{ base: '3', md: '4' }} px={{ base: '0', md: '5' }} py={{ base: '5', md: '5' }}>
+          <Flex align="flex-start" justify="space-between" gap="4">
+            <Box minW="0" flex="1">
+              <Text
+                lineClamp={{ base: 2, md: 2 }}
+                fontSize="16px"
+                fontWeight="700"
+                color="gray.900"
+                transition="color 0.2s"
+                _hover={{ color: 'orange.500' }}
               >
-                {!isAnonymousPost && post.author.avatar ? (
-                  <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
-                ) : (
-                  <Flex
-                    h="6"
-                    w="6"
-                    align="center"
-                    justify="center"
-                    rounded="full"
-                    bg={isAnonymousPost ? 'gray.900' : 'gray.200'}
-                    fontSize="9px"
-                    fontWeight="700"
-                    color={isAnonymousPost ? 'white' : 'transparent'}
-                  >
-                    {isAnonymousPost ? '익명' : '·'}
-                  </Flex>
-                )}
-                <HStack gap="1.5" lineHeight="none">
-                  <Text fontSize="sm" fontWeight="500" color="gray.900">
-                    {authorName}
-                  </Text>
-                  {!isAnonymousPost && post.isRealName ? <Icon as={BadgeCheck} boxSize="3.5" color="blue.500" /> : null}
-                  {!isAnonymousPost && post.author.position ? (
-                    <Text fontSize="xs" color="gray.500">
-                      · {post.author.position}
-                    </Text>
-                  ) : null}
-                </HStack>
-              </Button>
+                {highlightMatchedText(post.title, searchQuery)}
+              </Text>
+            </Box>
 
+            <Box ref={ownPostMenuRef} flexShrink={0}>
               {isOwnPost ? (
-                <Box ref={ownPostMenuRef} position="relative" ml="0.5">
-                  <Button
-                    type="button"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setIsOwnPostMenuOpen((prev) => !prev);
-                    }}
-                    minW="7"
-                    h="7"
-                    rounded="full"
-                    bg="transparent"
-                    p="0"
-                    color="gray.400"
-                    _hover={{ bg: 'gray.100', color: 'gray.700' }}
-                    aria-label="내 게시글 메뉴 열기"
-                  >
-                    <Icon as={MoreHorizontal} boxSize="4" />
-                  </Button>
-
-                  {isOwnPostMenuOpen ? (
-                    <Box position="absolute" top="10" right="0" zIndex="10" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
-                      {[
-                        { icon: Pencil, label: '수정' },
-                        { icon: Trash2, label: '삭제' },
-                        { icon: EyeOff, label: '숨김' },
-                      ].map((item) => (
-                        <Button
-                          key={item.label}
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setIsOwnPostMenuOpen(false);
-                          }}
-                          justifyContent="flex-start"
-                          gap="2"
-                          w="full"
-                          rounded="none"
-                          bg="transparent"
-                          px="3"
-                          py="2"
-                          fontSize="sm"
-                          fontWeight="400"
-                          color="gray.700"
-                          _hover={{ bg: 'gray.50' }}
-                        >
-                          <Icon as={item.icon} boxSize="4" />
-                          <Text>{item.label}</Text>
-                        </Button>
-                      ))}
-                    </Box>
-                  ) : null}
-                </Box>
-              ) : null}
-            </HStack>
-
-            <HStack gap="3" fontSize="sm" color="gray.500">
-              <Text fontSize="xs">{formatDate(post.createdAt)}</Text>
-              <HStack gap="1">
-                <Icon as={Heart} boxSize="4" />
-                <Text>{likeCount}</Text>
-              </HStack>
-              <HStack gap="1">
-                <Icon as={MessageSquare} boxSize="4" />
-                <Text>{commentCount}</Text>
-              </HStack>
-              {isLoggedIn ? (
                 <Button
                   type="button"
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    setIsPostBookmarked((prev) => !prev);
+                    setIsOwnPostMenuOpen((prev) => !prev);
                   }}
+                  minW="8"
+                  h="8"
+                  rounded="full"
+                  bg="transparent"
+                  p="0"
+                  color="gray.400"
+                  _hover={{ bg: 'gray.50', color: 'gray.700' }}
+                  aria-label="내 게시글 메뉴 열기"
+                >
+                  <Icon as={MoreHorizontal} boxSize="5" />
+                </Button>
+              ) : null}
+
+              {isOwnPostMenuOpen ? (
+                <Box position="absolute" top="14" right="5" zIndex="10" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
+                  {[
+                    { icon: Pencil, label: '수정' },
+                    { icon: Trash2, label: '삭제' },
+                    { icon: EyeOff, label: '숨김' },
+                  ].map((item) => (
+                    <Button
+                      key={item.label}
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setIsOwnPostMenuOpen(false);
+                      }}
+                      justifyContent="flex-start"
+                      gap="2"
+                      w="full"
+                      rounded="none"
+                      bg="transparent"
+                      px="3"
+                      py="2"
+                      fontSize="sm"
+                      fontWeight="400"
+                      color="gray.700"
+                      _hover={{ bg: 'gray.50' }}
+                    >
+                      <Icon as={item.icon} boxSize="4" />
+                      <Text>{item.label}</Text>
+                    </Button>
+                  ))}
+                </Box>
+              ) : null}
+            </Box>
+          </Flex>
+
+          <Flex align="center" justify="space-between" gap="4">
+            <HStack minW="0" flex="1" gap="2" flexWrap={{ base: 'nowrap', md: 'wrap' }}>
+              {resolvedTags.length > 0 ? (
+                <HStack gap="2" flexShrink={0}>
+                  {resolvedTags.slice(0, 1).map((tag) => (
+                    <UserTagBadge key={tag.id} tag={tag} />
+                  ))}
+                  {resolvedTags.length > 1 ? (
+                    <Flex
+                      align="center"
+                      justify="center"
+                      h="20px"
+                      minW="34px"
+                      borderRadius="10px"
+                      bg="gray.200"
+                      px="8px"
+                      fontSize="11px"
+                      fontWeight="600"
+                      color="gray.600"
+                      flexShrink={0}
+                    >
+                      +{resolvedTags.length - 1}
+                    </Flex>
+                  ) : null}
+                </HStack>
+              ) : null}
+
+              <Button
+                type="button"
+                onClick={handleAuthorAvatarClick}
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                display="flex"
+                alignItems="center"
+                gap="2"
+                p="0"
+                textAlign="left"
+                _hover={{ bg: 'transparent' }}
+                _active={{ bg: 'transparent' }}
+                aria-label={isAnonymousPost ? `${authorName} 작성자 정보` : `${authorName} 작성자 페이지로 이동`}
+                disabled={isAnonymousPost}
+              >
+                <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
+                  {authorName}
+                </Text>
+                {!isAnonymousPost && post.isRealName ? (
+                  <Icon as={BadgeCheck} boxSize="5" color="cyan.400" />
+                ) : null}
+                <Text fontSize="12px" color="gray.500" lineHeight="14px" whiteSpace="nowrap">
+                  {formatDate(post.createdAt)}
+                </Text>
+              </Button>
+            </HStack>
+
+            <HStack gap={{ base: '4', md: '4' }} color="gray.500" flexShrink={0}>
+              <HStack gap="1.5">
+                <Icon as={Heart} boxSize="20px" />
+                <Text fontSize="14px">{likeCount}</Text>
+              </HStack>
+              <HStack gap="1.5">
+                <Icon as={MessageSquare} boxSize="20px" />
+                <Text fontSize="14px">{commentCount}</Text>
+              </HStack>
+              <HStack display={{ base: 'none', md: 'flex' }} gap="4">
+                <Button
+                  type="button"
                   minW="auto"
                   h="auto"
                   bg="transparent"
                   p="0"
-                  color={isPostBookmarked ? 'orange.500' : 'gray.400'}
-                  _hover={{ bg: 'transparent', color: 'orange.500' }}
-                  aria-label="북마크"
-                  title="로그인 사용자용 북마크"
+                  color="gray.500"
+                  _hover={{ bg: 'transparent', color: 'blue.500' }}
+                  aria-label="공유"
+                  title="공유하기"
                 >
-                  <Icon as={Bookmark} boxSize="4" fill={isPostBookmarked ? 'currentColor' : 'none'} />
+                  <Icon as={Share2} boxSize="20px" />
                 </Button>
-              ) : null}
+                {isLoggedIn ? (
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setIsPostBookmarked((prev) => !prev);
+                    }}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color={isPostBookmarked ? 'orange.500' : 'gray.500'}
+                    _hover={{ bg: 'transparent', color: 'orange.500' }}
+                    aria-label="북마크"
+                    title="로그인 사용자용 북마크"
+                  >
+                    <Icon as={Bookmark} boxSize="20px" fill={isPostBookmarked ? 'currentColor' : 'none'} />
+                  </Button>
+                ) : null}
+              </HStack>
             </HStack>
           </Flex>
         </Flex>

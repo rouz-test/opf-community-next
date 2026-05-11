@@ -244,11 +244,6 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
               </Box>
             </Button>
 
-            {post.isPromotion ? (
-              <Flex rounded="full" bg="purple.500" px="2.5" py="1" fontSize="xs" fontWeight="500" color="white">
-                홍보
-              </Flex>
-            ) : null}
           </Flex>
 
           {resolvedTags.length > 0 ? (
@@ -259,9 +254,27 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             </HStack>
           ) : null}
 
-          <Text mb="3" fontSize="16px" fontWeight="700" color="gray.900" transition="color 0.2s" _hover={{ color: 'orange.500' }}>
-            {highlightMatchedText(post.title, searchQuery)}
-          </Text>
+          <Flex mb="3" align="center" gap="2" wrap="wrap">
+            {post.isPromotion ? (
+              <Flex
+                align="center"
+                justify="center"
+                h="20px"
+                borderRadius="10px"
+                bg="#7C3AED"
+                px="10px"
+                fontSize="11px"
+                fontWeight="600"
+                color="white"
+                flexShrink={0}
+              >
+                홍보
+              </Flex>
+            ) : null}
+            <Text fontSize="16px" fontWeight="700" color="gray.900" transition="color 0.2s" _hover={{ color: 'orange.500' }}>
+              {highlightMatchedText(post.title, searchQuery)}
+            </Text>
+          </Flex>
           <Text mb="4" lineClamp="4" fontSize="14px" lineHeight="1.65" color="gray.700">
             {highlightMatchedText(post.content, searchQuery)}
           </Text>
