@@ -23,6 +23,8 @@ import {
   UserCheck,
   TrendingUp,
   Sparkles,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 
 export type CommunityToolbarProps = {
@@ -59,24 +61,23 @@ function OptionCard({ active, icon, label, onClick }: OptionCardProps) {
     <Button
       type="button"
       onClick={onClick}
-      justifyContent="space-between"
-      rounded="xl"
-      borderWidth="1px"
-      borderColor={active ? 'orange.200' : 'gray.200'}
-      bg={active ? 'orange.50' : 'gray.50'}
+      justifyContent="flex-start"
+      w="full"
+      rounded="14px"
+      borderWidth="0"
+      bg={active ? '#FFF4E8' : 'transparent'}
       px="4"
-      py="3"
+      py="3.5"
       h="auto"
-      fontSize="sm"
+      fontSize="16px"
       fontWeight="600"
-      color={active ? 'orange.700' : 'gray.700'}
-      _hover={{ bg: active ? 'orange.100' : 'gray.100' }}
+      color={active ? '#FF6900' : 'gray.700'}
+      _hover={{ bg: active ? '#FFF0DE' : 'gray.50' }}
     >
       <HStack gap="2">
-        <Icon as={icon} boxSize="4" />
+        <Icon as={icon} boxSize="4.5" color={active ? '#FF6900' : 'gray.500'} />
         <Text>{label}</Text>
       </HStack>
-      {active ? <Text fontSize="base">✓</Text> : null}
     </Button>
   );
 }
@@ -126,6 +127,14 @@ export function CommunityToolbar({
     };
   }, [isFilterOpen, onCloseFilterOpen]);
 
+  const resetFilterSettings = () => {
+    if (showFollowingOnly) {
+      onToggleFollowingOnly();
+    }
+    onSortByChange('recommended');
+    onViewModeChange('feed');
+  };
+
   return (
     <Box position="relative">
       <Stack gap={{ base: '3', lg: '0' }}>
@@ -138,9 +147,10 @@ export function CommunityToolbar({
               value={searchQuery}
               placeholder={searchPlaceholder}
               onChange={(event) => onSearchQueryChange(event.target.value)}
-              rounded="lg"
-              borderColor="gray.200"
+              borderRadius="10px"
+              borderWidth="0"
               bg="white"
+              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
               py="2.5"
               pr="4"
               fontSize="sm"
@@ -156,10 +166,10 @@ export function CommunityToolbar({
             type="button"
             onClick={onToggleFilterOpen}
             gap="2"
-            rounded="lg"
-            borderWidth="1px"
-            borderColor={isFilterOpen ? 'orange.200' : 'gray.200'}
+            borderRadius="10px"
+            borderWidth="0"
             bg={isFilterOpen ? 'orange.50' : 'white'}
+            boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
             px="4"
             py="2.5"
             fontSize="sm"
@@ -179,9 +189,10 @@ export function CommunityToolbar({
               value={searchQuery}
               placeholder={searchPlaceholder}
               onChange={(event) => onSearchQueryChange(event.target.value)}
-              rounded="lg"
-              borderColor="gray.200"
+              borderRadius="10px"
+              borderWidth="0"
               bg="white"
+              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
               py="2.5"
               pr="4"
               fontSize="sm"
@@ -216,10 +227,10 @@ export function CommunityToolbar({
               type="button"
               onClick={onToggleFilterOpen}
               gap="2"
-              rounded="lg"
-              borderWidth="1px"
-              borderColor={isFilterOpen ? 'orange.200' : 'gray.200'}
+              borderRadius="10px"
+              borderWidth="0"
               bg={isFilterOpen ? 'orange.50' : 'white'}
+              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
               px="3"
               py="2.5"
               fontSize="sm"
@@ -244,40 +255,50 @@ export function CommunityToolbar({
           mt="3"
           display={{ base: 'none', lg: 'block' }}
           w="full"
-          maxW="360px"
-          rounded="2xl"
-          borderWidth="1px"
-          borderColor="gray.200"
+          maxW="320px"
+          rounded="30px"
           bg="white"
-          p="5"
-          boxShadow="xl"
+          p="6"
+          boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)"
         >
-          <Flex mb="4" align="center" justify="space-between">
-            <Text fontSize="base" fontWeight="600" color="gray.900">
+          <Flex mb="6" align="center" justify="space-between">
+            <Text fontSize="16px" fontWeight="700" letterSpacing="-0.02em" color="gray.900">
               필터 설정
             </Text>
-            <Button
-              type="button"
-              onClick={onCloseFilterOpen}
-              variant="ghost"
-              minW="auto"
-              h="auto"
-              px="0"
-              py="0"
-              fontSize="xl"
-              lineHeight="none"
-              color="gray.400"
-              _hover={{ color: 'gray.600', bg: 'transparent' }}
-              aria-label="필터 닫기"
-            >
-              ×
-            </Button>
+            <HStack gap="3">
+              <Button
+                type="button"
+                onClick={resetFilterSettings}
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                p="0"
+                color="#FF6900"
+                _hover={{ bg: 'transparent', color: '#E55F00' }}
+                aria-label="필터 전체 초기화"
+              >
+                <Icon as={RotateCcw} boxSize="5" />
+              </Button>
+              <Button
+                type="button"
+                onClick={onCloseFilterOpen}
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                p="0"
+                color="gray.500"
+                _hover={{ color: 'gray.700', bg: 'transparent' }}
+                aria-label="필터 닫기"
+              >
+                <Icon as={X} boxSize="5" />
+              </Button>
+            </HStack>
           </Flex>
 
-          <Stack gap="5">
+          <Stack gap="7">
             {showFollowingFilter ? (
               <Box>
-                <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+                <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                   표시 옵션
                 </Text>
                 <OptionCard
@@ -289,8 +310,8 @@ export function CommunityToolbar({
               </Box>
             ) : null}
 
-            <Box borderTopWidth={showFollowingFilter ? '1px' : '0'} borderColor="gray.100" pt={showFollowingFilter ? '5' : '0'}>
-              <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+            <Box>
+              <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                 정렬 순서
               </Text>
               <Stack gap="2">
@@ -309,8 +330,8 @@ export function CommunityToolbar({
               </Stack>
             </Box>
 
-            <Box borderTopWidth="1px" borderColor="gray.100" pt="5">
-              <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+            <Box>
+              <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                 보기 방식
               </Text>
               <Stack gap="2">
@@ -441,39 +462,51 @@ export function CommunityToolbar({
               zIndex="10"
               maxH="80vh"
               w="full"
-              maxW="md"
+              maxW="360px"
               overflowY="auto"
-              rounded="2xl"
+              rounded="30px"
               bg="white"
-              p="5"
-              boxShadow="2xl"
+              p="6"
+              boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)"
             >
-              <Flex mb="4" align="center" justify="space-between">
-                <Text fontSize="base" fontWeight="600" color="gray.900">
+              <Flex mb="6" align="center" justify="space-between">
+                <Text fontSize="16px" fontWeight="700" letterSpacing="-0.02em" color="gray.900">
                   필터 설정
                 </Text>
-                <Button
-                  type="button"
-                  onClick={onCloseFilterOpen}
-                  variant="ghost"
-                  minW="auto"
-                  h="auto"
-                  px="0"
-                  py="0"
-                  fontSize="xl"
-                  lineHeight="none"
-                  color="gray.400"
-                  _hover={{ color: 'gray.600', bg: 'transparent' }}
-                  aria-label="필터 닫기"
-                >
-                  ×
-                </Button>
+                <HStack gap="3">
+                  <Button
+                    type="button"
+                    onClick={resetFilterSettings}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color="#FF6900"
+                    _hover={{ bg: 'transparent', color: '#E55F00' }}
+                    aria-label="필터 전체 초기화"
+                  >
+                    <Icon as={RotateCcw} boxSize="5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={onCloseFilterOpen}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color="gray.500"
+                    _hover={{ color: 'gray.700', bg: 'transparent' }}
+                    aria-label="필터 닫기"
+                  >
+                    <Icon as={X} boxSize="5" />
+                  </Button>
+                </HStack>
               </Flex>
 
-              <Stack gap="5">
+              <Stack gap="7">
                 {showFollowingFilter ? (
                   <Box>
-                    <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+                    <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                       표시 옵션
                     </Text>
                     <OptionCard
@@ -485,8 +518,8 @@ export function CommunityToolbar({
                   </Box>
                 ) : null}
 
-                <Box borderTopWidth={showFollowingFilter ? '1px' : '0'} borderColor="gray.100" pt={showFollowingFilter ? '5' : '0'}>
-                  <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+                <Box>
+                  <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                     정렬 순서
                   </Text>
                   <Stack gap="2">
@@ -505,8 +538,8 @@ export function CommunityToolbar({
                   </Stack>
                 </Box>
 
-                <Box borderTopWidth="1px" borderColor="gray.100" pt="5">
-                  <Text mb="3" fontSize="sm" fontWeight="600" color="gray.700">
+                <Box>
+                  <Text mb="3" fontSize="14px" fontWeight="700" color="gray.500">
                     보기 방식
                   </Text>
                   <Stack gap="2">

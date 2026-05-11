@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BadgeCheck,
   Heart,
@@ -21,16 +21,21 @@ import {
   HStack,
   Icon,
   Image,
-  Stack,
   Text,
 } from '@chakra-ui/react';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
+import tagsData from '@/data/mock/tags.json';
+import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import { resolveTags } from '@/lib/tags';
+import type { Tag as CommunityTag } from '@/types/tag';
 
 type FeedPostCardProps = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
 };
+
+const tags = tagsData as CommunityTag[];
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -82,6 +87,14 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
   const images = post.images ?? [];
   const visibleImages = images.slice(0, 2);
   const remainingImageCount = Math.max(images.length - 2, 0);
+  const resolvedTags = useMemo(() => {
+    const sourceNames = post.tags ?? [];
+    const tagIds = sourceNames
+      .map((name) => tags.find((tag) => tag.name === name)?.id)
+      .filter((tagId): tagId is string => Boolean(tagId));
+
+    return resolveTags(tagIds, tags);
+  }, [post.tags]);
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -110,12 +123,15 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
     <Box
       as="article"
       position="relative"
-      rounded="lg"
-      borderWidth="1px"
-      borderColor="gray.200"
+      overflow="hidden"
+      rounded="3xl"
       bg="white"
-      transition="all 0.2s"
-      _hover={{ borderColor: 'gray.300' }}
+      boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+      transition="transform 0.2s, box-shadow 0.2s"
+      _hover={{
+        transform: 'translateY(-2px)',
+        boxShadow: '0 16px 36px rgba(223, 223, 223, 0.98)',
+      }}
     >
       {isOwnPost ? (
         <Box ref={ownPostMenuRef} position="absolute" top="4" right="4" zIndex="10">
@@ -175,33 +191,18 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
         </Box>
       ) : null}
 
-      {post.highlightedComment ? (
-        <Flex borderBottomWidth="1px" borderColor="gray.100" px="4" pb="3" pt="3" align="center" gap="2" fontSize="sm" color="gray.600">
-          {post.highlightedComment.author.avatar ? (
-            <Image src={post.highlightedComment.author.avatar} alt={highlightedCommentAuthorName} h="7" w="7" rounded="full" objectFit="cover" />
-          ) : (
-            <Box h="7" w="7" rounded="full" bg="gray.200" />
-          )}
-          <HStack minW="0" gap="1.5" fontSize="sm" color="gray.600">
-            <Text truncate fontWeight="500" color="gray.800">
-              {highlightedCommentAuthorName}
-            </Text>
-            {isHighlightedCommentRealName ? <Icon as={BadgeCheck} boxSize="3.5" color="blue.500" /> : null}
-            <Text flexShrink={0}>님이 댓글을 남김</Text>
-          </HStack>
-        </Flex>
-      ) : null}
-
       <Link href={`/user/community/post/${post.id}`}>
-        <Box display="block" p="4" pb="3">
-          <Flex mb="3" align="center" justify="space-between" gap="3" pr="10">
+        <Box display="block" px="5" pb="4" pt="5">
+          <Flex mb="5" h="40px" align="center" justify="space-between" gap="3" pr="10">
             <Button
               type="button"
               onClick={handleAuthorAvatarClick}
-              gap="3"
               minW="auto"
               h="auto"
               bg="transparent"
+              display="flex"
+              alignItems="center"
+              gap="2"
               p="0"
               textAlign="left"
               _hover={{ bg: 'transparent' }}
@@ -210,38 +211,37 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
               disabled={isAnonymousPost}
             >
               {!isAnonymousPost && post.author.avatar ? (
-                <Image src={post.author.avatar} alt={authorName} h="10" w="10" rounded="full" objectFit="cover" />
+                <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
               ) : (
                 <Flex
-                  h="10"
-                  w="10"
+                  h="6"
+                  w="6"
                   align="center"
                   justify="center"
                   rounded="full"
-                  bg={isAnonymousPost ? 'gray.900' : 'gray.200'}
-                  fontSize="11px"
+                  bg={isAnonymousPost ? 'gray.900' : '#FF6900'}
+                  fontSize="10px"
                   fontWeight="700"
-                  color={isAnonymousPost ? 'white' : 'transparent'}
+                  color="white"
+                  flexShrink={0}
                 >
-                  {isAnonymousPost ? '익명' : '·'}
+                  {isAnonymousPost ? '익명' : 'OP'}
                 </Flex>
               )}
-              <Stack gap="0">
-                <HStack gap="2">
-                  <Text fontSize="sm" fontWeight="600" color="gray.900">
+
+              <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">
+                <Flex align="center" gap="1">
+                  <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                     {authorName}
                   </Text>
-                  {!isAnonymousPost && post.isRealName ? <Icon as={BadgeCheck} boxSize="4" color="blue.500" /> : null}
-                  {!isAnonymousPost && post.author.position ? (
-                    <Text fontSize="xs" color="gray.500">
-                      · {post.author.position}
-                    </Text>
+                  {!isAnonymousPost && post.isRealName ? (
+                    <Icon as={BadgeCheck} boxSize="5" color="cyan.400" />
                   ) : null}
-                </HStack>
-                <Text fontSize="xs" color="gray.500">
-                  {formatDate(post.createdAt)}
+                </Flex>
+                <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
+                  {!isAnonymousPost ? `코마소프트 · ${post.author.position} · ${formatDate(post.createdAt)}` : formatDate(post.createdAt)}
                 </Text>
-              </Stack>
+              </Box>
             </Button>
 
             {post.isPromotion ? (
@@ -251,33 +251,18 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             ) : null}
           </Flex>
 
-          {(post.tags || []).length > 0 ? (
-            <HStack mb="3" flexWrap="wrap" gap="1.5">
-              {(post.tags || []).slice(0, 3).map((tag, index) => (
-                <Flex
-                  key={tag}
-                  rounded="full"
-                  borderWidth="1px"
-                  borderColor={
-                    index === 0 ? 'green.200' : index === 1 ? 'orange.200' : 'gray.200'
-                  }
-                  bg={index === 0 ? 'green.100' : index === 1 ? 'orange.100' : 'gray.100'}
-                  px="2"
-                  py="0.5"
-                  fontSize="xs"
-                  fontWeight="600"
-                  color={index === 0 ? 'green.700' : index === 1 ? 'orange.700' : 'gray.700'}
-                >
-                  {tag}
-                </Flex>
+          {resolvedTags.length > 0 ? (
+            <HStack mb="3" flexWrap="wrap" gap="2">
+              {resolvedTags.map((tag) => (
+                <UserTagBadge key={tag.id} tag={tag} />
               ))}
             </HStack>
           ) : null}
 
-          <Text mb="2" fontSize="base" fontWeight="700" color="gray.900" transition="color 0.2s" _hover={{ color: 'orange.500' }}>
+          <Text mb="3" fontSize="16px" fontWeight="700" color="gray.900" transition="color 0.2s" _hover={{ color: 'orange.500' }}>
             {highlightMatchedText(post.title, searchQuery)}
           </Text>
-          <Text mb="3" lineClamp="4" fontSize="sm" lineHeight="relaxed" color="gray.700">
+          <Text mb="4" lineClamp="4" fontSize="14px" lineHeight="1.65" color="gray.700">
             {highlightMatchedText(post.content, searchQuery)}
           </Text>
 
@@ -285,110 +270,115 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             <GridImages visibleImages={visibleImages} imagesLength={images.length} remainingImageCount={remainingImageCount} />
           ) : null}
 
-          {post.highlightedComment ? (
-            <Box mb="3" rounded="xl" borderWidth="1px" borderColor="orange.100" bg="orange.50" px={{ base: '3', sm: '4' }} py="3">
-              <Flex align="flex-start" gap="3">
-                {post.highlightedComment.author.avatar ? (
-                  <Image
-                    src={post.highlightedComment.author.avatar}
-                    alt={highlightedCommentAuthorName}
-                    h={{ base: '8', sm: '9' }}
-                    w={{ base: '8', sm: '9' }}
-                    flexShrink={0}
-                    rounded="full"
-                    objectFit="cover"
-                  />
-                ) : (
-                  <Box h={{ base: '8', sm: '9' }} w={{ base: '8', sm: '9' }} flexShrink={0} rounded="full" bg="gray.200" />
-                )}
-                <Box minW="0" flex="1">
-                  <HStack mb="1" gap="2">
-                    <Text truncate fontSize="sm" fontWeight="600" color="gray.900">
-                      {highlightedCommentAuthorName}
-                    </Text>
-                    {isHighlightedCommentRealName ? <Icon as={BadgeCheck} boxSize="3.5" color="blue.500" /> : null}
-                    <Text fontSize="xs" color="gray.500">
-                      댓글
-                    </Text>
-                  </HStack>
-                  <Text lineClamp={{ base: 2, sm: 3 }} fontSize="sm" lineHeight="relaxed" color="gray.700">
-                    {post.highlightedComment.content}
-                  </Text>
-                </Box>
-              </Flex>
-            </Box>
-          ) : null}
         </Box>
       </Link>
 
-      <Flex borderTopWidth="1px" borderColor="gray.100" px="4" py="3" align="center" justify="space-between">
-        <HStack gap="4">
-          <Button
-            type="button"
-            onClick={() => {
-              setIsPostLiked((prev) => {
-                const next = !prev;
-                setPostLikeCount(next ? post.likes + 1 : post.likes);
-                return next;
-              });
-            }}
-            gap="1.5"
-            minW="auto"
-            h="auto"
-            bg="transparent"
-            p="0"
-            color={isPostLiked ? 'orange.500' : 'gray.600'}
-            _hover={{ bg: 'transparent', color: 'orange.500' }}
-            aria-label="좋아요"
-            title="좋아요 표시"
-          >
-            <Icon as={Heart} boxSize="5" fill={isPostLiked ? 'currentColor' : 'none'} />
-            <Text fontSize="sm" fontWeight="500">
-              {postLikeCount}
-            </Text>
-          </Button>
-          <Button type="button" gap="1.5" minW="auto" h="auto" bg="transparent" p="0" color="gray.600" _hover={{ bg: 'transparent', color: 'blue.500' }}>
-            <Icon as={MessageSquare} boxSize="5" />
-            <Text fontSize="sm" fontWeight="500">
-              {commentCount}
-            </Text>
-          </Button>
-        </HStack>
+      <Box px="5" pb="5">
+        <Flex py="1" align="center" justify="space-between" color="gray.500">
+          <HStack gap="4">
+            <Button
+              type="button"
+              onClick={() => {
+                setIsPostLiked((prev) => {
+                  const next = !prev;
+                  setPostLikeCount(next ? post.likes + 1 : post.likes);
+                  return next;
+                });
+              }}
+              gap="1.5"
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color={isPostLiked ? 'orange.500' : 'gray.500'}
+              _hover={{ bg: 'transparent', color: 'orange.500' }}
+              aria-label="좋아요"
+              title="좋아요 표시"
+            >
+              <Icon as={Heart} boxSize="20px" fill={isPostLiked ? 'currentColor' : 'none'} />
+              <Text fontSize="14px">{postLikeCount}</Text>
+            </Button>
+            <Button
+              type="button"
+              gap="1.5"
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color="gray.500"
+              _hover={{ bg: 'transparent', color: 'blue.500' }}
+            >
+              <Icon as={MessageSquare} boxSize="20px" />
+              <Text fontSize="14px">{commentCount}</Text>
+            </Button>
+          </HStack>
 
-        <HStack gap="3">
-          <Button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              setIsPostBookmarked((prev) => !prev);
-            }}
-            minW="auto"
-            h="auto"
-            bg="transparent"
-            p="0"
-            color={isPostBookmarked ? 'orange.500' : 'gray.500'}
-            _hover={{ bg: 'transparent', color: 'orange.500' }}
-            aria-label="북마크"
-            title="북마크 표시"
-          >
-            <Icon as={Bookmark} boxSize="5" fill={isPostBookmarked ? 'currentColor' : 'none'} />
-          </Button>
-          <Button
-            type="button"
-            minW="auto"
-            h="auto"
-            bg="transparent"
-            p="0"
-            color="gray.500"
-            _hover={{ bg: 'transparent', color: 'blue.500' }}
-            aria-label="공유"
-            title="공유하기"
-          >
-            <Icon as={Share2} boxSize="5" />
-          </Button>
-        </HStack>
-      </Flex>
+          <HStack gap="4">
+            <Button
+              type="button"
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color="gray.500"
+              _hover={{ bg: 'transparent', color: 'blue.500' }}
+              aria-label="공유"
+              title="공유하기"
+            >
+              <Icon as={Share2} boxSize="20px" />
+            </Button>
+            <Button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsPostBookmarked((prev) => !prev);
+              }}
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color={isPostBookmarked ? 'orange.500' : 'gray.500'}
+              _hover={{ bg: 'transparent', color: 'orange.500' }}
+              aria-label="북마크"
+              title="북마크 표시"
+            >
+              <Icon as={Bookmark} boxSize="20px" fill={isPostBookmarked ? 'currentColor' : 'none'} />
+            </Button>
+          </HStack>
+        </Flex>
+
+        {post.highlightedComment ? (
+          <Box mt="4" rounded="20px" borderWidth="1px" borderColor="orange.200" bg="orange.50" px={{ base: '4', sm: '5' }} py="4">
+            <Flex align="flex-start" gap="3">
+              {post.highlightedComment.author.avatar ? (
+                <Image
+                  src={post.highlightedComment.author.avatar}
+                  alt={highlightedCommentAuthorName}
+                  h={{ base: '8', sm: '9' }}
+                  w={{ base: '8', sm: '9' }}
+                  flexShrink={0}
+                  rounded="full"
+                  objectFit="cover"
+                />
+              ) : (
+                <Box h={{ base: '8', sm: '9' }} w={{ base: '8', sm: '9' }} flexShrink={0} rounded="full" bg="gray.200" />
+              )}
+              <Box minW="0" flex="1">
+                <HStack mb="1.5" gap="2">
+                  <Text truncate fontSize="14px" fontWeight="700" color="gray.900">
+                    {highlightedCommentAuthorName}
+                  </Text>
+                  {isHighlightedCommentRealName ? <Icon as={BadgeCheck} boxSize="4" color="cyan.400" /> : null}
+                </HStack>
+                <Text lineClamp={{ base: 2, sm: 3 }} fontSize="14px" lineHeight="1.65" color="gray.600">
+                  {post.highlightedComment.content}
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+        ) : null}
+      </Box>
     </Box>
   );
 }
