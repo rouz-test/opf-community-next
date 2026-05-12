@@ -24,6 +24,7 @@ export type CommunityContentFlags = {
   isPinned: boolean;
   isNotice: boolean;
   isPromoted: boolean;
+  isHiddenByAuthor?: boolean;
 };
 
 export type CommunityContentStats = {

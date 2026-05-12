@@ -40,6 +40,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isHiddenByAuthor(content: CommunityContent) {
+  return Boolean(content.flags.isHiddenByAuthor);
+}
+
 function createDefaultContent() {
   return {
     type: 'doc',
@@ -79,8 +83,10 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
 
   const normalizedContents = contents.map((content) => {
     const normalizedTagIds = normalizeTagIds(content.tagIds, tags);
+    const hasHiddenByAuthorFlag = typeof content.flags?.isHiddenByAuthor === 'boolean';
 
     if (
+      hasHiddenByAuthorFlag &&
       normalizedTagIds.length === content.tagIds.length &&
       normalizedTagIds.every((tagId, index) => tagId === content.tagIds[index])
     ) {
@@ -90,6 +96,10 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
     return {
       ...content,
       tagIds: normalizedTagIds,
+      flags: {
+        ...content.flags,
+        isHiddenByAuthor: Boolean(content.flags?.isHiddenByAuthor),
+      },
       updatedAt: new Date().toISOString(),
     };
   });
@@ -108,14 +118,28 @@ export async function GET(request: NextRequest) {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
     const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const query = parseCommunityContentListQuery(request.nextUrl.searchParams);
+    const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
+    const hiddenByAuthorOnly = request.nextUrl.searchParams.get('hiddenByAuthorOnly') === 'true';
+    const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
 
     let filteredItems = isValidContentStatus(query.status)
       ? normalizedContents.filter((item) => item.status === query.status)
       : normalizedContents;
 
     filteredItems = filteredItems.filter((content) => {
+      const hiddenByAuthor = isHiddenByAuthor(content);
       const referenceDate = getContentReferenceDate(content);
       const resolvedTags = resolveTags(content.tagIds, tags);
+
+      if (hiddenByAuthorOnly) {
+        if (!includeHiddenByAuthor) return false;
+        if (!authorId || content.author.id !== authorId) return false;
+        if (!hiddenByAuthor) return false;
+      } else if (hiddenByAuthor) {
+        if (!includeHiddenByAuthor || !authorId || content.author.id !== authorId) {
+          return false;
+        }
+      }
 
       if (query.startDate) {
         if (!referenceDate) return false;
@@ -320,6 +344,7 @@ export async function POST(request: NextRequest) {
         isPinned: Boolean(body.flags.isPinned),
         isNotice: Boolean(body.flags.isNotice),
         isPromoted: Boolean(body.flags.isPromoted),
+        isHiddenByAuthor: false,
       },
       stats: DEFAULT_STATS,
       createdAt: now,

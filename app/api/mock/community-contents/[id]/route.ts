@@ -31,13 +31,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isHiddenByAuthor(content: CommunityContent) {
+  return Boolean(content.flags.isHiddenByAuthor);
+}
+
 async function normalizeStoredContents(contents: CommunityContent[]) {
   const tags = await readJsonFile<Tag[]>(TAGS_PATH);
 
   const normalizedContents = contents.map((content) => {
     const normalizedTagIds = normalizeTagIds(content.tagIds, tags);
+    const hasHiddenByAuthorFlag = typeof content.flags?.isHiddenByAuthor === 'boolean';
 
     if (
+      hasHiddenByAuthorFlag &&
       normalizedTagIds.length === content.tagIds.length &&
       normalizedTagIds.every((tagId, index) => tagId === content.tagIds[index])
     ) {
@@ -47,6 +53,10 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
     return {
       ...content,
       tagIds: normalizedTagIds,
+      flags: {
+        ...content.flags,
+        isHiddenByAuthor: Boolean(content.flags?.isHiddenByAuthor),
+      },
       updatedAt: new Date().toISOString(),
     };
   });
@@ -60,14 +70,23 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
   return { normalizedContents, tags };
 }
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
     const { normalizedContents } = await normalizeStoredContents(contents);
     const content = normalizedContents.find((item) => item.id === id);
+    const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
+    const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
 
     if (!content) {
+      return NextResponse.json(
+        { message: '콘텐츠를 찾을 수 없습니다.' },
+        { status: 404 },
+      );
+    }
+
+    if (isHiddenByAuthor(content) && (!includeHiddenByAuthor || !authorId || content.author.id !== authorId)) {
       return NextResponse.json(
         { message: '콘텐츠를 찾을 수 없습니다.' },
         { status: 404 },
@@ -213,6 +232,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
               body.flags.isPromoted !== undefined
                 ? Boolean(body.flags.isPromoted)
                 : currentContent.flags.isPromoted,
+            isHiddenByAuthor:
+              body.flags.isHiddenByAuthor !== undefined
+                ? Boolean(body.flags.isHiddenByAuthor)
+                : Boolean(currentContent.flags.isHiddenByAuthor),
           }
         : currentContent.flags,
       updatedAt: now,

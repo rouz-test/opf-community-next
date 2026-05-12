@@ -34,7 +34,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": true
+      "isPromoted": true,
+      "isHiddenByAuthor": true
     },
     "stats": {
       "viewCount": 0,
@@ -44,7 +45,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-05-12T06:14:33.171Z",
-    "updatedAt": "2026-05-12T06:14:33.171Z",
+    "updatedAt": "2026-05-12T06:53:50.423Z",
     "publishedAt": "2026-05-12T06:14:33.171Z"
   },
   {
@@ -106,7 +107,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -116,7 +118,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-05-12T05:33:07.230Z",
-    "updatedAt": "2026-05-12T05:33:07.230Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": null
   },
   {
@@ -735,7 +737,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -745,7 +748,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-05-12T05:07:13.818Z",
-    "updatedAt": "2026-05-12T05:07:13.818Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-05-12T05:07:13.818Z"
   },
   {
@@ -775,7 +778,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -785,7 +789,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-05-12T04:23:23.805Z",
-    "updatedAt": "2026-05-12T04:23:23.805Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": null
   },
   {
@@ -851,7 +855,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": true,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -861,7 +866,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:25:34.227Z",
-    "updatedAt": "2026-05-08T07:17:53.687Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-28T07:41:01.449Z"
   },
   {
@@ -904,7 +909,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -914,7 +920,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:17:55.788Z",
-    "updatedAt": "2026-05-08T07:46:34.657Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-28T07:41:05.578Z"
   },
   {
@@ -991,7 +997,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -1001,7 +1008,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T03:42:15.121Z",
-    "updatedAt": "2026-04-30T04:50:47.852Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-28T07:41:08.478Z"
   },
   {
@@ -1041,7 +1048,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": true,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -1051,7 +1059,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
-    "updatedAt": "2026-05-08T07:17:57.603Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-24T08:12:48.845Z"
   },
   {
@@ -1188,7 +1196,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -1198,7 +1207,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-24T08:07:32.424Z",
-    "updatedAt": "2026-04-28T06:08:16.242Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-24T08:07:32.424Z"
   },
   {
@@ -1627,7 +1636,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -1637,7 +1647,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:19:14.106Z",
-    "updatedAt": "2026-05-08T07:18:00.511Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-23T08:19:14.106Z"
   },
   {
@@ -1674,7 +1684,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -1684,7 +1695,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-04-30T04:51:08.778Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
@@ -1721,7 +1732,8 @@
     "flags": {
       "isPinned": true,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 32,
@@ -1731,7 +1743,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T10:00:00.000Z",
-    "updatedAt": "2026-05-08T07:18:02.608Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-23T10:00:00.000Z"
   },
   {
@@ -1766,7 +1778,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": true
+      "isPromoted": true,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 32,
@@ -1776,7 +1789,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T12:00:00.000Z",
-    "updatedAt": "2026-05-08T07:18:04.295Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-27T03:29:45.477Z"
   },
   {
@@ -1813,7 +1826,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 132,
@@ -1823,7 +1837,7 @@
       "replyCount": 2
     },
     "createdAt": "2026-04-20T10:12:00Z",
-    "updatedAt": "2026-04-30T05:14:12.214Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-20T10:12:00Z"
   },
   {
@@ -1858,7 +1872,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": true
+      "isPromoted": true,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 421,
@@ -1868,7 +1883,7 @@
       "replyCount": 4
     },
     "createdAt": "2026-04-18T08:00:00Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-18T08:00:00Z"
   },
   {
@@ -1904,7 +1919,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 289,
@@ -1914,7 +1930,7 @@
       "replyCount": 3
     },
     "createdAt": "2026-04-19T14:30:00Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-19T14:30:00Z"
   },
   {
@@ -1950,7 +1966,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 198,
@@ -1960,7 +1977,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-17T09:15:00Z",
-    "updatedAt": "2026-04-28T06:05:39.544Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-17T09:15:00Z"
   },
   {
@@ -1995,7 +2012,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 354,
@@ -2005,7 +2023,7 @@
       "replyCount": 4
     },
     "createdAt": "2026-04-16T13:45:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-16T13:45:00Z"
   },
   {
@@ -2040,7 +2058,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 210,
@@ -2050,7 +2069,7 @@
       "replyCount": 2
     },
     "createdAt": "2026-04-15T11:20:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-15T11:20:00Z"
   },
   {
@@ -2085,7 +2104,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 267,
@@ -2095,7 +2115,7 @@
       "replyCount": 3
     },
     "createdAt": "2026-04-14T16:00:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-14T16:00:00Z"
   },
   {
@@ -2130,7 +2150,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 305,
@@ -2140,7 +2161,7 @@
       "replyCount": 4
     },
     "createdAt": "2026-04-13T12:10:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-13T12:10:00Z"
   },
   {
@@ -2175,7 +2196,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 178,
@@ -2185,7 +2207,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-12T09:50:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-12T09:50:00Z"
   },
   {
@@ -2220,7 +2242,8 @@
     "flags": {
       "isPinned": false,
       "isNotice": false,
-      "isPromoted": false
+      "isPromoted": false,
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 392,
@@ -2230,7 +2253,7 @@
       "replyCount": 5
     },
     "createdAt": "2026-04-11T18:25:00Z",
-    "updatedAt": "2026-04-28T06:05:39.545Z",
+    "updatedAt": "2026-05-12T06:53:50.422Z",
     "publishedAt": "2026-04-11T18:25:00Z"
   }
 ]

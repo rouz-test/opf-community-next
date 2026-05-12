@@ -13,14 +13,18 @@ import type { Tag } from '@/types/tag';
 
 const tags = tagsData as Tag[];
 
+type PostAction = (post: CommunityPost) => void | Promise<void>;
+
 function HighlightPostCard({
   post,
   onRequestDelete,
   onRequestEdit,
+  onRequestHide,
 }: {
   post: CommunityPost;
-  onRequestDelete?: (post: CommunityPost) => void;
-  onRequestEdit?: (post: CommunityPost) => void;
+  onRequestDelete?: PostAction;
+  onRequestEdit?: PostAction;
+  onRequestHide?: PostAction;
 }) {
   const router = useRouter();
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
@@ -163,6 +167,9 @@ function HighlightPostCard({
                         if (item.label === '삭제') {
                           onRequestDelete?.(post);
                         }
+                        if (item.label === '숨김') {
+                          onRequestHide?.(post);
+                        }
                       }}
                       justifyContent="flex-start"
                       gap="2"
@@ -241,10 +248,12 @@ export function HighlightCarousel({
   posts,
   onRequestDelete,
   onRequestEdit,
+  onRequestHide,
 }: {
   posts: CommunityPost[];
-  onRequestDelete?: (post: CommunityPost) => void;
-  onRequestEdit?: (post: CommunityPost) => void;
+  onRequestDelete?: PostAction;
+  onRequestEdit?: PostAction;
+  onRequestHide?: PostAction;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
@@ -325,6 +334,7 @@ export function HighlightCarousel({
                     post={post}
                     onRequestDelete={onRequestDelete}
                     onRequestEdit={onRequestEdit}
+                    onRequestHide={onRequestHide}
                   />
                 ))}
               </Box>

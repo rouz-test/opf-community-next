@@ -178,7 +178,7 @@ export default function MyPageCommunityPage() {
           fetch('/api/mock/community-contents?status=published&page=1&pageSize=200', {
             cache: 'no-store',
           }),
-          fetch('/api/mock/community-contents?status=archived&page=1&pageSize=200', {
+          fetch(`/api/mock/community-contents?includeHiddenByAuthor=true&hiddenByAuthorOnly=true&authorId=${COMMUNITY_CURRENT_USER.accountId}&page=1&pageSize=200`, {
             cache: 'no-store',
           }),
         ]);
@@ -204,11 +204,7 @@ export default function MyPageCommunityPage() {
         setMypagePosts(
           nextPublishedPosts.filter((post) => post.author.accountId === COMMUNITY_CURRENT_USER.accountId),
         );
-        setHiddenPosts(
-          archivedData.items
-            .filter((content) => content.author.id === COMMUNITY_CURRENT_USER.accountId)
-            .map((content) => mapCommunityContentToPost(content as CommunityContent)),
-        );
+        setHiddenPosts(archivedData.items.map((content) => mapCommunityContentToPost(content as CommunityContent)));
       } catch (error) {
         if (isCancelled) return;
         console.error('[MyPageCommunityPage] failed to load community posts:', error);
@@ -293,8 +289,9 @@ export default function MyPageCommunityPage() {
 
   const followingProfiles = useMemo(() => {
     const seen = new Set<string>();
+    const sourcePosts = Array.isArray(allPublishedPosts) ? allPublishedPosts : [];
 
-    return mockCommunityPosts
+    return sourcePosts
       .map((post) => post.author)
       .filter((author) => {
         if (author.accountId === COMMUNITY_CURRENT_USER.accountId) return false;
@@ -305,7 +302,7 @@ export default function MyPageCommunityPage() {
         return true;
       })
       .slice(0, 5);
-  }, []);
+  }, [allPublishedPosts]);
 
   return (
     <Box mx="auto" w="100%" maxW="1120px">

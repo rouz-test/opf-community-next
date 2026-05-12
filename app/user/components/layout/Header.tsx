@@ -100,7 +100,16 @@ export default function Header() {
               <Icon as={Menu} boxSize="5" />
             </Button>
 
-            <ChakraLink asChild display={{ base: 'none', sm: 'inline-flex' }} alignItems="center" _hover={{ textDecoration: 'none' }}>
+            <ChakraLink
+              asChild
+              display={{ base: 'none', sm: 'inline-flex' }}
+              alignItems="center"
+              outline="none"
+              boxShadow="none"
+              _hover={{ textDecoration: 'none' }}
+              _focus={{ outline: 'none', boxShadow: 'none' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none' }}
+            >
               <Link href="/user">
                 <Image
                   src="/logo.webp"
@@ -115,7 +124,16 @@ export default function Header() {
           </HStack>
 
           <Flex as="nav" display={{ base: 'none', md: 'flex' }} align="center" gap="6" fontSize="sm" color="gray.700">
-            <ChakraLink asChild fontWeight="600" color="#111827" _hover={{ color: '#EA580C', textDecoration: 'none' }}>
+            <ChakraLink
+              asChild
+              fontWeight="600"
+              color="#111827"
+              outline="none"
+              boxShadow="none"
+              _hover={{ color: '#EA580C', textDecoration: 'none' }}
+              _focus={{ outline: 'none', boxShadow: 'none' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none' }}
+            >
               <Link href="/user/community">커뮤니티</Link>
             </ChakraLink>
             <Button
@@ -127,20 +145,38 @@ export default function Header() {
               fontSize="sm"
               fontWeight="400"
               color="inherit"
+              outline="none"
+              boxShadow="none"
               _hover={{ bg: 'transparent', color: '#EA580C' }}
+              _focus={{ outline: 'none', boxShadow: 'none' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none' }}
             >
               캠퍼스
               <Text as="span" ml="1" fontSize="xs">
                 ▾
               </Text>
             </Button>
-            <ChakraLink asChild _hover={{ color: '#EA580C', textDecoration: 'none' }}>
+            <ChakraLink
+              asChild
+              outline="none"
+              boxShadow="none"
+              _hover={{ color: '#EA580C', textDecoration: 'none' }}
+              _focus={{ outline: 'none', boxShadow: 'none' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none' }}
+            >
               <Link href="/user/article">아티클</Link>
             </ChakraLink>
           </Flex>
 
           <Box position="absolute" left="50%" transform="translateX(-50%)" display={{ base: 'block', sm: 'none' }}>
-            <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+            <ChakraLink
+              asChild
+              outline="none"
+              boxShadow="none"
+              _hover={{ textDecoration: 'none' }}
+              _focus={{ outline: 'none', boxShadow: 'none' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none' }}
+            >
               <Link href="/user">
                 <Image
                   src="/logo-mobile.webp"

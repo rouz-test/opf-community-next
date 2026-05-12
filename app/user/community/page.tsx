@@ -110,7 +110,7 @@ export default function CommunityPage() {
   const [createdPosts, setCreatedPosts] = useState<CommunityPost[]>([]);
   const [updatedPosts, setUpdatedPosts] = useState<CommunityPost[]>([]);
   const [deletedPostIds, setDeletedPostIds] = useState<string[]>([]);
-  const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
+  const [authorHiddenPostIds, setAuthorHiddenPostIds] = useState<string[]>([]);
   const [deleteTargetPost, setDeleteTargetPost] = useState<CommunityPost | null>(null);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
   const [hideTargetPost, setHideTargetPost] = useState<CommunityPost | null>(null);
@@ -131,8 +131,8 @@ export default function CommunityPage() {
           .map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post)
           .filter((post) => !createdPosts.some((created) => created.id === post.id)),
       ]
-        .filter((post) => !deletedPostIds.includes(post.id) && !hiddenPostIds.includes(post.id)),
-    [createdPosts, deletedPostIds, hiddenPostIds, updatedPosts],
+        .filter((post) => !deletedPostIds.includes(post.id) && !authorHiddenPostIds.includes(post.id)),
+    [authorHiddenPostIds, createdPosts, deletedPostIds, updatedPosts],
   );
 
   const allTags = useMemo(() => getAllTags(baseCommunityPosts), [baseCommunityPosts]);
@@ -141,9 +141,9 @@ export default function CommunityPage() {
     () =>
       getHighlightPosts(
         baseCommunityPosts,
-        mockNotices.filter((post) => !deletedPostIds.includes(post.id) && !hiddenPostIds.includes(post.id)),
+        mockNotices.filter((post) => !deletedPostIds.includes(post.id) && !authorHiddenPostIds.includes(post.id)),
       ),
-    [baseCommunityPosts, deletedPostIds, hiddenPostIds],
+    [authorHiddenPostIds, baseCommunityPosts, deletedPostIds],
   );
 
   const visiblePosts = useMemo(
@@ -297,7 +297,9 @@ export default function CommunityPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'archived',
+          flags: {
+            isHiddenByAuthor: true,
+          },
         }),
       });
 
@@ -307,7 +309,7 @@ export default function CommunityPage() {
         throw new Error(data?.message || '게시글을 숨기지 못했습니다.');
       }
 
-      setHiddenPostIds((prev) => [...prev, hideTargetPost.id]);
+      setAuthorHiddenPostIds((prev) => [...prev, hideTargetPost.id]);
       setCreatedPosts((prev) => prev.filter((post) => post.id !== hideTargetPost.id));
       setHideTargetPost(null);
       toaster.create({

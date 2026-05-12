@@ -57,6 +57,7 @@ export interface CommunityPost {
   isHighlight?: boolean;
   isPromotion?: boolean;
   isRealName?: boolean;
+  isHiddenByAuthor?: boolean;
   highlightedComment?: HighlightedComment;
 }
 
@@ -92,7 +93,9 @@ export const COMMUNITY_CURRENT_USER = {
   commentsCount: 45,
 };
 
-const publishedContents = contents.filter((content) => content.status === 'published');
+const publishedContents = contents.filter(
+  (content) => content.status === 'published' && !content.flags?.isHiddenByAuthor,
+);
 
 function extractTextFromContentBody(node?: CommunityContentBody | null): string {
   if (!node) return '';
@@ -296,6 +299,7 @@ export function mapCommunityContentToPost(content: CommunityContent): CommunityP
     isHighlight: content.flags.isNotice || content.flags.isPinned,
     isPromotion: content.flags.isPromoted,
     isRealName: author.mode === 'real',
+    isHiddenByAuthor: Boolean(content.flags.isHiddenByAuthor),
     highlightedComment: buildHighlightedComment(content.id),
   };
 }
