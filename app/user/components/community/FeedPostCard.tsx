@@ -33,6 +33,7 @@ type FeedPostCardProps = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
+  onRequestDelete?: (post: CommunityPost) => void;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -67,7 +68,7 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
   });
 };
 
-export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProps) {
+export function FeedPostCard({ post, formatDate, searchQuery, onRequestDelete }: FeedPostCardProps) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const highlightedCommentAuthorName = post.highlightedComment
@@ -145,11 +146,10 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
             minW="8"
             h="8"
             rounded="full"
-            bg="whiteAlpha.900"
+            bg="transparent"
             p="0"
-            color="gray.500"
-            boxShadow="sm"
-            _hover={{ bg: 'gray.50', color: 'gray.700' }}
+            color="gray.400"
+            _hover={{ bg: 'transparent', color: 'gray.700' }}
             aria-label="내 게시글 메뉴 열기"
           >
             <Icon as={MoreHorizontal} boxSize="4" />
@@ -169,6 +169,9 @@ export function FeedPostCard({ post, formatDate, searchQuery }: FeedPostCardProp
                     event.preventDefault();
                     event.stopPropagation();
                     setIsOwnPostMenuOpen(false);
+                    if (item.label === '삭제') {
+                      onRequestDelete?.(post);
+                    }
                   }}
                   justifyContent="flex-start"
                   gap="2"

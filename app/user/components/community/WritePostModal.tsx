@@ -12,22 +12,36 @@ import {
   Input,
   Portal,
   Text,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/app/user/components/ui/button';
+import { toaster } from '@/app/user/components/ui/toaster';
+import ContentEditor from '@/app/user/components/editor/content-editor';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import tagsData from '@/data/mock/tags.json';
+import { getBlockedWords } from '@/lib/blocked-words';
+import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
 import {
   normalizeLegacyCommunityIdentity,
   type CommunityIdentityMode,
 } from '@/app/user/lib/community-identity';
+import {
+  clearCommunityPostDraft,
+  loadCommunityPostDraft,
+  saveCommunityPostDraft,
+} from '@/app/user/lib/community-draft';
+import type { ContentEditorJsonValue } from '@/app/user/components/editor/content-editor';
+import type { CommunityContent, CommunityContentAuthor, CommunityContentPayload } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
 
 export type WritePostModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (content: CommunityContent) => void;
   currentUser: {
     name: string;
     nickname: string;
@@ -39,9 +53,22 @@ export type WritePostModalProps = {
 const WRITE_MAX_TITLE_LENGTH = 200;
 const tags = tagsData as Tag[];
 const TEMP_PROFILE_IMAGE = 'https://placehold.co/40x40/png';
+const TEMP_AUTHOR_NAME = '이호준';
+const TEMP_AUTHOR_ID = 'account-user-1';
+
+const EMPTY_CONTENT: ContentEditorJsonValue = {
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [],
+    },
+  ],
+};
 
 type WriteErrors = {
   title?: string;
+  content?: string;
 };
 
 type IdentityOption = {
@@ -69,18 +96,25 @@ const selectButtonStyles = {
   _hover: { bg: 'gray.50' },
 } as const;
 
-export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
+export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalProps) {
   const { defaultCommunityIdentity } = useAuth();
   const normalizedDefaultIdentity =
     normalizeLegacyCommunityIdentity(defaultCommunityIdentity) ?? 'real';
+  const editorHeight = useBreakpointValue({ base: '280px', md: '404px' }) ?? '404px';
 
   const [title, setTitle] = useState('');
+  const [content, setContent] = useState<ContentEditorJsonValue>(EMPTY_CONTENT);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPromotion, setIsPromotion] = useState(false);
   const [profileModeOverride, setProfileModeOverride] = useState<CommunityIdentityMode | null>(null);
   const [isIdentityDropdownOpen, setIsIdentityDropdownOpen] = useState(false);
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+  const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
+  const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
+  const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
+  const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
   const [errors, setErrors] = useState<WriteErrors>({});
 
   const identityDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -95,6 +129,23 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
     return () => {
       document.body.style.overflow = originalOverflow;
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const savedDraft = loadCommunityPostDraft();
+
+    if (!savedDraft) {
+      return;
+    }
+
+    setTitle(savedDraft.title);
+    setContent(savedDraft.content as ContentEditorJsonValue);
+    setSelectedTags(savedDraft.selectedTags);
+    setIsPromotion(savedDraft.isPromotion);
+    setProfileModeOverride(savedDraft.profileModeOverride);
+    setErrors({});
   }, [isOpen]);
 
   useEffect(() => {
@@ -131,18 +182,28 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
     [selectedTags],
   );
 
+  const hasContentText = (node?: ContentEditorJsonValue | null): boolean => {
+    if (!node) return false;
+    if (typeof node.text === 'string' && node.text.trim().length > 0) return true;
+    return node.content?.some((childNode) => hasContentText(childNode)) ?? false;
+  };
+
   if (!isOpen) {
     return null;
   }
 
   const resetForm = () => {
     setTitle('');
+    setContent(EMPTY_CONTENT);
     setSelectedTags([]);
     setIsPromotion(false);
     setProfileModeOverride(null);
     setIsIdentityDropdownOpen(false);
     setIsTagDropdownOpen(false);
-    setShowCloseConfirm(false);
+    setShowDraftPrompt(false);
+    setIsBlockedWordModalOpen(false);
+    setMatchedBlockedKeywords([]);
+    setBlockedWordSourceText('');
     setErrors({});
   };
 
@@ -152,8 +213,8 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
   };
 
   const handleCloseAttempt = () => {
-    if (title.trim() || selectedTags.length > 0 || isPromotion || profileModeOverride) {
-      setShowCloseConfirm(true);
+    if (title.trim() || hasContentText(content) || selectedTags.length > 0 || isPromotion || profileModeOverride) {
+      setShowDraftPrompt(true);
       return;
     }
 
@@ -178,14 +239,139 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
     );
   };
 
-  const handleSubmit = () => {
+  const openBlockedWordModal = (
+    title: string,
+    description: string,
+    matchedKeywords: string[],
+    sourceText: string,
+  ) => {
+    setBlockedWordModalTitle(title);
+    setBlockedWordModalDescription(description);
+    setMatchedBlockedKeywords(matchedKeywords);
+    setBlockedWordSourceText(sourceText);
+    setIsBlockedWordModalOpen(true);
+  };
+
+  const getBlockedWordValidationText = () =>
+    [title.trim(), extractTextFromContentBody(content)].filter(Boolean).join('\n');
+
+  const handleSaveDraft = () => {
+    saveCommunityPostDraft({
+      title: title.trim(),
+      content,
+      selectedTags,
+      isPromotion,
+      profileModeOverride,
+      savedAt: new Date().toISOString(),
+    });
+    handleClose();
+  };
+
+  const handleDeleteDraft = () => {
+    clearCommunityPostDraft();
+    handleClose();
+  };
+
+  const handleSubmit = async () => {
     if (!title.trim()) {
       setErrors({ title: '제목을 입력해 주세요.' });
       return;
     }
 
-    window.alert('글쓰기 UI 시안만 우선 적용된 상태입니다. 실제 저장과 에디터 연결은 다음 단계에서 진행됩니다.');
-    handleClose();
+    if (!hasContentText(content)) {
+      setErrors({ content: '내용을 입력해 주세요.' });
+      return;
+    }
+
+    try {
+      const blockedWords = await getBlockedWords();
+      const validationText = getBlockedWordValidationText();
+      const matchResult = findMatchedBlockedWords(validationText, blockedWords);
+
+      if (matchResult.hasBlockedWords) {
+        openBlockedWordModal(
+          '금지 키워드가 포함되어 발행할 수 없습니다.',
+          '제목 또는 본문에 포함된 금지 키워드를 수정한 뒤 다시 올려주세요.',
+          matchResult.matchedKeywords,
+          validationText,
+        );
+        return;
+      }
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '금지 키워드 목록을 확인하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+      return;
+    }
+
+    const author: CommunityContentAuthor = {
+      type: 'user',
+      id: TEMP_AUTHOR_ID,
+      visibility: profileMode === 'anonymous' ? 'anonymous' : 'public',
+      displayName: profileMode === 'anonymous' ? '익명' : TEMP_AUTHOR_NAME,
+      identifierType: 'name',
+      identifierValue: TEMP_AUTHOR_NAME,
+    };
+
+    const payload: CommunityContentPayload = {
+      title: title.trim(),
+      content,
+      tagIds: selectedTags,
+      status: 'published',
+      author,
+      flags: {
+        isPinned: false,
+        isNotice: false,
+        isPromoted: isPromotion,
+      },
+    };
+
+    try {
+      const response = await fetch('/api/mock/community-contents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => null)) as
+          | { message?: string; matchedKeywords?: string[] }
+          | null;
+
+        if (errorData?.matchedKeywords?.length) {
+          openBlockedWordModal(
+            '금지 키워드가 포함되어 발행할 수 없습니다.',
+            '제목 또는 본문에 포함된 금지 키워드를 수정한 뒤 다시 올려주세요.',
+            errorData.matchedKeywords,
+            getBlockedWordValidationText(),
+          );
+          return;
+        }
+
+        throw new Error(errorData?.message || '게시글을 저장하지 못했습니다.');
+      }
+
+      const createdContent = (await response.json()) as CommunityContent;
+      clearCommunityPostDraft();
+      onCreated?.(createdContent);
+      handleClose();
+      toaster.create({
+        description: '게시글이 등록되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+      return createdContent;
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글 저장에 실패했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   return (
@@ -194,21 +380,24 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
         position="fixed"
         inset="0"
         zIndex="80"
-        align="center"
+        align={{ base: 'stretch', md: 'center' }}
         justify="center"
         bg="blackAlpha.600"
         px={{ base: '0', md: '4' }}
+        py={{ base: '0', md: '6' }}
         onClick={handleCloseAttempt}
       >
         <Box
           w="full"
-          maxW={{ base: '100%', md: '920px' }}
-          h={{ base: '100%', md: 'auto' }}
+          maxW={{ base: '100%', md: '80vw' }}
+          h={{ base: '100dvh', md: 'auto' }}
           maxH={{ md: '92vh' }}
           overflow="hidden"
           rounded={{ base: 'none', md: '28px' }}
           bg="white"
           boxShadow="0 24px 80px rgba(15, 23, 42, 0.18)"
+          display="flex"
+          flexDirection="column"
           onClick={(event) => event.stopPropagation()}
         >
           <Flex align="center" justify="space-between" px={{ base: '5', md: '10' }} pt={{ base: '6', md: '10' }} pb="4">
@@ -230,16 +419,19 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
             </ChakraButton>
           </Flex>
 
-          <Box px={{ base: '5', md: '10' }} pb={{ base: '6', md: '10' }}>
+          <Box
+            px={{ base: '5', md: '10' }}
+            pb={{ base: '6', md: '10' }}
+            overflowY={{ base: 'auto', md: 'visible' }}
+            overflowX="hidden"
+            flex="1"
+          >
             <Grid
               templateColumns={{ base: '1fr', md: 'minmax(0, 1fr) 252px' }}
-              gap={{ base: '6', md: '5' }}
-              alignItems="start"
+              gap={{ base: '5', md: '5' }}
+              alignItems="stretch"
             >
-              <Box order={{ base: 4, md: 1 }}>
-                <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
-                  제목
-                </Text>
+              <Box order={{ base: 4, md: 1 }} minW="0">
                 <Input
                   value={title}
                   onChange={handleTitleChange}
@@ -266,14 +458,17 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
                 </Flex>
               </Box>
 
-              <Box order={{ base: 1, md: 2 }}>
+              <Box order={{ base: 1, md: 2 }} minW="0">
                 <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
                   작성자
                 </Text>
                 <Box ref={identityDropdownRef} position="relative">
                     <ChakraButton
                       type="button"
-                      onClick={() => setIsIdentityDropdownOpen((prev) => !prev)}
+                      onClick={() => {
+                        setIsTagDropdownOpen(false);
+                        setIsIdentityDropdownOpen((prev) => !prev);
+                      }}
                       {...selectButtonStyles}
                     >
                       <HStack gap="2" minW="0">
@@ -360,151 +555,177 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
                 </Box>
               </Box>
 
-              <Box order={{ base: 5, md: 3 }}>
-                <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
-                  내용
-                </Text>
-                <Box
-                  minH={{ base: '280px', md: '404px' }}
-                  rounded="12px"
-                  borderWidth="1px"
-                  borderColor="#D1D5DB"
-                  bg="white"
-                  px="14px"
-                  py="12px"
-                >
-                  <Text fontSize="14px" color="gray.400">
-                    내용을 입력하세요.
-                  </Text>
+              <Box order={{ base: 5, md: 3 }} minW="0">
+                <Box overflow="hidden" rounded="12px" maxW="full">
+                  <ContentEditor
+                    format="json"
+                    value={content}
+                    onChange={(nextValue) => {
+                      setContent(nextValue);
+                      setErrors((prev) => ({ ...prev, content: undefined }));
+                    }}
+                    minHeight={editorHeight}
+                    maxHeight={editorHeight}
+                    placeholder="내용을 입력하세요."
+                  />
                 </Box>
-                <Flex mt="2" justify="flex-end">
+                <Flex mt="2" minH="20px" justify="space-between">
+                  <Text fontSize="12px" color="red.500">
+                    {errors.content ?? ''}
+                  </Text>
                   <Text fontSize="12px" color="gray.400">
-                    0/2000
+                    제한 없음
                   </Text>
                 </Flex>
               </Box>
 
-              <Flex order={{ base: 2, md: 4 }} direction="column" gap="6">
-                <Box>
-                  <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
-                    태그
-                  </Text>
-                  <Box ref={tagDropdownRef} position="relative">
-                    <ChakraButton
-                      type="button"
-                      onClick={() => setIsTagDropdownOpen((prev) => !prev)}
-                      {...selectButtonStyles}
-                    >
-                      <Text color={selectedTags.length > 0 ? 'gray.700' : 'gray.400'}>
-                        {selectedTags.length > 0 ? `${selectedTags.length}개 선택됨` : '태그 선택하기'}
-                      </Text>
-                      <Icon
-                        as={ChevronDown}
-                        boxSize="4"
-                        color="gray.500"
-                        transform={isTagDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'}
-                        transition="transform 0.2s"
-                      />
-                    </ChakraButton>
-
-                    {isTagDropdownOpen ? (
-                      <Box
-                        position="absolute"
-                        top="calc(100% + 8px)"
-                        left="0"
-                        zIndex="20"
-                        w="full"
-                        rounded="16px"
-                        borderWidth="1px"
-                        borderColor="#E5E7EB"
-                        bg="white"
-                        p="2"
-                        boxShadow="0 16px 40px rgba(15, 23, 42, 0.12)"
+              <Flex order={{ base: 2, md: 4 }} direction="column" justify="space-between" minH="full" minW="0">
+                <Flex direction="column" gap="6">
+                  <Box>
+                    <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
+                      태그
+                    </Text>
+                    <Box ref={tagDropdownRef} position="relative">
+                      <ChakraButton
+                        type="button"
+                        onClick={() => {
+                          setIsIdentityDropdownOpen(false);
+                          setIsTagDropdownOpen((prev) => !prev);
+                        }}
+                        {...selectButtonStyles}
                       >
-                        <Flex direction="column" gap="1">
-                          {availableTags.map((tag) => {
-                            const selected = selectedTags.includes(tag.id);
+                        <Text color={selectedTags.length > 0 ? 'gray.700' : 'gray.400'}>
+                          {selectedTags.length > 0 ? `${selectedTags.length}개 선택됨` : '태그 선택하기'}
+                        </Text>
+                        <Icon
+                          as={ChevronDown}
+                          boxSize="4"
+                          color="gray.500"
+                          transform={isTagDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'}
+                          transition="transform 0.2s"
+                        />
+                      </ChakraButton>
 
-                            return (
-                              <ChakraButton
-                                key={tag.id}
-                                type="button"
-                                onClick={() => toggleTag(tag.id)}
-                                justifyContent="space-between"
-                                w="full"
-                                rounded="12px"
-                                bg={selected ? '#FFF4E8' : 'transparent'}
-                                px="3"
-                                py="3"
-                                fontSize="14px"
-                                fontWeight="500"
-                                color={selected ? '#FF6900' : 'gray.700'}
-                                _hover={{ bg: selected ? '#FFF0DE' : 'gray.50' }}
-                              >
-                                <Text>#{tag.name}</Text>
-                                {selected ? <Icon as={Check} boxSize="4" /> : null}
-                              </ChakraButton>
-                            );
-                          })}
-                        </Flex>
-                      </Box>
+                      {isTagDropdownOpen ? (
+                        <Box
+                          position="absolute"
+                          top="calc(100% + 8px)"
+                          left="0"
+                          zIndex="20"
+                          w="full"
+                          rounded="16px"
+                          borderWidth="1px"
+                          borderColor="#E5E7EB"
+                          bg="white"
+                          p="2"
+                          boxShadow="0 16px 40px rgba(15, 23, 42, 0.12)"
+                        >
+                          <Flex direction="column" gap="1">
+                            {availableTags.map((tag) => {
+                              const selected = selectedTags.includes(tag.id);
+
+                              return (
+                                <ChakraButton
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => toggleTag(tag.id)}
+                                  justifyContent="space-between"
+                                  w="full"
+                                  rounded="12px"
+                                  bg={selected ? '#FFF4E8' : 'transparent'}
+                                  px="3"
+                                  py="3"
+                                  fontSize="14px"
+                                  fontWeight="500"
+                                  color={selected ? '#FF6900' : 'gray.700'}
+                                  _hover={{ bg: selected ? '#FFF0DE' : 'gray.50' }}
+                                >
+                                  <Text>#{tag.name}</Text>
+                                  {selected ? <Icon as={Check} boxSize="4" /> : null}
+                                </ChakraButton>
+                              );
+                            })}
+                          </Flex>
+                        </Box>
+                      ) : null}
+                    </Box>
+
+                    {selectedResolvedTags.length > 0 ? (
+                      <Flex mt="3" wrap="wrap" gap="2">
+                        {selectedResolvedTags.map((tag) => (
+                          <UserTagBadge key={tag.id} tag={tag} />
+                        ))}
+                      </Flex>
                     ) : null}
                   </Box>
 
-                  {selectedResolvedTags.length > 0 ? (
-                    <Flex mt="3" wrap="wrap" gap="2">
-                      {selectedResolvedTags.map((tag) => (
-                        <UserTagBadge key={tag.id} tag={tag} />
-                      ))}
+                  <Box order={{ base: 3, md: 5 }}>
+                    <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
+                      게시글 유형
+                    </Text>
+                    <Flex rounded="12px" borderWidth="1px" borderColor="#D1D5DB" overflow="hidden">
+                      <ChakraButton
+                        type="button"
+                        onClick={() => setIsPromotion(false)}
+                        flex="1"
+                        h="40px"
+                        rounded="none"
+                        bg={!isPromotion ? '#FFF4E8' : 'white'}
+                        borderRightWidth="1px"
+                        borderColor="#D1D5DB"
+                        fontSize="14px"
+                        fontWeight="600"
+                        color={!isPromotion ? '#FF6900' : 'gray.700'}
+                        _hover={{ bg: !isPromotion ? '#FFF0DE' : 'gray.50' }}
+                      >
+                        일반글
+                      </ChakraButton>
+                      <ChakraButton
+                        type="button"
+                        onClick={() => setIsPromotion(true)}
+                        flex="1"
+                        h="40px"
+                        rounded="none"
+                        bg={isPromotion ? '#FFF4E8' : 'white'}
+                        fontSize="14px"
+                        fontWeight="600"
+                        color={isPromotion ? '#FF6900' : 'gray.700'}
+                        _hover={{ bg: isPromotion ? '#FFF0DE' : 'gray.50' }}
+                      >
+                        홍보글
+                      </ChakraButton>
                     </Flex>
-                  ) : null}
-                </Box>
+                  </Box>
+                </Flex>
 
-                <Box order={{ base: 3, md: 5 }}>
-                  <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
-                    게시글 유형
-                  </Text>
-                  <Flex rounded="12px" borderWidth="1px" borderColor="#D1D5DB" overflow="hidden">
-                    <ChakraButton
-                      type="button"
-                      onClick={() => setIsPromotion(false)}
-                      flex="1"
-                      h="40px"
-                      rounded="none"
-                      bg={!isPromotion ? '#FFF4E8' : 'white'}
-                      borderRightWidth="1px"
-                      borderColor="#D1D5DB"
-                      fontSize="14px"
-                      fontWeight="600"
-                      color={!isPromotion ? '#FF6900' : 'gray.700'}
-                      _hover={{ bg: !isPromotion ? '#FFF0DE' : 'gray.50' }}
-                    >
-                      일반글
-                    </ChakraButton>
-                    <ChakraButton
-                      type="button"
-                      onClick={() => setIsPromotion(true)}
-                      flex="1"
-                      h="40px"
-                      rounded="none"
-                      bg={isPromotion ? '#FFF4E8' : 'white'}
-                      fontSize="14px"
-                      fontWeight="600"
-                      color={isPromotion ? '#FF6900' : 'gray.700'}
-                      _hover={{ bg: isPromotion ? '#FFF0DE' : 'gray.50' }}
-                    >
-                      홍보글
-                    </ChakraButton>
-                  </Flex>
-                </Box>
+                <Flex
+                  display={{ base: 'none', md: 'flex' }}
+                  mt={{ base: '8', md: '10' }}
+                  justify={{ base: 'flex-end', md: 'stretch' }}
+                  gap="3"
+                  direction={{ base: 'row', md: 'row' }}
+                >
+                  <Button type="button" variant="ghost" onClick={handleCloseAttempt} minW={{ base: '88px', md: '0' }} flex={{ md: 1 }}>
+                    취소
+                  </Button>
+                  <Button type="button" variant="primary" onClick={handleSubmit} minW={{ base: '122px', md: '0' }} flex={{ md: 1 }}>
+                    올리기
+                  </Button>
+                </Flex>
               </Flex>
             </Grid>
 
-            <Flex mt={{ base: '8', md: '6' }} justify="flex-end" gap="3">
-              <Button type="button" variant="ghost" onClick={handleCloseAttempt} minW="88px">
+            <Flex
+              display={{ base: 'flex', md: 'none' }}
+              mt="6"
+              justify="flex-end"
+              gap="3"
+              pb="calc(env(safe-area-inset-bottom, 0px) + 4px)"
+            >
+              <Button type="button" variant="ghost" minW="88px" onClick={handleCloseAttempt}>
                 취소
               </Button>
-              <Button type="button" variant="primary" onClick={handleSubmit} minW="122px">
+              <Button type="button" variant="primary" minW="122px" onClick={handleSubmit}>
                 올리기
               </Button>
             </Flex>
@@ -512,29 +733,38 @@ export function WritePostModal({ isOpen, onClose }: WritePostModalProps) {
         </Box>
       </Flex>
 
-      {showCloseConfirm ? (
+      {showDraftPrompt ? (
         <Portal>
           <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
             <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
               <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
-                작성 중인 내용이 있습니다. 닫으시겠어요?
+                임시 저장 하시겠습니까?
               </Text>
               <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
-                저장 기능은 아직 연결되지 않아, 닫으면 입력 내용이 사라집니다.
+                작성 중인 글은 브라우저에 임시 저장되며, 다음에 글쓰기를 열면 다시 불러올 수 있습니다.
               </Text>
 
               <Flex mt="5" gap="3">
-                <Button type="button" variant="outline" onClick={() => setShowCloseConfirm(false)} flex="1">
-                  계속 작성
+                <Button type="button" variant="outline" onClick={handleDeleteDraft} flex="1">
+                  삭제
                 </Button>
-                <Button type="button" variant="primary" onClick={handleClose} flex="1">
-                  닫기
+                <Button type="button" variant="primary" onClick={handleSaveDraft} flex="1">
+                  임시 저장
                 </Button>
               </Flex>
             </Box>
           </Flex>
         </Portal>
       ) : null}
+
+      <BlockedWordAlertModal
+        isOpen={isBlockedWordModalOpen}
+        onClose={() => setIsBlockedWordModalOpen(false)}
+        title={blockedWordModalTitle}
+        description={blockedWordModalDescription}
+        matchedKeywords={matchedBlockedKeywords}
+        sourceText={blockedWordSourceText}
+      />
     </>
   );
 }

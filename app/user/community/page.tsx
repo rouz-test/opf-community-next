@@ -1,14 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, Portal, Spinner, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
   orangePickArticles,
   type CommunityPost,
   COMMUNITY_CURRENT_USER,
+  mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
+import type { CommunityContent } from '@/types/community-content';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/app/user/components/community/HighlightCarousel';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
@@ -19,6 +21,8 @@ import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
 import { CommunityWriteAction } from '@/app/user/components/community/CommunityWriteAction';
+import { Button } from '@/app/user/components/ui/button';
+import { toaster } from '@/app/user/components/ui/toaster';
 
 type CommunityPageState = {
   selectedTags: string[];
@@ -103,6 +107,10 @@ export default function CommunityPage() {
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [renderedPostCount, setRenderedPostCount] = useState(POSTS_PAGE_SIZE);
+  const [createdPosts, setCreatedPosts] = useState<CommunityPost[]>([]);
+  const [deletedPostIds, setDeletedPostIds] = useState<string[]>([]);
+  const [deleteTargetPost, setDeleteTargetPost] = useState<CommunityPost | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
@@ -110,22 +118,29 @@ export default function CommunityPage() {
     setDefaultCommunityIdentity,
   } = useAuth();
 
-  const allTags = useMemo(() => getAllTags(mockCommunityPosts), []);
+  const baseCommunityPosts = useMemo(
+    () =>
+      [...createdPosts, ...mockCommunityPosts.filter((post) => !createdPosts.some((created) => created.id === post.id))]
+        .filter((post) => !deletedPostIds.includes(post.id)),
+    [createdPosts, deletedPostIds],
+  );
+
+  const allTags = useMemo(() => getAllTags(baseCommunityPosts), [baseCommunityPosts]);
 
   const highlightPosts = useMemo(
-    () => getHighlightPosts(mockCommunityPosts, mockNotices),
-    [],
+    () => getHighlightPosts(baseCommunityPosts, mockNotices.filter((post) => !deletedPostIds.includes(post.id))),
+    [baseCommunityPosts, deletedPostIds],
   );
 
   const visiblePosts = useMemo(
     () =>
-      filterPosts(mockCommunityPosts, {
+      filterPosts(baseCommunityPosts, {
         selectedTags,
         searchQuery,
         showFollowingOnly,
         sortBy,
       }),
-    [searchQuery, selectedTags, showFollowingOnly, sortBy],
+    [baseCommunityPosts, searchQuery, selectedTags, showFollowingOnly, sortBy],
   );
   const renderedPosts = useMemo(
     () => visiblePosts.slice(0, renderedPostCount),
@@ -164,6 +179,52 @@ export default function CommunityPage() {
 
   const toggleMobileTagFilterOpen = () => {
     setIsMobileTagFilterOpen((prev) => !prev);
+  };
+
+  const handleCreatedContent = (createdContent: CommunityContent) => {
+    const nextPost = mapCommunityContentToPost(createdContent);
+    setCreatedPosts((prev) => [nextPost, ...prev.filter((post) => post.id !== nextPost.id)]);
+    setRenderedPostCount((prev) => Math.max(prev, POSTS_PAGE_SIZE));
+    setIsWriteModalOpen(false);
+  };
+
+  const handleRequestDeletePost = (post: CommunityPost) => {
+    setDeleteTargetPost(post);
+  };
+
+  const handleConfirmDeletePost = async () => {
+    if (!deleteTargetPost || isDeletingPost) return;
+
+    try {
+      setIsDeletingPost(true);
+
+      const response = await fetch(`/api/mock/community-contents/${deleteTargetPost.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '게시글을 삭제하지 못했습니다.');
+      }
+
+      setDeletedPostIds((prev) => [...prev, deleteTargetPost.id]);
+      setCreatedPosts((prev) => prev.filter((post) => post.id !== deleteTargetPost.id));
+      setDeleteTargetPost(null);
+      toaster.create({
+        description: '게시글이 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글을 삭제하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsDeletingPost(false);
+    }
   };
 
   useEffect(() => {
@@ -230,7 +291,7 @@ export default function CommunityPage() {
           <Box as="section" minW="0" overflow="visible">
             <Flex direction="column" gap="6">
               <Flex direction="column" gap="2.5">
-                {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} /> : null}
+                {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} onRequestDelete={handleRequestDeletePost} /> : null}
 
                 <CommunityToolbar
                   searchQuery={searchQuery}
@@ -271,6 +332,7 @@ export default function CommunityPage() {
                         post={post}
                         formatDate={formatRelativeDate}
                         searchQuery={searchQuery}
+                        onRequestDelete={handleRequestDeletePost}
                       />
                     );
                   }
@@ -281,6 +343,7 @@ export default function CommunityPage() {
                       post={post}
                       formatDate={formatRelativeDate}
                       searchQuery={searchQuery}
+                      onRequestDelete={handleRequestDeletePost}
                     />
                   );
                 })}
@@ -313,8 +376,45 @@ export default function CommunityPage() {
       <WritePostModal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}
+        onCreated={handleCreatedContent}
         currentUser={COMMUNITY_CURRENT_USER}
       />
+
+      {deleteTargetPost ? (
+        <Portal>
+          <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
+            <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
+              <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
+                게시글을 삭제하시겠습니까?
+              </Text>
+              <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
+                삭제한 게시글은 복구할 수 없습니다.
+              </Text>
+
+              <Flex mt="5" gap="3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteTargetPost(null)}
+                  flex="1"
+                  disabled={isDeletingPost}
+                >
+                  취소
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleConfirmDeletePost}
+                  flex="1"
+                  disabled={isDeletingPost}
+                >
+                  삭제
+                </Button>
+              </Flex>
+            </Box>
+          </Flex>
+        </Portal>
+      ) : null}
     </Box>
   );
 }

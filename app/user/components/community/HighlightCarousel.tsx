@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { BadgeCheck, Bookmark, Heart, MessageSquare, MoreHorizontal, Share2 } from 'lucide-react';
+import { BadgeCheck, Bookmark, EyeOff, Heart, MessageSquare, MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react';
 import tagsData from '@/data/mock/tags.json';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
@@ -13,10 +13,19 @@ import type { Tag } from '@/types/tag';
 
 const tags = tagsData as Tag[];
 
-function HighlightPostCard({ post }: { post: CommunityPost }) {
+function HighlightPostCard({
+  post,
+  onRequestDelete,
+}: {
+  post: CommunityPost;
+  onRequestDelete?: (post: CommunityPost) => void;
+}) {
   const router = useRouter();
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
+  const isOwnPost = post.author.accountId === 'account-user-1';
+  const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
   const resolvedTags = useMemo(() => {
     const sourceNames = post.tags ?? [];
     const tagIds = sourceNames
@@ -32,6 +41,22 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
     event.stopPropagation();
     router.push(`/user/community/author/${post.author.id}`);
   };
+
+  useEffect(() => {
+    if (!isOwnPostMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!ownPostMenuRef.current) return;
+      if (ownPostMenuRef.current.contains(event.target as Node)) return;
+      setIsOwnPostMenuOpen(false);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isOwnPostMenuOpen]);
 
   return (
     <Link href={`/user/community/post/${post.id}`}>
@@ -95,7 +120,65 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
             </Box>
           </Button>
 
-          <Icon as={MoreHorizontal} boxSize="24px" color="gray.500" flexShrink={0} />
+          {isOwnPost ? (
+            <Box ref={ownPostMenuRef} position="relative" flexShrink={0}>
+              <Button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setIsOwnPostMenuOpen((prev) => !prev);
+                }}
+                minW="8"
+                h="8"
+                rounded="full"
+                bg="transparent"
+                p="0"
+                color="gray.400"
+                _hover={{ bg: 'transparent', color: 'gray.700' }}
+                aria-label="내 게시글 메뉴 열기"
+              >
+                <Icon as={MoreHorizontal} boxSize="5" />
+              </Button>
+
+              {isOwnPostMenuOpen ? (
+                <Box position="absolute" top="10" right="0" zIndex="10" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
+                  {[
+                    { icon: Pencil, label: '수정' },
+                    { icon: Trash2, label: '삭제' },
+                    { icon: EyeOff, label: '숨김' },
+                  ].map((item) => (
+                    <Button
+                      key={item.label}
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setIsOwnPostMenuOpen(false);
+                        if (item.label === '삭제') {
+                          onRequestDelete?.(post);
+                        }
+                      }}
+                      justifyContent="flex-start"
+                      gap="2"
+                      w="full"
+                      rounded="none"
+                      bg="transparent"
+                      px="3"
+                      py="2"
+                      fontSize="sm"
+                      fontWeight="400"
+                      color="gray.700"
+                      _hover={{ bg: 'gray.50' }}
+                    >
+                      <Icon as={item.icon} boxSize="4" />
+                      <Text>{item.label}</Text>
+                    </Button>
+                  ))}
+                </Box>
+              ) : null}
+            </Box>
+          ) : null}
         </Flex>
 
         <HStack mt="25px" gap="3" wrap="wrap">
@@ -149,7 +232,13 @@ function HighlightPostCard({ post }: { post: CommunityPost }) {
   );
 }
 
-export function HighlightCarousel({ posts }: { posts: CommunityPost[] }) {
+export function HighlightCarousel({
+  posts,
+  onRequestDelete,
+}: {
+  posts: CommunityPost[];
+  onRequestDelete?: (post: CommunityPost) => void;
+}) {
   const [currentPage, setCurrentPage] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
   const touchEndXRef = useRef<number | null>(null);
@@ -224,7 +313,7 @@ export function HighlightCarousel({ posts }: { posts: CommunityPost[] }) {
             {pages.map((pagePosts, pageIndex) => (
               <Box key={pageIndex} w="full" flexShrink={0}>
                 {pagePosts.map((post) => (
-                  <HighlightPostCard key={post.id} post={post} />
+                  <HighlightPostCard key={post.id} post={post} onRequestDelete={onRequestDelete} />
                 ))}
               </Box>
             ))}

@@ -272,7 +272,7 @@ function buildHighlightedComment(contentId: string): HighlightedComment | undefi
   };
 }
 
-function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
+export function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
   const resolvedTags = resolveTags(content.tagIds, tags).map((tag) => tag.name);
   const mappedType = content.flags.isNotice ? 'notice' : 'community';
   const author = mapContentAuthor(content.author);

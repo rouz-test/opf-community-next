@@ -19,15 +19,24 @@ function escapeRegExp(value: string) {
 }
 
 function normalizeWhitespace(value: string) {
-  return value.replace(/\s+/g, ' ').trim();
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 function splitTextIntoSegments(sourceText: string) {
   const normalizedText = normalizeWhitespace(sourceText);
   if (!normalizedText) return [];
 
-  const sentenceMatches = normalizedText.match(/[^.!?。！？\n]+[.!?。！？]?/g);
-  return sentenceMatches?.map((sentence) => sentence.trim()).filter(Boolean) ?? [normalizedText];
+  return normalizedText
+    .split('\n')
+    .flatMap((line) => {
+      const sentenceMatches = line.match(/[^.!?。！？]+[.!?。！？]?/g);
+      return sentenceMatches?.map((sentence) => sentence.trim()).filter(Boolean) ?? [line];
+    })
+    .filter(Boolean);
 }
 
 function createMatchedSegments(sourceText: string | undefined, matchedKeywords: string[]) {

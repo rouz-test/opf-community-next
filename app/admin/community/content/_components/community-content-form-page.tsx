@@ -460,7 +460,7 @@ export default function CommunityContentFormPage({ contentId }: CommunityContent
     [contentId, createPayload, draftContentId],
   );
 
-  const getBlockedWordValidationText = () => [title, extractTextFromContentBody(content)].filter(Boolean).join(' ');
+  const getBlockedWordValidationText = () => [title, extractTextFromContentBody(content)].filter(Boolean).join('\n');
 
   const validateBlockedWords = async () => {
     const blockedWords = await getBlockedWords();

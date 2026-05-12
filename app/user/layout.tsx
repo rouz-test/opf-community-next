@@ -8,6 +8,7 @@ import MobileNavDrawer from '@/app/user/components/layout/MobileNavDrawer';
 import { ProfileMenuProvider } from '@/app/user/components/providers/ProfileMenuProvider';
 import ProfileMenuLayer from '@/app/user/components/layout/ProfileMenuLayer';
 import UserChakraProvider from '@/app/user/components/user-chakra-provider';
+import AppToaster from '@/app/user/components/ui/toaster';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function UserLayout({
               <Footer />
               <MobileNavDrawer />
               <ProfileMenuLayer />
+              <AppToaster />
             </div>
           </ProfileMenuProvider>
         </MobileNavProvider>

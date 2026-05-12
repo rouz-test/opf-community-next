@@ -33,6 +33,7 @@ type Props = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
+  onRequestDelete?: (post: CommunityPost) => void;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -67,7 +68,7 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
   });
 };
 
-export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
+export function BoardPostRow({ post, formatDate, searchQuery, onRequestDelete }: Props) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const isOwnPost = post.author.accountId === 'account-user-1';
@@ -115,7 +116,8 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
       <Box
         as="article"
         position="relative"
-        overflow="hidden"
+        overflow="visible"
+        zIndex={isOwnPostMenuOpen ? 20 : 1}
         rounded={{ base: 'none', md: '3xl' }}
         bg="white"
         borderBottomWidth={{ base: '1px', md: '0' }}
@@ -125,6 +127,7 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
         _hover={{
           transform: { md: 'translateY(-2px)' },
           boxShadow: { md: '0 16px 36px rgba(223, 223, 223, 0.98)' },
+          zIndex: { md: 10 },
         }}
       >
         <Flex direction="column" gap={{ base: '3', md: '4' }} px={{ base: '0', md: '5' }} py={{ base: '5', md: '5' }}>
@@ -178,6 +181,9 @@ export function BoardPostRow({ post, formatDate, searchQuery }: Props) {
                         event.preventDefault();
                         event.stopPropagation();
                         setIsOwnPostMenuOpen(false);
+                        if (item.label === '삭제') {
+                          onRequestDelete?.(post);
+                        }
                       }}
                       justifyContent="flex-start"
                       gap="2"

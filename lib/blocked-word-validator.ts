@@ -10,24 +10,43 @@ function normalizeKeyword(value: string) {
   return value.trim().toLowerCase();
 }
 
+const BLOCK_TEXT_NODE_TYPES = new Set(['paragraph', 'heading', 'blockquote', 'codeBlock']);
+
+function normalizeLine(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function collectInlineText(node?: CommunityContentBody | null): string {
+  if (!node) return '';
+
+  if (node.type === 'hardBreak') {
+    return '\n';
+  }
+
+  if (typeof node.text === 'string') {
+    return node.text;
+  }
+
+  return (node.content ?? []).map((childNode) => collectInlineText(childNode)).join('');
+}
+
+function extractLinesFromContentBody(node?: CommunityContentBody | null): string[] {
+  if (!node) return [];
+
+  if (BLOCK_TEXT_NODE_TYPES.has(node.type)) {
+    return collectInlineText(node)
+      .split(/\r?\n/)
+      .map((line) => normalizeLine(line))
+      .filter(Boolean);
+  }
+
+  return (node.content ?? []).flatMap((childNode) => extractLinesFromContentBody(childNode));
+}
+
 export function extractTextFromContentBody(node?: CommunityContentBody | null): string {
   if (!node) return '';
 
-  const parts: string[] = [];
-
-  const visit = (currentNode?: CommunityContentBody | null) => {
-    if (!currentNode) return;
-
-    if (typeof currentNode.text === 'string' && currentNode.text.trim()) {
-      parts.push(currentNode.text);
-    }
-
-    currentNode.content?.forEach((childNode) => visit(childNode));
-  };
-
-  visit(node);
-
-  return parts.join(' ').trim();
+  return extractLinesFromContentBody(node).join('\n');
 }
 
 export function findMatchedBlockedWords(
