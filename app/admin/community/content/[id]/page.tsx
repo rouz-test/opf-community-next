@@ -374,11 +374,6 @@ function renderBodyNode(node: CommunityContentBody, index: number) {
     return (
       <Box
         key={`image-${index}`}
-        overflow="hidden"
-        borderRadius="12px"
-        bg="#F3F4F6"
-        borderWidth="1px"
-        borderColor="#E5E7EB"
         w={imageWidth}
         maxW="100%"
         {...imageAlignment}
@@ -531,20 +526,8 @@ function renderBodyNode(node: CommunityContentBody, index: number) {
     }
 
     return (
-      <Box
-        key={`youtube-${index}`}
-        borderRadius="16px"
-        overflow="hidden"
-        borderWidth="1px"
-        borderColor="#E5E7EB"
-        bg="#111827"
-      >
-        <Box
-          asChild
-          display="block"
-          lineHeight="0"
-        >
-          <iframe
+      <Box key={`youtube-${index}`} display="block" lineHeight="0">
+        <iframe
           src={src}
           title={`youtube-${index}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -557,8 +540,7 @@ function renderBodyNode(node: CommunityContentBody, index: number) {
             margin: '0 auto',
             border: 'none',
           }}
-          />
-        </Box>
+        />
       </Box>
     );
   }

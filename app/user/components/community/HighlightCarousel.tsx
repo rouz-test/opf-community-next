@@ -16,9 +16,11 @@ const tags = tagsData as Tag[];
 function HighlightPostCard({
   post,
   onRequestDelete,
+  onRequestEdit,
 }: {
   post: CommunityPost;
   onRequestDelete?: (post: CommunityPost) => void;
+  onRequestEdit?: (post: CommunityPost) => void;
 }) {
   const router = useRouter();
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
@@ -155,6 +157,9 @@ function HighlightPostCard({
                         event.preventDefault();
                         event.stopPropagation();
                         setIsOwnPostMenuOpen(false);
+                        if (item.label === '수정') {
+                          onRequestEdit?.(post);
+                        }
                         if (item.label === '삭제') {
                           onRequestDelete?.(post);
                         }
@@ -235,9 +240,11 @@ function HighlightPostCard({
 export function HighlightCarousel({
   posts,
   onRequestDelete,
+  onRequestEdit,
 }: {
   posts: CommunityPost[];
   onRequestDelete?: (post: CommunityPost) => void;
+  onRequestEdit?: (post: CommunityPost) => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0);
   const touchStartXRef = useRef<number | null>(null);
@@ -313,7 +320,12 @@ export function HighlightCarousel({
             {pages.map((pagePosts, pageIndex) => (
               <Box key={pageIndex} w="full" flexShrink={0}>
                 {pagePosts.map((post) => (
-                  <HighlightPostCard key={post.id} post={post} onRequestDelete={onRequestDelete} />
+                  <HighlightPostCard
+                    key={post.id}
+                    post={post}
+                    onRequestDelete={onRequestDelete}
+                    onRequestEdit={onRequestEdit}
+                  />
                 ))}
               </Box>
             ))}

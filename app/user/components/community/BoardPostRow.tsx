@@ -34,6 +34,9 @@ type Props = {
   formatDate: (dateString?: string) => string;
   searchQuery: string;
   onRequestDelete?: (post: CommunityPost) => void;
+  onRequestEdit?: (post: CommunityPost) => void;
+  onRequestHide?: (post: CommunityPost) => void;
+  enableOwnPostMenu?: boolean;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -68,7 +71,15 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
   });
 };
 
-export function BoardPostRow({ post, formatDate, searchQuery, onRequestDelete }: Props) {
+export function BoardPostRow({
+  post,
+  formatDate,
+  searchQuery,
+  onRequestDelete,
+  onRequestEdit,
+  onRequestHide,
+  enableOwnPostMenu = true,
+}: Props) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const isOwnPost = post.author.accountId === 'account-user-1';
@@ -146,7 +157,7 @@ export function BoardPostRow({ post, formatDate, searchQuery, onRequestDelete }:
             </Box>
 
             <Box ref={ownPostMenuRef} flexShrink={0}>
-              {isOwnPost ? (
+              {isOwnPost && enableOwnPostMenu ? (
                 <Button
                   type="button"
                   onClick={(event) => {
@@ -181,8 +192,14 @@ export function BoardPostRow({ post, formatDate, searchQuery, onRequestDelete }:
                         event.preventDefault();
                         event.stopPropagation();
                         setIsOwnPostMenuOpen(false);
+                        if (item.label === '수정') {
+                          onRequestEdit?.(post);
+                        }
                         if (item.label === '삭제') {
                           onRequestDelete?.(post);
+                        }
+                        if (item.label === '숨김') {
+                          onRequestHide?.(post);
                         }
                       }}
                       justifyContent="flex-start"

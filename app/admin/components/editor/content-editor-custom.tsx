@@ -348,7 +348,6 @@ export const contentEditorCustomStyles = {
     display: 'block',
     maxWidth: '100%',
     height: 'auto',
-    borderRadius: '8px',
   },
   '& .ProseMirror img[data-align="left"]': {
     marginLeft: '0',

@@ -42,6 +42,8 @@ export type WritePostModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onCreated?: (content: CommunityContent) => void;
+  onUpdated?: (content: CommunityContent) => void;
+  editingContent?: CommunityContent | null;
   currentUser: {
     name: string;
     nickname: string;
@@ -96,11 +98,18 @@ const selectButtonStyles = {
   _hover: { bg: 'gray.50' },
 } as const;
 
-export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalProps) {
+export function WritePostModal({
+  isOpen,
+  onClose,
+  onCreated,
+  onUpdated,
+  editingContent,
+}: WritePostModalProps) {
   const { defaultCommunityIdentity } = useAuth();
   const normalizedDefaultIdentity =
     normalizeLegacyCommunityIdentity(defaultCommunityIdentity) ?? 'real';
   const editorHeight = useBreakpointValue({ base: '280px', md: '404px' }) ?? '404px';
+  const isEditMode = Boolean(editingContent);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState<ContentEditorJsonValue>(EMPTY_CONTENT);
@@ -109,7 +118,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
   const [profileModeOverride, setProfileModeOverride] = useState<CommunityIdentityMode | null>(null);
   const [isIdentityDropdownOpen, setIsIdentityDropdownOpen] = useState(false);
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
-  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [showClosePrompt, setShowClosePrompt] = useState(false);
   const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
   const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
   const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
@@ -129,10 +138,20 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, [isOpen]);
+  }, [editingContent, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    if (editingContent) {
+      setTitle(editingContent.title);
+      setContent(editingContent.content as ContentEditorJsonValue);
+      setSelectedTags(editingContent.tagIds);
+      setIsPromotion(Boolean(editingContent.flags.isPromoted));
+      setProfileModeOverride(editingContent.author.visibility === 'anonymous' ? 'anonymous' : 'real');
+      setErrors({});
+      return;
+    }
 
     const savedDraft = loadCommunityPostDraft();
 
@@ -146,7 +165,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
     setIsPromotion(savedDraft.isPromotion);
     setProfileModeOverride(savedDraft.profileModeOverride);
     setErrors({});
-  }, [isOpen]);
+  }, [editingContent, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -200,7 +219,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
     setProfileModeOverride(null);
     setIsIdentityDropdownOpen(false);
     setIsTagDropdownOpen(false);
-    setShowDraftPrompt(false);
+    setShowClosePrompt(false);
     setIsBlockedWordModalOpen(false);
     setMatchedBlockedKeywords([]);
     setBlockedWordSourceText('');
@@ -214,7 +233,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
 
   const handleCloseAttempt = () => {
     if (title.trim() || hasContentText(content) || selectedTags.length > 0 || isPromotion || profileModeOverride) {
-      setShowDraftPrompt(true);
+      setShowClosePrompt(true);
       return;
     }
 
@@ -269,6 +288,10 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
 
   const handleDeleteDraft = () => {
     clearCommunityPostDraft();
+    handleClose();
+  };
+
+  const handleDiscardChanges = () => {
     handleClose();
   };
 
@@ -329,8 +352,11 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
     };
 
     try {
-      const response = await fetch('/api/mock/community-contents', {
-        method: 'POST',
+      const endpoint = isEditMode && editingContent
+        ? `/api/mock/community-contents/${editingContent.id}`
+        : '/api/mock/community-contents';
+      const response = await fetch(endpoint, {
+        method: isEditMode ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -356,11 +382,15 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
       }
 
       const createdContent = (await response.json()) as CommunityContent;
-      clearCommunityPostDraft();
-      onCreated?.(createdContent);
+      if (isEditMode) {
+        onUpdated?.(createdContent);
+      } else {
+        clearCommunityPostDraft();
+        onCreated?.(createdContent);
+      }
       handleClose();
       toaster.create({
-        description: '게시글이 등록되었습니다.',
+        description: isEditMode ? '게시글이 수정되었습니다.' : '게시글이 등록되었습니다.',
         type: 'success',
         duration: 2000,
       });
@@ -402,7 +432,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
         >
           <Flex align="center" justify="space-between" px={{ base: '5', md: '10' }} pt={{ base: '6', md: '10' }} pb="4">
             <Text fontSize="20px" fontWeight="700" letterSpacing="-0.02em" color="gray.900">
-              글쓰기
+              {isEditMode ? '글 수정' : '글쓰기'}
             </Text>
             <ChakraButton
               type="button"
@@ -709,7 +739,7 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
                     취소
                   </Button>
                   <Button type="button" variant="primary" onClick={handleSubmit} minW={{ base: '122px', md: '0' }} flex={{ md: 1 }}>
-                    올리기
+                    {isEditMode ? '수정하기' : '올리기'}
                   </Button>
                 </Flex>
               </Flex>
@@ -726,31 +756,46 @@ export function WritePostModal({ isOpen, onClose, onCreated }: WritePostModalPro
                 취소
               </Button>
               <Button type="button" variant="primary" minW="122px" onClick={handleSubmit}>
-                올리기
+                {isEditMode ? '수정하기' : '올리기'}
               </Button>
             </Flex>
           </Box>
         </Box>
       </Flex>
 
-      {showDraftPrompt ? (
+      {showClosePrompt ? (
         <Portal>
           <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
             <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
               <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
-                임시 저장 하시겠습니까?
+                {isEditMode ? '변경 사항을 버리시겠습니까?' : '임시 저장 하시겠습니까?'}
               </Text>
               <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
-                작성 중인 글은 브라우저에 임시 저장되며, 다음에 글쓰기를 열면 다시 불러올 수 있습니다.
+                {isEditMode
+                  ? '수정 중인 내용은 저장되지 않고 사라집니다.'
+                  : '작성 중인 글은 브라우저에 임시 저장되며, 다음에 글쓰기를 열면 다시 불러올 수 있습니다.'}
               </Text>
 
               <Flex mt="5" gap="3">
-                <Button type="button" variant="outline" onClick={handleDeleteDraft} flex="1">
-                  삭제
-                </Button>
-                <Button type="button" variant="primary" onClick={handleSaveDraft} flex="1">
-                  임시 저장
-                </Button>
+                {isEditMode ? (
+                  <>
+                    <Button type="button" variant="outline" onClick={() => setShowClosePrompt(false)} flex="1">
+                      계속 수정
+                    </Button>
+                    <Button type="button" variant="primary" onClick={handleDiscardChanges} flex="1">
+                      닫기
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button type="button" variant="outline" onClick={handleDeleteDraft} flex="1">
+                      삭제
+                    </Button>
+                    <Button type="button" variant="primary" onClick={handleSaveDraft} flex="1">
+                      임시 저장
+                    </Button>
+                  </>
+                )}
               </Flex>
             </Box>
           </Flex>

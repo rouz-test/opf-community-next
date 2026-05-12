@@ -108,9 +108,14 @@ export default function CommunityPage() {
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [renderedPostCount, setRenderedPostCount] = useState(POSTS_PAGE_SIZE);
   const [createdPosts, setCreatedPosts] = useState<CommunityPost[]>([]);
+  const [updatedPosts, setUpdatedPosts] = useState<CommunityPost[]>([]);
   const [deletedPostIds, setDeletedPostIds] = useState<string[]>([]);
+  const [hiddenPostIds, setHiddenPostIds] = useState<string[]>([]);
   const [deleteTargetPost, setDeleteTargetPost] = useState<CommunityPost | null>(null);
   const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [hideTargetPost, setHideTargetPost] = useState<CommunityPost | null>(null);
+  const [isHidingPost, setIsHidingPost] = useState(false);
+  const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
@@ -120,16 +125,25 @@ export default function CommunityPage() {
 
   const baseCommunityPosts = useMemo(
     () =>
-      [...createdPosts, ...mockCommunityPosts.filter((post) => !createdPosts.some((created) => created.id === post.id))]
-        .filter((post) => !deletedPostIds.includes(post.id)),
-    [createdPosts, deletedPostIds],
+      [
+        ...createdPosts,
+        ...mockCommunityPosts
+          .map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post)
+          .filter((post) => !createdPosts.some((created) => created.id === post.id)),
+      ]
+        .filter((post) => !deletedPostIds.includes(post.id) && !hiddenPostIds.includes(post.id)),
+    [createdPosts, deletedPostIds, hiddenPostIds, updatedPosts],
   );
 
   const allTags = useMemo(() => getAllTags(baseCommunityPosts), [baseCommunityPosts]);
 
   const highlightPosts = useMemo(
-    () => getHighlightPosts(baseCommunityPosts, mockNotices.filter((post) => !deletedPostIds.includes(post.id))),
-    [baseCommunityPosts, deletedPostIds],
+    () =>
+      getHighlightPosts(
+        baseCommunityPosts,
+        mockNotices.filter((post) => !deletedPostIds.includes(post.id) && !hiddenPostIds.includes(post.id)),
+      ),
+    [baseCommunityPosts, deletedPostIds, hiddenPostIds],
   );
 
   const visiblePosts = useMemo(
@@ -186,10 +200,54 @@ export default function CommunityPage() {
     setCreatedPosts((prev) => [nextPost, ...prev.filter((post) => post.id !== nextPost.id)]);
     setRenderedPostCount((prev) => Math.max(prev, POSTS_PAGE_SIZE));
     setIsWriteModalOpen(false);
+    setEditingContent(null);
+  };
+
+  const handleUpdatedContent = (updatedContent: CommunityContent) => {
+    const nextPost = mapCommunityContentToPost(updatedContent);
+    setCreatedPosts((prev) =>
+      prev.some((post) => post.id === nextPost.id)
+        ? prev.map((post) => (post.id === nextPost.id ? nextPost : post))
+        : prev,
+    );
+    setUpdatedPosts((prev) =>
+      prev.some((post) => post.id === nextPost.id)
+        ? prev.map((post) => (post.id === nextPost.id ? nextPost : post))
+        : [nextPost, ...prev.filter((post) => post.id !== nextPost.id)],
+    );
+    setIsWriteModalOpen(false);
+    setEditingContent(null);
   };
 
   const handleRequestDeletePost = (post: CommunityPost) => {
     setDeleteTargetPost(post);
+  };
+
+  const handleRequestHidePost = (post: CommunityPost) => {
+    setHideTargetPost(post);
+  };
+
+  const handleRequestEditPost = async (post: CommunityPost) => {
+    try {
+      const response = await fetch(`/api/mock/community-contents/${post.id}`, {
+        cache: 'no-store',
+      });
+
+      const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+      if (!response.ok || !data || !('id' in data)) {
+        throw new Error((data as { message?: string } | null)?.message || '게시글 정보를 불러오지 못했습니다.');
+      }
+
+      setEditingContent(data);
+      setIsWriteModalOpen(true);
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글 정보를 불러오지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    }
   };
 
   const handleConfirmDeletePost = async () => {
@@ -224,6 +282,47 @@ export default function CommunityPage() {
       });
     } finally {
       setIsDeletingPost(false);
+    }
+  };
+
+  const handleConfirmHidePost = async () => {
+    if (!hideTargetPost || isHidingPost) return;
+
+    try {
+      setIsHidingPost(true);
+
+      const response = await fetch(`/api/mock/community-contents/${hideTargetPost.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'archived',
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '게시글을 숨기지 못했습니다.');
+      }
+
+      setHiddenPostIds((prev) => [...prev, hideTargetPost.id]);
+      setCreatedPosts((prev) => prev.filter((post) => post.id !== hideTargetPost.id));
+      setHideTargetPost(null);
+      toaster.create({
+        description: '게시글이 숨김 처리되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글을 숨기지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsHidingPost(false);
     }
   };
 
@@ -273,7 +372,10 @@ export default function CommunityPage() {
                 <CommunityProfileCard
                   profileMode={defaultCommunityIdentity}
                   onToggleProfileMode={toggleProfileMode}
-                  onWriteClick={() => setIsWriteModalOpen(true)}
+                  onWriteClick={() => {
+                    setEditingContent(null);
+                    setIsWriteModalOpen(true);
+                  }}
                   showWriteButton
                   currentUser={COMMUNITY_CURRENT_USER}
                 />
@@ -291,7 +393,14 @@ export default function CommunityPage() {
           <Box as="section" minW="0" overflow="visible">
             <Flex direction="column" gap="6">
               <Flex direction="column" gap="2.5">
-                {highlightPosts.length > 0 ? <HighlightCarousel posts={highlightPosts} onRequestDelete={handleRequestDeletePost} /> : null}
+                {highlightPosts.length > 0 ? (
+                  <HighlightCarousel
+                    posts={highlightPosts}
+                    onRequestDelete={handleRequestDeletePost}
+                    onRequestEdit={handleRequestEditPost}
+                    onRequestHide={handleRequestHidePost}
+                  />
+                ) : null}
 
                 <CommunityToolbar
                   searchQuery={searchQuery}
@@ -333,6 +442,8 @@ export default function CommunityPage() {
                         formatDate={formatRelativeDate}
                         searchQuery={searchQuery}
                         onRequestDelete={handleRequestDeletePost}
+                        onRequestEdit={handleRequestEditPost}
+                        onRequestHide={handleRequestHidePost}
                       />
                     );
                   }
@@ -344,6 +455,8 @@ export default function CommunityPage() {
                       formatDate={formatRelativeDate}
                       searchQuery={searchQuery}
                       onRequestDelete={handleRequestDeletePost}
+                      onRequestEdit={handleRequestEditPost}
+                      onRequestHide={handleRequestHidePost}
                     />
                   );
                 })}
@@ -371,12 +484,22 @@ export default function CommunityPage() {
         </Grid>
       </Box>
 
-      <CommunityWriteAction onClick={() => setIsWriteModalOpen(true)} />
+      <CommunityWriteAction
+        onClick={() => {
+          setEditingContent(null);
+          setIsWriteModalOpen(true);
+        }}
+      />
 
       <WritePostModal
         isOpen={isWriteModalOpen}
-        onClose={() => setIsWriteModalOpen(false)}
+        onClose={() => {
+          setIsWriteModalOpen(false);
+          setEditingContent(null);
+        }}
         onCreated={handleCreatedContent}
+        onUpdated={handleUpdatedContent}
+        editingContent={editingContent}
         currentUser={COMMUNITY_CURRENT_USER}
       />
 
@@ -409,6 +532,42 @@ export default function CommunityPage() {
                   disabled={isDeletingPost}
                 >
                   삭제
+                </Button>
+              </Flex>
+            </Box>
+          </Flex>
+        </Portal>
+      ) : null}
+
+      {hideTargetPost ? (
+        <Portal>
+          <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
+            <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
+              <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
+                게시글을 숨기시겠습니까?
+              </Text>
+              <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
+                숨김 처리된 게시글은 커뮤니티 메인에서 보이지 않고, 마이페이지의 숨김 탭에서 확인할 수 있습니다.
+              </Text>
+
+              <Flex mt="5" gap="3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setHideTargetPost(null)}
+                  flex="1"
+                  disabled={isHidingPost}
+                >
+                  취소
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleConfirmHidePost}
+                  flex="1"
+                  disabled={isHidingPost}
+                >
+                  숨김
                 </Button>
               </Flex>
             </Box>

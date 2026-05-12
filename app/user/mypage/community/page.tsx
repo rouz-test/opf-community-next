@@ -17,10 +17,11 @@ import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import {
   COMMUNITY_CURRENT_USER,
   mockComments,
-  mockCommunityPosts,
   type HighlightedComment,
   type CommunityPost,
+  mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
+import type { CommunityContent, CommunityContentListResponse } from '@/types/community-content';
 
 function ProfileSummaryCard({
   title,
@@ -129,10 +130,13 @@ function ProfileSummaryCard({
 export default function MyPageCommunityPage() {
   const router = useRouter();
   const [communityViewMode, setCommunityViewMode] = useState<'feed' | 'board'>('feed');
-  const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments'>('posts');
+  const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments' | 'hidden'>('posts');
   const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [allPublishedPosts, setAllPublishedPosts] = useState<CommunityPost[]>([]);
+  const [mypagePosts, setMypagePosts] = useState<CommunityPost[]>([]);
+  const [hiddenPosts, setHiddenPosts] = useState<CommunityPost[]>([]);
 
   const filterRef = useRef<HTMLDivElement | null>(null);
 
@@ -165,13 +169,58 @@ export default function MyPageCommunityPage() {
     };
   }, [isFollowingModalOpen]);
 
-  const mypagePosts = useMemo(
-    () =>
-      mockCommunityPosts.filter(
-        (post) => post.author.accountId === COMMUNITY_CURRENT_USER.accountId,
-      ),
-    [],
-  );
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadMyCommunityPosts = async () => {
+      try {
+        const [publishedResponse, archivedResponse] = await Promise.all([
+          fetch('/api/mock/community-contents?status=published&page=1&pageSize=200', {
+            cache: 'no-store',
+          }),
+          fetch('/api/mock/community-contents?status=archived&page=1&pageSize=200', {
+            cache: 'no-store',
+          }),
+        ]);
+
+        const publishedData = (await publishedResponse.json().catch(() => null)) as CommunityContentListResponse | { message?: string } | null;
+        const archivedData = (await archivedResponse.json().catch(() => null)) as CommunityContentListResponse | { message?: string } | null;
+
+        if (!publishedResponse.ok || !publishedData || !('items' in publishedData)) {
+          throw new Error('작성한 게시글을 불러오지 못했습니다.');
+        }
+
+        if (!archivedResponse.ok || !archivedData || !('items' in archivedData)) {
+          throw new Error('숨김 게시글을 불러오지 못했습니다.');
+        }
+
+        if (isCancelled) return;
+
+        const nextPublishedPosts = publishedData.items.map((content) =>
+          mapCommunityContentToPost(content as CommunityContent),
+        );
+
+        setAllPublishedPosts(nextPublishedPosts);
+        setMypagePosts(
+          nextPublishedPosts.filter((post) => post.author.accountId === COMMUNITY_CURRENT_USER.accountId),
+        );
+        setHiddenPosts(
+          archivedData.items
+            .filter((content) => content.author.id === COMMUNITY_CURRENT_USER.accountId)
+            .map((content) => mapCommunityContentToPost(content as CommunityContent)),
+        );
+      } catch (error) {
+        if (isCancelled) return;
+        console.error('[MyPageCommunityPage] failed to load community posts:', error);
+      }
+    };
+
+    void loadMyCommunityPosts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const mypageCommentedPosts = useMemo<CommunityPost[]>(() => {
     const ownComments = mockComments
@@ -188,7 +237,7 @@ export default function MyPageCommunityPage() {
 
     return Array.from(latestCommentByPostId.entries()).reduce<CommunityPost[]>(
       (acc, [postId, comment]) => {
-        const post = mockCommunityPosts.find((item) => item.id === postId);
+        const post = allPublishedPosts.find((item) => item.id === postId);
         if (!post) return acc;
 
         const highlightedComment: HighlightedComment = {
@@ -209,12 +258,14 @@ export default function MyPageCommunityPage() {
       },
       [],
     );
-  }, []);
+  }, [allPublishedPosts]);
 
   const baseCommunityPosts =
     activeCommunityTab === 'posts'
       ? mypagePosts
-      : mypageCommentedPosts;
+      : activeCommunityTab === 'hidden'
+        ? hiddenPosts
+        : mypageCommentedPosts;
 
   const activeCommunityPosts = useMemo(() => {
     if (profileFilter === 'all') return baseCommunityPosts;
@@ -317,10 +368,12 @@ export default function MyPageCommunityPage() {
           {['게시글', '댓글', '좋아요', '저장', '숨김'].map((tab, index) => {
             const isPostsTab = index === 0;
             const isCommentsTab = index === 1;
-            const isClickable = isPostsTab || isCommentsTab;
+            const isHiddenTab = index === 4;
+            const isClickable = isPostsTab || isCommentsTab || isHiddenTab;
             const isActive =
               (isPostsTab && activeCommunityTab === 'posts') ||
-              (isCommentsTab && activeCommunityTab === 'comments');
+              (isCommentsTab && activeCommunityTab === 'comments') ||
+              (isHiddenTab && activeCommunityTab === 'hidden');
 
             return (
               <Button
@@ -343,6 +396,8 @@ export default function MyPageCommunityPage() {
                     ? () => setActiveCommunityTab('posts')
                     : isCommentsTab
                       ? () => setActiveCommunityTab('comments')
+                      : isHiddenTab
+                        ? () => setActiveCommunityTab('hidden')
                       : undefined
                 }
               >
@@ -487,16 +542,30 @@ export default function MyPageCommunityPage() {
             <Text fontSize="14px" color="#6B7280">
               {activeCommunityTab === 'posts'
                 ? '작성한 게시글이 아직 없습니다.'
-                : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
+                : activeCommunityTab === 'hidden'
+                  ? '숨김 처리한 게시글이 아직 없습니다.'
+                  : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
             </Text>
           </Box>
         ) : communityViewMode === 'feed' ? (
           activeCommunityPosts.map((post) => (
-            <FeedPostCard key={post.id} post={post} formatDate={formatDate} searchQuery="" />
+            <FeedPostCard
+              key={post.id}
+              post={post}
+              formatDate={formatDate}
+              searchQuery=""
+              enableOwnPostMenu={activeCommunityTab !== 'hidden'}
+            />
           ))
         ) : (
           activeCommunityPosts.map((post) => (
-            <BoardPostRow key={post.id} post={post} formatDate={formatDate} searchQuery="" />
+            <BoardPostRow
+              key={post.id}
+              post={post}
+              formatDate={formatDate}
+              searchQuery=""
+              enableOwnPostMenu={activeCommunityTab !== 'hidden'}
+            />
           ))
         )}
       </Flex>

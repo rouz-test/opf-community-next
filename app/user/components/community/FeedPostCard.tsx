@@ -34,6 +34,9 @@ type FeedPostCardProps = {
   formatDate: (dateString?: string) => string;
   searchQuery: string;
   onRequestDelete?: (post: CommunityPost) => void;
+  onRequestEdit?: (post: CommunityPost) => void;
+  onRequestHide?: (post: CommunityPost) => void;
+  enableOwnPostMenu?: boolean;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -68,7 +71,15 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
   });
 };
 
-export function FeedPostCard({ post, formatDate, searchQuery, onRequestDelete }: FeedPostCardProps) {
+export function FeedPostCard({
+  post,
+  formatDate,
+  searchQuery,
+  onRequestDelete,
+  onRequestEdit,
+  onRequestHide,
+  enableOwnPostMenu = true,
+}: FeedPostCardProps) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const highlightedCommentAuthorName = post.highlightedComment
@@ -134,7 +145,7 @@ export function FeedPostCard({ post, formatDate, searchQuery, onRequestDelete }:
         boxShadow: '0 16px 36px rgba(223, 223, 223, 0.98)',
       }}
     >
-      {isOwnPost ? (
+      {isOwnPost && enableOwnPostMenu ? (
         <Box ref={ownPostMenuRef} position="absolute" top="4" right="4" zIndex="10">
           <Button
             type="button"
@@ -169,8 +180,14 @@ export function FeedPostCard({ post, formatDate, searchQuery, onRequestDelete }:
                     event.preventDefault();
                     event.stopPropagation();
                     setIsOwnPostMenuOpen(false);
+                    if (item.label === '수정') {
+                      onRequestEdit?.(post);
+                    }
                     if (item.label === '삭제') {
                       onRequestDelete?.(post);
+                    }
+                    if (item.label === '숨김') {
+                      onRequestHide?.(post);
                     }
                   }}
                   justifyContent="flex-start"
