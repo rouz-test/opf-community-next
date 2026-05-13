@@ -11,7 +11,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   BadgeCheck,
@@ -20,12 +20,17 @@ import {
   Heart,
   Megaphone,
   MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  EyeOff,
 } from 'lucide-react';
 import {
   Fragment,
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -33,11 +38,14 @@ import {
 
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import CommentItem from '@/app/user/components/comment/comment-item';
+import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
+import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
 import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import { toaster } from '@/app/user/components/ui/toaster';
 import {
   COMMUNITY_CURRENT_USER,
   mockCommunityPosts,
@@ -532,6 +540,7 @@ function mapCommentsForUser(comments: CommunityComment[], postAuthorId: string):
 
 export default function CommunityPostDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const contentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const {
     isLoggedIn,
@@ -559,11 +568,35 @@ export default function CommunityPostDetailPage() {
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
   const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
   const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+  const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
+  const [deleteTargetContent, setDeleteTargetContent] = useState<CommunityContent | null>(null);
+  const [hideTargetContent, setHideTargetContent] = useState<CommunityContent | null>(null);
+  const [isDeletingContent, setIsDeletingContent] = useState(false);
+  const [isHidingContent, setIsHidingContent] = useState(false);
+  const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setCommentIdentity(defaultCommunityIdentity);
     setReplyIdentity(defaultCommunityIdentity);
   }, [defaultCommunityIdentity]);
+
+  useEffect(() => {
+    if (!isOwnPostMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!ownPostMenuRef.current) return;
+      if (ownPostMenuRef.current.contains(event.target as Node)) return;
+      setIsOwnPostMenuOpen(false);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [isOwnPostMenuOpen]);
 
   const loadComments = useCallback(async (authorId?: string) => {
     if (!contentId) {
@@ -705,6 +738,113 @@ export default function CommunityPostDetailPage() {
       setIsLikeSubmitting(false);
     }
   }, [content, contentId, isLikeSubmitting]);
+
+  const handleRequestEditContent = async () => {
+    if (!contentId) return;
+
+    try {
+      const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+        cache: 'no-store',
+      });
+
+      const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+      if (!response.ok || !data || !('id' in data)) {
+        throw new Error(parseErrorMessage(data, '게시글 정보를 불러오지 못했습니다.'));
+      }
+
+      setEditingContent(data);
+      setIsWriteModalOpen(true);
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글 정보를 불러오지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    }
+  };
+
+  const handleUpdatedContent = (updatedContent: CommunityContent) => {
+    setContent(updatedContent);
+    setEditingContent(null);
+    setIsWriteModalOpen(false);
+  };
+
+  const handleConfirmDeleteContent = async () => {
+    if (!deleteTargetContent || isDeletingContent) return;
+
+    try {
+      setIsDeletingContent(true);
+
+      const response = await fetch(`/api/mock/community-contents/${deleteTargetContent.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '게시글을 삭제하지 못했습니다.');
+      }
+
+      setDeleteTargetContent(null);
+      toaster.create({
+        description: '게시글이 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+      router.push('/user/community');
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글을 삭제하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsDeletingContent(false);
+    }
+  };
+
+  const handleConfirmHideContent = async () => {
+    if (!hideTargetContent || isHidingContent) return;
+
+    try {
+      setIsHidingContent(true);
+
+      const response = await fetch(`/api/mock/community-contents/${hideTargetContent.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          flags: {
+            isHiddenByAuthor: true,
+          },
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '게시글을 숨기지 못했습니다.');
+      }
+
+      setHideTargetContent(null);
+      toaster.create({
+        description: '게시글이 숨김 처리되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+      router.push('/user/community');
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '게시글을 숨기지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsHidingContent(false);
+    }
+  };
 
   const handleCreateComment = async () => {
     if (!contentId || !content || isCommentSubmitting) return;
@@ -861,6 +1001,7 @@ export default function CommunityPostDetailPage() {
   };
 
   const isAnonymousContent = content?.author.visibility === 'anonymous';
+  const isOwnContent = content?.author.id === COMMUNITY_CURRENT_USER.accountId;
   const resolvedTags = useMemo(() => (content ? resolveTags(content.tagIds, tags) : []), [content]);
   const authorDisplay = content ? getAuthorDisplay(content) : '';
   const authorInitial = content ? getAuthorInitial(content) : '';
@@ -924,7 +1065,14 @@ export default function CommunityPostDetailPage() {
           </Box>
 
           <Flex direction="column" gap="16px" minW="0">
-            <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
+            <Box
+              overflow="hidden"
+              borderRadius="20px"
+              bg="#FFFFFF"
+              boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+              px={{ base: '18px', md: '24px' }}
+              py={{ base: '18px', md: '20px' }}
+            >
               <Flex align="center" justify="space-between" mb="10px">
                 <Button
                   asChild
@@ -943,6 +1091,110 @@ export default function CommunityPostDetailPage() {
                     </Flex>
                   </Link>
                 </Button>
+
+                {isOwnContent ? (
+                  <Box ref={ownPostMenuRef} position="relative">
+                    <Button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setIsOwnPostMenuOpen((prev) => !prev);
+                      }}
+                      minW="8"
+                      h="8"
+                      rounded="full"
+                      bg="transparent"
+                      p="0"
+                      color="gray.400"
+                      _hover={{ bg: 'transparent', color: 'gray.700' }}
+                      aria-label="내 게시글 메뉴 열기"
+                    >
+                      <MoreHorizontal size={16} />
+                    </Button>
+
+                    {isOwnPostMenuOpen ? (
+                      <Box
+                        position="absolute"
+                        top="10"
+                        right="0"
+                        zIndex="20"
+                        w="176px"
+                        overflow="hidden"
+                        rounded="xl"
+                        borderWidth="1px"
+                        borderColor="gray.200"
+                        bg="white"
+                        py="1.5"
+                        boxShadow="lg"
+                      >
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setIsOwnPostMenuOpen(false);
+                            void handleRequestEditContent();
+                          }}
+                          justifyContent="flex-start"
+                          gap="2"
+                          w="full"
+                          rounded="none"
+                          bg="transparent"
+                          px="3"
+                          py="2"
+                          fontSize="sm"
+                          fontWeight="400"
+                          color="gray.700"
+                          _hover={{ bg: 'gray.50' }}
+                        >
+                          <Pencil size={16} />
+                          <Text>수정</Text>
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setIsOwnPostMenuOpen(false);
+                            setDeleteTargetContent(content);
+                          }}
+                          justifyContent="flex-start"
+                          gap="2"
+                          w="full"
+                          rounded="none"
+                          bg="transparent"
+                          px="3"
+                          py="2"
+                          fontSize="sm"
+                          fontWeight="400"
+                          color="gray.700"
+                          _hover={{ bg: 'gray.50' }}
+                        >
+                          <Trash2 size={16} />
+                          <Text>삭제</Text>
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setIsOwnPostMenuOpen(false);
+                            setHideTargetContent(content);
+                          }}
+                          justifyContent="flex-start"
+                          gap="2"
+                          w="full"
+                          rounded="none"
+                          bg="transparent"
+                          px="3"
+                          py="2"
+                          fontSize="sm"
+                          fontWeight="400"
+                          color="gray.700"
+                          _hover={{ bg: 'gray.50' }}
+                        >
+                          <EyeOff size={16} />
+                          <Text>숨김</Text>
+                        </Button>
+                      </Box>
+                    ) : null}
+                  </Box>
+                ) : null}
               </Flex>
 
               <Flex align="center" gap="8px" mb="14px" wrap="wrap">
@@ -1055,7 +1307,12 @@ export default function CommunityPostDetailPage() {
               </Flex>
             </Box>
 
-            <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF">
+            <Box
+              overflow="hidden"
+              borderRadius="20px"
+              bg="#FFFFFF"
+              boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+            >
               <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }} borderBottom="1px solid" borderColor="#E5E7EB">
                 <Flex align="center" gap="6px" mb="16px">
                   <Text fontSize="18px" fontWeight="700" color="#111827">
@@ -1172,7 +1429,13 @@ export default function CommunityPostDetailPage() {
             ) : null}
 
             {!isAnonymousContent && authorOtherPosts.length > 0 ? (
-              <Box borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF" px="18px" py="18px">
+              <Box
+                borderRadius="20px"
+                bg="#FFFFFF"
+                boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+                px="18px"
+                py="18px"
+              >
                 <Text fontSize="15px" fontWeight="700" color="#111827" mb="12px">
                   작성자의 다른 글
                 </Text>
@@ -1205,6 +1468,37 @@ export default function CommunityPostDetailPage() {
         description={blockedWordModalDescription}
         matchedKeywords={matchedBlockedKeywords}
         sourceText={blockedWordSourceText}
+      />
+
+      <WritePostModal
+        isOpen={isWriteModalOpen}
+        onClose={() => {
+          setIsWriteModalOpen(false);
+          setEditingContent(null);
+        }}
+        onUpdated={handleUpdatedContent}
+        editingContent={editingContent}
+        currentUser={COMMUNITY_CURRENT_USER}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(deleteTargetContent)}
+        title="게시글을 삭제하시겠습니까?"
+        description="삭제한 게시글은 복구할 수 없습니다."
+        confirmLabel="삭제"
+        isLoading={isDeletingContent}
+        onCancel={() => setDeleteTargetContent(null)}
+        onConfirm={handleConfirmDeleteContent}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(hideTargetContent)}
+        title="게시글을 숨기시겠습니까?"
+        description="숨김 처리된 게시글은 커뮤니티 메인에서 보이지 않고, 마이페이지의 숨김 탭에서 확인할 수 있습니다."
+        confirmLabel="숨김"
+        isLoading={isHidingContent}
+        onCancel={() => setHideTargetContent(null)}
+        onConfirm={handleConfirmHideContent}
       />
     </Box>
   );

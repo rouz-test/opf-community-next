@@ -90,55 +90,6 @@
     "publishedAt": "2026-05-13T04:19:09.078Z"
   },
   {
-    "id": "content-1778566473171",
-    "title": "글쓰기 토스트 테스트용으로 작성되는 글입니다",
-    "content": {
-      "type": "doc",
-      "content": [
-        {
-          "type": "paragraph",
-          "attrs": {
-            "textAlign": null
-          },
-          "content": [
-            {
-              "type": "text",
-              "text": "익명 홍보"
-            }
-          ]
-        }
-      ]
-    },
-    "tagIds": [
-      "tag_1776227414022"
-    ],
-    "status": "published",
-    "author": {
-      "type": "user",
-      "id": "account-user-1",
-      "visibility": "anonymous",
-      "displayName": "익명",
-      "identifierType": "name",
-      "identifierValue": "이호준"
-    },
-    "flags": {
-      "isPinned": false,
-      "isNotice": false,
-      "isPromoted": true,
-      "isHiddenByAuthor": false
-    },
-    "stats": {
-      "viewCount": 0,
-      "likeCount": 0,
-      "saveCount": 0,
-      "commentCount": 0,
-      "replyCount": 0
-    },
-    "createdAt": "2026-05-12T06:14:33.171Z",
-    "updatedAt": "2026-05-13T02:48:34.893Z",
-    "publishedAt": "2026-05-12T06:14:33.171Z"
-  },
-  {
     "id": "content-1778563987230",
     "title": "관리자 금칙어 모달 테스트",
     "content": {
@@ -1773,19 +1724,19 @@
     },
     "flags": {
       "isPinned": true,
-      "isNotice": false,
+      "isNotice": true,
       "isPromoted": false,
       "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
-      "likeCount": 0,
+      "likeCount": 1,
       "saveCount": 0,
       "commentCount": 0,
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-05-12T06:53:50.422Z",
+    "updatedAt": "2026-05-13T05:14:19.977Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
