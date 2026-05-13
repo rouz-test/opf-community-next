@@ -17,11 +17,13 @@ type PostAction = (post: CommunityPost) => void | Promise<void>;
 
 function HighlightPostCard({
   post,
+  onToggleLike,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
 }: {
   post: CommunityPost;
+  onToggleLike?: PostAction;
   onRequestDelete?: PostAction;
   onRequestEdit?: PostAction;
   onRequestHide?: PostAction;
@@ -31,6 +33,8 @@ function HighlightPostCard({
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const isOwnPost = post.author.accountId === 'account-user-1';
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
+  const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
   const resolvedTags = useMemo(() => {
     const sourceNames = post.tags ?? [];
@@ -40,6 +44,8 @@ function HighlightPostCard({
 
     return resolveTags(tagIds, tags);
   }, [post.tags]);
+  const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
+  const displayLikeCount = onToggleLike ? post.likes : fallbackLikeCount;
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -224,10 +230,33 @@ function HighlightPostCard({
 
         <Flex mt="25px" align="center" justify="space-between" color="gray.500">
           <HStack gap="4">
-            <HStack gap="1.5">
-              <Icon as={Heart} boxSize="20px" />
-              <Text fontSize="14px">{post.likes}</Text>
-            </HStack>
+            <Button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (onToggleLike) {
+                  onToggleLike(post);
+                  return;
+                }
+
+                setFallbackIsLiked((prev) => {
+                  const next = !prev;
+                  setFallbackLikeCount((count) => Math.max(0, count + (next ? 1 : -1)));
+                  return next;
+                });
+              }}
+              gap="1.5"
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color={displayIsLiked ? 'orange.500' : 'gray.500'}
+              _hover={{ bg: 'transparent', color: 'orange.500' }}
+            >
+              <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+              <Text fontSize="14px">{displayLikeCount}</Text>
+            </Button>
             <HStack gap="1.5">
               <Icon as={MessageSquare} boxSize="20px" />
               <Text fontSize="14px">{post.commentCount ?? 0}</Text>
@@ -246,11 +275,13 @@ function HighlightPostCard({
 
 export function HighlightCarousel({
   posts,
+  onToggleLike,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
 }: {
   posts: CommunityPost[];
+  onToggleLike?: PostAction;
   onRequestDelete?: PostAction;
   onRequestEdit?: PostAction;
   onRequestHide?: PostAction;
@@ -332,6 +363,7 @@ export function HighlightCarousel({
                   <HighlightPostCard
                     key={post.id}
                     post={post}
+                    onToggleLike={onToggleLike}
                     onRequestDelete={onRequestDelete}
                     onRequestEdit={onRequestEdit}
                     onRequestHide={onRequestHide}

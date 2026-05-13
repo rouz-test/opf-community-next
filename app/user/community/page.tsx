@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Box, Flex, Grid, Portal, Spinner, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
@@ -19,9 +19,9 @@ import { OrangePickWidget } from '@/app/user/components/community/OrangePickWidg
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
 import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
 import { CommunityWriteAction } from '@/app/user/components/community/CommunityWriteAction';
-import { Button } from '@/app/user/components/ui/button';
 import { toaster } from '@/app/user/components/ui/toaster';
 
 type CommunityPageState = {
@@ -227,6 +227,48 @@ export default function CommunityPage() {
     setHideTargetPost(post);
   };
 
+  const handleToggleLikePost = async (post: CommunityPost) => {
+    try {
+      const method = post.isLikedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; liked?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(data?.message || '좋아요를 처리하지 못했습니다.');
+      }
+
+      const nextPost = {
+        ...mapCommunityContentToPost(data.content),
+        isLikedByMe: Boolean(data.liked),
+      };
+
+      setCreatedPosts((prev) =>
+        prev.some((item) => item.id === nextPost.id)
+          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
+          : prev,
+      );
+      setUpdatedPosts((prev) =>
+        prev.some((item) => item.id === nextPost.id)
+          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
+          : [nextPost, ...prev.filter((item) => item.id !== nextPost.id)],
+      );
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    }
+  };
+
   const handleRequestEditPost = async (post: CommunityPost) => {
     try {
       const response = await fetch(`/api/mock/community-contents/${post.id}`, {
@@ -398,6 +440,7 @@ export default function CommunityPage() {
                 {highlightPosts.length > 0 ? (
                   <HighlightCarousel
                     posts={highlightPosts}
+                    onToggleLike={handleToggleLikePost}
                     onRequestDelete={handleRequestDeletePost}
                     onRequestEdit={handleRequestEditPost}
                     onRequestHide={handleRequestHidePost}
@@ -443,6 +486,7 @@ export default function CommunityPage() {
                         post={post}
                         formatDate={formatRelativeDate}
                         searchQuery={searchQuery}
+                        onToggleLike={handleToggleLikePost}
                         onRequestDelete={handleRequestDeletePost}
                         onRequestEdit={handleRequestEditPost}
                         onRequestHide={handleRequestHidePost}
@@ -456,6 +500,7 @@ export default function CommunityPage() {
                       post={post}
                       formatDate={formatRelativeDate}
                       searchQuery={searchQuery}
+                      onToggleLike={handleToggleLikePost}
                       onRequestDelete={handleRequestDeletePost}
                       onRequestEdit={handleRequestEditPost}
                       onRequestHide={handleRequestHidePost}
@@ -505,77 +550,25 @@ export default function CommunityPage() {
         currentUser={COMMUNITY_CURRENT_USER}
       />
 
-      {deleteTargetPost ? (
-        <Portal>
-          <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
-            <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
-              <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
-                게시글을 삭제하시겠습니까?
-              </Text>
-              <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
-                삭제한 게시글은 복구할 수 없습니다.
-              </Text>
+      <ActionConfirmModal
+        isOpen={Boolean(deleteTargetPost)}
+        title="게시글을 삭제하시겠습니까?"
+        description="삭제한 게시글은 복구할 수 없습니다."
+        confirmLabel="삭제"
+        isLoading={isDeletingPost}
+        onCancel={() => setDeleteTargetPost(null)}
+        onConfirm={handleConfirmDeletePost}
+      />
 
-              <Flex mt="5" gap="3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDeleteTargetPost(null)}
-                  flex="1"
-                  disabled={isDeletingPost}
-                >
-                  취소
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleConfirmDeletePost}
-                  flex="1"
-                  disabled={isDeletingPost}
-                >
-                  삭제
-                </Button>
-              </Flex>
-            </Box>
-          </Flex>
-        </Portal>
-      ) : null}
-
-      {hideTargetPost ? (
-        <Portal>
-          <Flex position="fixed" inset="0" zIndex="90" align="center" justify="center" bg="blackAlpha.500" px="4">
-            <Box w="full" maxW="sm" rounded="24px" bg="white" p="6" boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)">
-              <Text textAlign="center" fontSize="16px" fontWeight="700" color="gray.900">
-                게시글을 숨기시겠습니까?
-              </Text>
-              <Text mt="2" textAlign="center" fontSize="14px" color="gray.500">
-                숨김 처리된 게시글은 커뮤니티 메인에서 보이지 않고, 마이페이지의 숨김 탭에서 확인할 수 있습니다.
-              </Text>
-
-              <Flex mt="5" gap="3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setHideTargetPost(null)}
-                  flex="1"
-                  disabled={isHidingPost}
-                >
-                  취소
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleConfirmHidePost}
-                  flex="1"
-                  disabled={isHidingPost}
-                >
-                  숨김
-                </Button>
-              </Flex>
-            </Box>
-          </Flex>
-        </Portal>
-      ) : null}
+      <ActionConfirmModal
+        isOpen={Boolean(hideTargetPost)}
+        title="게시글을 숨기시겠습니까?"
+        description="숨김 처리된 게시글은 커뮤니티 메인에서 보이지 않고, 마이페이지의 숨김 탭에서 확인할 수 있습니다."
+        confirmLabel="숨김"
+        isLoading={isHidingPost}
+        onCancel={() => setHideTargetPost(null)}
+        onConfirm={handleConfirmHidePost}
+      />
     </Box>
   );
 }

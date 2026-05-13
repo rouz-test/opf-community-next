@@ -8,9 +8,11 @@ import type {
   CommunityContent,
   CommunityContentPayload,
 } from '@/types/community-content';
+import type { CommunityContentReaction } from '@/types/community-content-reaction';
 import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
+const COMMUNITY_CONTENT_REACTIONS_PATH = 'data/mock/community-content-reactions.json';
 const TAGS_PATH = 'data/mock/tags.json';
 
 type RouteContext = {
@@ -33,6 +35,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isHiddenByAuthor(content: CommunityContent) {
   return Boolean(content.flags.isHiddenByAuthor);
+}
+
+function getViewerAccountId(request: NextRequest) {
+  return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
 }
 
 async function normalizeStoredContents(contents: CommunityContent[]) {
@@ -73,11 +79,15 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const [contents, reactions] = await Promise.all([
+      readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH),
+      readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH),
+    ]);
     const { normalizedContents } = await normalizeStoredContents(contents);
     const content = normalizedContents.find((item) => item.id === id);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
+    const viewerAccountId = getViewerAccountId(request);
 
     if (!content) {
       return NextResponse.json(
@@ -93,7 +103,22 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    return NextResponse.json(content, { status: 200 });
+    return NextResponse.json(
+      {
+        ...content,
+        viewerState: viewerAccountId
+          ? {
+              isLikedByMe: reactions.some(
+                (reaction) =>
+                  reaction.type === 'like' &&
+                  reaction.contentId === content.id &&
+                  reaction.accountId === viewerAccountId,
+              ),
+            }
+          : content.viewerState,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.error('[GET /api/mock/community-contents/[id]] failed:', error);
     return NextResponse.json(
@@ -263,7 +288,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const [contents, reactions] = await Promise.all([
+      readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH),
+      readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH),
+    ]);
     const { normalizedContents } = await normalizeStoredContents(contents);
     const targetContent = normalizedContents.find((item) => item.id === id);
 
@@ -275,7 +303,12 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     const nextContents = normalizedContents.filter((item) => item.id !== id);
-    await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
+    const nextReactions = reactions.filter((reaction) => reaction.contentId !== id);
+
+    await Promise.all([
+      writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents),
+      writeJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH, nextReactions),
+    ]);
 
     return NextResponse.json(
       { message: '콘텐츠가 삭제되었습니다.' },

@@ -19,7 +19,10 @@ import {
   mockCommunityPosts,
   type CommunityPost,
   type HighlightedComment,
+  mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
+import { toaster } from '@/app/user/components/ui/toaster';
+import type { CommunityContent } from '@/types/community-content';
 
 const formatRelativeDate = (dateString?: string) => {
   if (!dateString) return '방금 전';
@@ -124,15 +127,21 @@ export default function CommunityAuthorPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
+  const [updatedPosts, setUpdatedPosts] = useState<CommunityPost[]>([]);
+
+  const resolvedCommunityPosts = useMemo(
+    () => mockCommunityPosts.map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post),
+    [updatedPosts],
+  );
 
   const authorPosts = useMemo(
-    () => mockCommunityPosts.filter((post) => getProfileActorId(post.author) === authorId),
-    [authorId],
+    () => resolvedCommunityPosts.filter((post) => getProfileActorId(post.author) === authorId),
+    [authorId, resolvedCommunityPosts],
   );
 
   const authorCommentEntries = useMemo<AuthorCommentEntry[]>(() => {
     const entries = new Map<string | number, AuthorCommentEntry>();
-    const postMap = new Map(mockCommunityPosts.map((post) => [post.id, post]));
+    const postMap = new Map(resolvedCommunityPosts.map((post) => [post.id, post]));
 
     flattenComments(mockComments).forEach((comment) => {
       if (getProfileActorId(comment.author) !== authorId) return;
@@ -182,7 +191,43 @@ export default function CommunityAuthorPage() {
     });
 
     return Array.from(entries.values());
-  }, [authorId]);
+  }, [authorId, resolvedCommunityPosts]);
+
+  const handleToggleLikePost = async (post: CommunityPost) => {
+    try {
+      const method = post.isLikedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; liked?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(data?.message || '좋아요를 처리하지 못했습니다.');
+      }
+
+      const nextPost = {
+        ...mapCommunityContentToPost(data.content),
+        isLikedByMe: Boolean(data.liked),
+      };
+
+      setUpdatedPosts((prev) =>
+        prev.some((item) => item.id === nextPost.id)
+          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
+          : [nextPost, ...prev.filter((item) => item.id !== nextPost.id)],
+      );
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+      });
+    }
+  };
 
   const author =
     authorPosts[0]?.author ??
@@ -451,6 +496,7 @@ export default function CommunityAuthorPage() {
                     post={post}
                     formatDate={formatRelativeDate}
                     searchQuery={searchQuery}
+                    onToggleLike={handleToggleLikePost}
                   />
                 ))
               ) : (
@@ -460,6 +506,7 @@ export default function CommunityAuthorPage() {
                     post={post}
                     formatDate={formatRelativeDate}
                     searchQuery={searchQuery}
+                    onToggleLike={handleToggleLikePost}
                   />
                 ))
               )}

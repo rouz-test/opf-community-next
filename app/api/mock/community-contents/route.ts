@@ -15,9 +15,11 @@ import type {
   CommunityContentPayload,
   CommunityContentStats,
 } from '@/types/community-content';
+import type { CommunityContentReaction } from '@/types/community-content-reaction';
 import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
+const COMMUNITY_CONTENT_REACTIONS_PATH = 'data/mock/community-content-reactions.json';
 const TAGS_PATH = 'data/mock/tags.json';
 
 type CreateCommunityContentRequestBody = Partial<CommunityContentPayload>;
@@ -78,6 +80,10 @@ function getContentReferenceDate(content: CommunityContent) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function getViewerAccountId(request: NextRequest) {
+  return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
+}
+
 async function normalizeStoredContents(contents: CommunityContent[]) {
   const tags = await readJsonFile<Tag[]>(TAGS_PATH);
 
@@ -116,11 +122,13 @@ async function normalizeStoredContents(contents: CommunityContent[]) {
 export async function GET(request: NextRequest) {
   try {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
+    const reactions = await readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH);
     const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const query = parseCommunityContentListQuery(request.nextUrl.searchParams);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const hiddenByAuthorOnly = request.nextUrl.searchParams.get('hiddenByAuthorOnly') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
+    const viewerAccountId = getViewerAccountId(request);
 
     let filteredItems = isValidContentStatus(query.status)
       ? normalizedContents.filter((item) => item.status === query.status)
@@ -228,8 +236,22 @@ export async function GET(request: NextRequest) {
       currentPage * query.pageSize,
     );
 
+    const responseItems = pagedItems.map((item) => ({
+      ...item,
+      viewerState: viewerAccountId
+        ? {
+            isLikedByMe: reactions.some(
+              (reaction) =>
+                reaction.type === 'like' &&
+                reaction.contentId === item.id &&
+                reaction.accountId === viewerAccountId,
+            ),
+          }
+        : item.viewerState,
+    }));
+
     const response: CommunityContentListResponse = {
-      items: pagedItems,
+      items: responseItems,
       meta: {
         totalCount,
         page: currentPage,

@@ -1,10 +1,12 @@
 import communityCommentsData from '@/data/mock/community-comments.json';
+import communityContentReactionsData from '@/data/mock/community-content-reactions.json';
 import communityContentsData from '@/data/mock/community-contents.json';
 import tagsData from '@/data/mock/tags.json';
 import { orangePickArticles } from '@/data/mockCommunityPosts';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type { CommunityComment, CommunityCommentEntity } from '@/types/community-comment';
+import type { CommunityContentReaction } from '@/types/community-content-reaction';
 import type { Tag } from '@/types/tag';
 
 export type CommunityProfileMode = 'real' | 'anonymous';
@@ -75,6 +77,7 @@ export interface Comment {
 
 const contents = communityContentsData as CommunityContent[];
 const commentEntities = communityCommentsData as CommunityCommentEntity[];
+const contentReactions = communityContentReactionsData as CommunityContentReaction[];
 const tags = tagsData as Tag[];
 
 const DEFAULT_REAL_AVATAR =
@@ -275,6 +278,15 @@ function buildHighlightedComment(contentId: string): HighlightedComment | undefi
   };
 }
 
+function isLikedByCurrentUser(contentId: string) {
+  return contentReactions.some(
+    (reaction) =>
+      reaction.type === 'like' &&
+      reaction.contentId === contentId &&
+      reaction.accountId === COMMUNITY_CURRENT_USER.accountId,
+  );
+}
+
 export function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
   const resolvedTags = resolveTags(content.tagIds, tags).map((tag) => tag.name);
   const mappedType = content.flags.isNotice ? 'notice' : 'community';
@@ -291,7 +303,7 @@ export function mapCommunityContentToPost(content: CommunityContent): CommunityP
     views: content.stats.viewCount,
     likes: content.stats.likeCount,
     commentCount: content.stats.commentCount + content.stats.replyCount,
-    isLikedByMe: false,
+    isLikedByMe: content.viewerState?.isLikedByMe ?? isLikedByCurrentUser(content.id),
     tags: resolvedTags,
     images: extractImageSources(content.content),
     isNotice: content.flags.isNotice,

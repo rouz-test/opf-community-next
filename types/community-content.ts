@@ -58,6 +58,9 @@ export type CommunityContent = {
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
+  viewerState?: {
+    isLikedByMe?: boolean;
+  };
 };
 
 // =============================

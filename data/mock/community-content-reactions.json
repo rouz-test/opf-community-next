@@ -1,0 +1,30 @@
+[
+  {
+    "id": "content-like-1778648992000",
+    "contentId": "content-1",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-13T05:09:52.000Z"
+  },
+  {
+    "id": "content-like-1778648999080",
+    "contentId": "post-102",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-13T05:09:59.080Z"
+  },
+  {
+    "id": "content-like-1778649006583",
+    "contentId": "post-110",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-13T05:10:06.583Z"
+  },
+  {
+    "id": "content-like-1778649015677",
+    "contentId": "content-1777018368845",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-13T05:10:15.676Z"
+  }
+]

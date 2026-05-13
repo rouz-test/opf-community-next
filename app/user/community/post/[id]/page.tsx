@@ -553,6 +553,7 @@ export default function CommunityPostDetailPage() {
   const [replyIdentity, setReplyIdentity] = useState<'real' | 'anonymous'>(defaultCommunityIdentity);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [isReplySubmitting, setIsReplySubmitting] = useState(false);
+  const [isLikeSubmitting, setIsLikeSubmitting] = useState(false);
   const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
   const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
@@ -618,7 +619,7 @@ export default function CommunityPostDetailPage() {
         setIsLoading(true);
         setLoadError(null);
 
-        const response = await fetch(`/api/mock/community-contents/${contentId}`, {
+        const response = await fetch(`/api/mock/community-contents/${contentId}?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
           cache: 'no-store',
         });
         const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
@@ -669,6 +670,41 @@ export default function CommunityPostDetailPage() {
     if (!content) return;
     await loadComments(content.author.id);
   }, [content, loadComments]);
+
+  const handleTogglePostLike = useCallback(async () => {
+    if (!contentId || !content || isLikeSubmitting) return;
+
+    try {
+      setIsLikeSubmitting(true);
+
+      const isLikedByMe = Boolean(content.viewerState?.isLikedByMe);
+      const response = await fetch(`/api/mock/community-contents/${contentId}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method: isLikedByMe ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; liked?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(parseErrorMessage(data, '좋아요를 처리하지 못했습니다.'));
+      }
+
+      setContent({
+        ...data.content,
+        viewerState: {
+          isLikedByMe: Boolean(data.liked),
+        },
+      });
+    } catch (error) {
+      console.error('[CommunityPostDetailPage] failed to toggle like:', error);
+    } finally {
+      setIsLikeSubmitting(false);
+    }
+  }, [content, contentId, isLikeSubmitting]);
 
   const handleCreateComment = async () => {
     if (!contentId || !content || isCommentSubmitting) return;
@@ -984,10 +1020,27 @@ export default function CommunityPostDetailPage() {
                     <Eye size={16} />
                     <Text fontSize="13px" fontWeight="600">{content.stats.viewCount}</Text>
                   </Flex>
-                  <Flex align="center" gap="6px">
-                    <Heart size={16} />
-                    <Text fontSize="13px" fontWeight="600">{content.stats.likeCount}</Text>
-                  </Flex>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      void handleTogglePostLike();
+                    }}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color={content.viewerState?.isLikedByMe ? '#F97316' : '#6B7280'}
+                    _hover={{ bg: 'transparent', color: '#F97316' }}
+                    disabled={isLikeSubmitting}
+                  >
+                    <Flex align="center" gap="6px">
+                      <Heart
+                        size={16}
+                        fill={content.viewerState?.isLikedByMe ? 'currentColor' : 'none'}
+                      />
+                      <Text fontSize="13px" fontWeight="600">{content.stats.likeCount}</Text>
+                    </Flex>
+                  </Button>
                   <Flex align="center" gap="6px">
                     <MessageSquare size={16} />
                     <Text fontSize="13px" fontWeight="600">

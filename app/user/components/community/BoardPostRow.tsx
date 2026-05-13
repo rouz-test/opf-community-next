@@ -33,10 +33,13 @@ type Props = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
+  onToggleLike?: (post: CommunityPost) => void;
   onRequestDelete?: (post: CommunityPost) => void;
   onRequestEdit?: (post: CommunityPost) => void;
   onRequestHide?: (post: CommunityPost) => void;
   enableOwnPostMenu?: boolean;
+  hideActionLabel?: string;
+  ownPostMenuActions?: Array<'edit' | 'delete' | 'hide'>;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -75,10 +78,13 @@ export function BoardPostRow({
   post,
   formatDate,
   searchQuery,
+  onToggleLike,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
   enableOwnPostMenu = true,
+  hideActionLabel = '숨김',
+  ownPostMenuActions = ['edit', 'delete', 'hide'],
 }: Props) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
@@ -89,6 +95,8 @@ export function BoardPostRow({
   const { isLoggedIn } = useAuth();
   const [isPostBookmarked, setIsPostBookmarked] = useState(false);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
+  const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
   const resolvedTags = useMemo(() => {
     const sourceNames = post.tags ?? [];
@@ -98,6 +106,13 @@ export function BoardPostRow({
 
     return resolveTags(tagIds, tags);
   }, [post.tags]);
+  const ownPostMenuItems = [
+    { key: 'edit' as const, icon: Pencil, label: '수정' },
+    { key: 'delete' as const, icon: Trash2, label: '삭제' },
+    { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
+  ].filter((item) => ownPostMenuActions.includes(item.key));
+  const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
+  const displayLikeCount = onToggleLike ? likeCount : fallbackLikeCount;
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -180,11 +195,7 @@ export function BoardPostRow({
 
               {isOwnPostMenuOpen ? (
                 <Box position="absolute" top="14" right="5" zIndex="10" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
-                  {[
-                    { icon: Pencil, label: '수정' },
-                    { icon: Trash2, label: '삭제' },
-                    { icon: EyeOff, label: '숨김' },
-                  ].map((item) => (
+                  {ownPostMenuItems.map((item) => (
                     <Button
                       key={item.label}
                       type="button"
@@ -192,13 +203,13 @@ export function BoardPostRow({
                         event.preventDefault();
                         event.stopPropagation();
                         setIsOwnPostMenuOpen(false);
-                        if (item.label === '수정') {
+                        if (item.key === 'edit') {
                           onRequestEdit?.(post);
                         }
-                        if (item.label === '삭제') {
+                        if (item.key === 'delete') {
                           onRequestDelete?.(post);
                         }
-                        if (item.label === '숨김') {
+                        if (item.key === 'hide') {
                           onRequestHide?.(post);
                         }
                       }}
@@ -279,10 +290,33 @@ export function BoardPostRow({
             </HStack>
 
             <HStack gap={{ base: '4', md: '4' }} color="gray.500" flexShrink={0}>
-              <HStack gap="1.5">
-                <Icon as={Heart} boxSize="20px" />
-                <Text fontSize="14px">{likeCount}</Text>
-              </HStack>
+              <Button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (onToggleLike) {
+                    onToggleLike(post);
+                    return;
+                  }
+
+                  setFallbackIsLiked((prev) => {
+                    const next = !prev;
+                    setFallbackLikeCount((count) => Math.max(0, count + (next ? 1 : -1)));
+                    return next;
+                  });
+                }}
+                gap="1.5"
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                p="0"
+                color={displayIsLiked ? 'orange.500' : 'gray.500'}
+                _hover={{ bg: 'transparent', color: 'orange.500' }}
+              >
+                <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+                <Text fontSize="14px">{displayLikeCount}</Text>
+              </Button>
               <HStack gap="1.5">
                 <Icon as={MessageSquare} boxSize="20px" />
                 <Text fontSize="14px">{commentCount}</Text>

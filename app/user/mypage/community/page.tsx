@@ -14,6 +14,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
+import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
+import { toaster } from '@/app/user/components/ui/toaster';
 import {
   COMMUNITY_CURRENT_USER,
   mockComments,
@@ -137,6 +140,14 @@ export default function MyPageCommunityPage() {
   const [allPublishedPosts, setAllPublishedPosts] = useState<CommunityPost[]>([]);
   const [mypagePosts, setMypagePosts] = useState<CommunityPost[]>([]);
   const [hiddenPosts, setHiddenPosts] = useState<CommunityPost[]>([]);
+  const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
+  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [deleteTargetPost, setDeleteTargetPost] = useState<CommunityPost | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [hideTargetPost, setHideTargetPost] = useState<CommunityPost | null>(null);
+  const [isHidingPost, setIsHidingPost] = useState(false);
+  const [pendingRestorePost, setPendingRestorePost] = useState<CommunityPost | null>(null);
+  const [isRestoringHiddenPost, setIsRestoringHiddenPost] = useState(false);
 
   const filterRef = useRef<HTMLDivElement | null>(null);
 
@@ -175,10 +186,10 @@ export default function MyPageCommunityPage() {
     const loadMyCommunityPosts = async () => {
       try {
         const [publishedResponse, archivedResponse] = await Promise.all([
-          fetch('/api/mock/community-contents?status=published&page=1&pageSize=200', {
+          fetch(`/api/mock/community-contents?status=published&page=1&pageSize=200&accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
             cache: 'no-store',
           }),
-          fetch(`/api/mock/community-contents?includeHiddenByAuthor=true&hiddenByAuthorOnly=true&authorId=${COMMUNITY_CURRENT_USER.accountId}&page=1&pageSize=200`, {
+          fetch(`/api/mock/community-contents?includeHiddenByAuthor=true&hiddenByAuthorOnly=true&authorId=${COMMUNITY_CURRENT_USER.accountId}&accountId=${COMMUNITY_CURRENT_USER.accountId}&page=1&pageSize=200`, {
             cache: 'no-store',
           }),
         ]);
@@ -303,6 +314,213 @@ export default function MyPageCommunityPage() {
       })
       .slice(0, 5);
   }, [allPublishedPosts]);
+
+  const handleToggleLikePost = async (post: CommunityPost) => {
+    try {
+      const method = post.isLikedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; liked?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(data?.message || '좋아요를 처리하지 못했습니다.');
+      }
+
+      const nextPost = {
+        ...mapCommunityContentToPost(data.content),
+        isLikedByMe: Boolean(data.liked),
+      };
+
+      setAllPublishedPosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+      setMypagePosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+      setHiddenPosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleRequestEditPost = async (post: CommunityPost) => {
+    try {
+      const response = await fetch(`/api/mock/community-contents/${post.id}`, {
+        cache: 'no-store',
+      });
+
+      const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+      if (!response.ok || !data || !('id' in data)) {
+        throw new Error((data as { message?: string } | null)?.message || '게시글 정보를 불러오지 못했습니다.');
+      }
+
+      setEditingContent(data);
+      setIsWriteModalOpen(true);
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '게시글 정보를 불러오지 못했습니다.',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleUpdatedContent = (updatedContent: CommunityContent) => {
+    const nextPost = mapCommunityContentToPost(updatedContent);
+
+    setAllPublishedPosts((prev) => prev.map((post) => (post.id === nextPost.id ? nextPost : post)));
+    setMypagePosts((prev) => prev.map((post) => (post.id === nextPost.id ? nextPost : post)));
+    setHiddenPosts((prev) => prev.map((post) => (post.id === nextPost.id ? nextPost : post)));
+    setEditingContent(null);
+    setIsWriteModalOpen(false);
+  };
+
+  const handleRequestDeletePost = (post: CommunityPost) => {
+    setDeleteTargetPost(post);
+  };
+
+  const handleConfirmDeletePost = async () => {
+    if (!deleteTargetPost || isDeletingPost) return;
+
+    try {
+      setIsDeletingPost(true);
+
+      const response = await fetch(`/api/mock/community-contents/${deleteTargetPost.id}`, {
+        method: 'DELETE',
+      });
+
+      const data = (await response.json().catch(() => null)) as { message?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '게시글을 삭제하지 못했습니다.');
+      }
+
+      setAllPublishedPosts((prev) => prev.filter((post) => post.id !== deleteTargetPost.id));
+      setMypagePosts((prev) => prev.filter((post) => post.id !== deleteTargetPost.id));
+      setHiddenPosts((prev) => prev.filter((post) => post.id !== deleteTargetPost.id));
+      setDeleteTargetPost(null);
+      toaster.create({
+        title: '게시글이 삭제되었습니다.',
+        type: 'success',
+      });
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '게시글을 삭제하지 못했습니다.',
+        type: 'error',
+      });
+    } finally {
+      setIsDeletingPost(false);
+    }
+  };
+
+  const handleRequestHidePost = (post: CommunityPost) => {
+    setHideTargetPost(post);
+  };
+
+  const handleConfirmHidePost = async () => {
+    if (!hideTargetPost || isHidingPost) return;
+
+    try {
+      setIsHidingPost(true);
+
+      const response = await fetch(`/api/mock/community-contents/${hideTargetPost.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          flags: {
+            isHiddenByAuthor: true,
+          },
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+      if (!response.ok || !payload || !('id' in payload)) {
+        throw new Error((payload as { message?: string } | null)?.message || '게시글을 숨기지 못했습니다.');
+      }
+
+      const hiddenPost = mapCommunityContentToPost(payload as CommunityContent);
+
+      setAllPublishedPosts((prev) => prev.filter((post) => post.id !== hiddenPost.id));
+      setMypagePosts((prev) => prev.filter((post) => post.id !== hiddenPost.id));
+      setHiddenPosts((prev) => [hiddenPost, ...prev.filter((post) => post.id !== hiddenPost.id)]);
+      setHideTargetPost(null);
+      toaster.create({
+        title: '게시글이 숨김 처리되었습니다.',
+        type: 'success',
+      });
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '게시글을 숨기지 못했습니다.',
+        type: 'error',
+      });
+    } finally {
+      setIsHidingPost(false);
+    }
+  };
+
+  const handleRequestRestoreHiddenPost = (post: CommunityPost) => {
+    setPendingRestorePost(post);
+  };
+
+  const handleConfirmRestoreHiddenPost = async () => {
+    if (!pendingRestorePost || isRestoringHiddenPost) return;
+
+    try {
+      setIsRestoringHiddenPost(true);
+
+      const response = await fetch(`/api/mock/community-contents/${pendingRestorePost.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          flags: {
+            isHiddenByAuthor: false,
+          },
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
+
+      if (!response.ok || !payload || !('id' in payload)) {
+        throw new Error('숨김 해제에 실패했습니다.');
+      }
+
+      const restoredPost = mapCommunityContentToPost(payload as CommunityContent);
+
+      setHiddenPosts((prev) => prev.filter((post) => post.id !== restoredPost.id));
+      setAllPublishedPosts((prev) => {
+        const next = [restoredPost, ...prev.filter((post) => post.id !== restoredPost.id)];
+        return next;
+      });
+      if (restoredPost.author.accountId === COMMUNITY_CURRENT_USER.accountId) {
+        setMypagePosts((prev) => [restoredPost, ...prev.filter((post) => post.id !== restoredPost.id)]);
+      }
+
+      toaster.create({
+        title: '게시글 숨김이 해제되었습니다.',
+        type: 'success',
+      });
+      setPendingRestorePost(null);
+    } catch (error) {
+      console.error('[MyPageCommunityPage] failed to restore hidden post:', error);
+      toaster.create({
+        title: '숨김 해제에 실패했습니다.',
+        type: 'error',
+      });
+    } finally {
+      setIsRestoringHiddenPost(false);
+    }
+  };
 
   return (
     <Box mx="auto" w="100%" maxW="1120px">
@@ -551,7 +769,13 @@ export default function MyPageCommunityPage() {
               post={post}
               formatDate={formatDate}
               searchQuery=""
-              enableOwnPostMenu={activeCommunityTab !== 'hidden'}
+              enableOwnPostMenu
+              hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
+              onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
+              onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
+              onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
+              onToggleLike={handleToggleLikePost}
+              ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
             />
           ))
         ) : (
@@ -561,11 +785,67 @@ export default function MyPageCommunityPage() {
               post={post}
               formatDate={formatDate}
               searchQuery=""
-              enableOwnPostMenu={activeCommunityTab !== 'hidden'}
+              enableOwnPostMenu
+              hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
+              onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
+              onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
+              onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
+              onToggleLike={handleToggleLikePost}
+              ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
             />
           ))
         )}
       </Flex>
+
+      <WritePostModal
+        isOpen={isWriteModalOpen}
+        onClose={() => {
+          setIsWriteModalOpen(false);
+          setEditingContent(null);
+        }}
+        onUpdated={handleUpdatedContent}
+        editingContent={editingContent}
+        currentUser={COMMUNITY_CURRENT_USER}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(deleteTargetPost)}
+        title="게시글을 삭제하시겠습니까?"
+        description="삭제한 게시글은 복구할 수 없습니다."
+        confirmLabel="삭제"
+        isLoading={isDeletingPost}
+        onCancel={() => setDeleteTargetPost(null)}
+        onConfirm={() => {
+          void handleConfirmDeletePost();
+        }}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(hideTargetPost)}
+        title="게시글을 숨기시겠습니까?"
+        description="숨김 처리된 게시글은 커뮤니티 메인에서 보이지 않고, 마이페이지의 숨김 탭에서 확인할 수 있습니다."
+        confirmLabel="숨김"
+        isLoading={isHidingPost}
+        onCancel={() => setHideTargetPost(null)}
+        onConfirm={() => {
+          void handleConfirmHidePost();
+        }}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(pendingRestorePost)}
+        title="게시글 숨김을 해제할까요?"
+        description="숨김 해제한 게시글은 다시 커뮤니티 화면에 노출됩니다."
+        confirmLabel="숨김 해제"
+        isLoading={isRestoringHiddenPost}
+        onCancel={() => {
+          if (isRestoringHiddenPost) return;
+          setPendingRestorePost(null);
+        }}
+        onConfirm={() => {
+          void handleConfirmRestoreHiddenPost();
+        }}
+      />
 
       {isFollowingModalOpen ? (
         <Flex position="fixed" inset="0" zIndex="50" align="center" justify="center" bg="rgba(0, 0, 0, 0.5)" px="16px">

@@ -22,6 +22,7 @@ import {
   Icon,
   Image,
   Text,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import tagsData from '@/data/mock/tags.json';
@@ -33,10 +34,13 @@ type FeedPostCardProps = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
   searchQuery: string;
+  onToggleLike?: (post: CommunityPost) => void;
   onRequestDelete?: (post: CommunityPost) => void;
   onRequestEdit?: (post: CommunityPost) => void;
   onRequestHide?: (post: CommunityPost) => void;
   enableOwnPostMenu?: boolean;
+  hideActionLabel?: string;
+  ownPostMenuActions?: Array<'edit' | 'delete' | 'hide'>;
 };
 
 const tags = tagsData as CommunityTag[];
@@ -71,14 +75,22 @@ const highlightMatchedText = (text: string, searchQuery: string) => {
   });
 };
 
+const truncateText = (text: string, maxLength: number) => {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+};
+
 export function FeedPostCard({
   post,
   formatDate,
   searchQuery,
+  onToggleLike,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
   enableOwnPostMenu = true,
+  hideActionLabel = '숨김',
+  ownPostMenuActions = ['edit', 'delete', 'hide'],
 }: FeedPostCardProps) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
@@ -91,11 +103,12 @@ export function FeedPostCard({
   const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const commentCount = post.commentCount ?? 0;
-  const [isPostLiked, setIsPostLiked] = useState(false);
-  const [postLikeCount, setPostLikeCount] = useState(post.likes);
   const [isPostBookmarked, setIsPostBookmarked] = useState(false);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
+  const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
+  const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
+  const maxContentLength = useBreakpointValue({ base: 100, md: 200 }) ?? 200;
   const images = post.images ?? [];
   const visibleImages = images.slice(0, 2);
   const remainingImageCount = Math.max(images.length - 2, 0);
@@ -107,6 +120,14 @@ export function FeedPostCard({
 
     return resolveTags(tagIds, tags);
   }, [post.tags]);
+  const ownPostMenuItems = [
+    { key: 'edit' as const, icon: Pencil, label: '수정' },
+    { key: 'delete' as const, icon: Trash2, label: '삭제' },
+    { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
+  ].filter((item) => ownPostMenuActions.includes(item.key));
+  const truncatedContent = truncateText(post.content, maxContentLength);
+  const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
+  const displayLikeCount = onToggleLike ? post.likes : fallbackLikeCount;
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -168,11 +189,7 @@ export function FeedPostCard({
 
           {isOwnPostMenuOpen ? (
             <Box position="absolute" top="10" right="0" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
-              {[
-                { icon: Pencil, label: '수정' },
-                { icon: Trash2, label: '삭제' },
-                { icon: EyeOff, label: '숨김' },
-              ].map((item) => (
+              {ownPostMenuItems.map((item) => (
                 <Button
                   key={item.label}
                   type="button"
@@ -180,13 +197,13 @@ export function FeedPostCard({
                     event.preventDefault();
                     event.stopPropagation();
                     setIsOwnPostMenuOpen(false);
-                    if (item.label === '수정') {
+                    if (item.key === 'edit') {
                       onRequestEdit?.(post);
                     }
-                    if (item.label === '삭제') {
+                    if (item.key === 'delete') {
                       onRequestDelete?.(post);
                     }
-                    if (item.label === '숨김') {
+                    if (item.key === 'hide') {
                       onRequestHide?.(post);
                     }
                   }}
@@ -295,8 +312,8 @@ export function FeedPostCard({
               {highlightMatchedText(post.title, searchQuery)}
             </Text>
           </Flex>
-          <Text mb="4" lineClamp="4" fontSize="14px" lineHeight="1.65" color="gray.700">
-            {highlightMatchedText(post.content, searchQuery)}
+          <Text mb="4" fontSize="14px" lineHeight="1.65" color="gray.700">
+            {highlightMatchedText(truncatedContent, searchQuery)}
           </Text>
 
           {images.length > 0 ? (
@@ -312,9 +329,14 @@ export function FeedPostCard({
             <Button
               type="button"
               onClick={() => {
-                setIsPostLiked((prev) => {
+                if (onToggleLike) {
+                  onToggleLike(post);
+                  return;
+                }
+
+                setFallbackIsLiked((prev) => {
                   const next = !prev;
-                  setPostLikeCount(next ? post.likes + 1 : post.likes);
+                  setFallbackLikeCount((count) => Math.max(0, count + (next ? 1 : -1)));
                   return next;
                 });
               }}
@@ -323,13 +345,13 @@ export function FeedPostCard({
               h="auto"
               bg="transparent"
               p="0"
-              color={isPostLiked ? 'orange.500' : 'gray.500'}
+              color={displayIsLiked ? 'orange.500' : 'gray.500'}
               _hover={{ bg: 'transparent', color: 'orange.500' }}
               aria-label="좋아요"
               title="좋아요 표시"
             >
-              <Icon as={Heart} boxSize="20px" fill={isPostLiked ? 'currentColor' : 'none'} />
-              <Text fontSize="14px">{postLikeCount}</Text>
+              <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+              <Text fontSize="14px">{displayLikeCount}</Text>
             </Button>
             <Button
               type="button"
