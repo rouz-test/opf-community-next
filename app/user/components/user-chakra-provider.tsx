@@ -5,7 +5,15 @@ import { ChakraProvider, createSystem, defaultConfig } from '@chakra-ui/react';
 
 const userSystem = createSystem({
   ...defaultConfig,
-  globalCss: undefined,
+  globalCss: {
+    'input, textarea, select': {
+      outline: 'none',
+      WebkitTapHighlightColor: 'transparent',
+    },
+    'input:focus, input:focus-visible, textarea:focus, textarea:focus-visible, select:focus, select:focus-visible': {
+      outline: 'none',
+    },
+  },
 });
 
 export default function UserChakraProvider({ children }: PropsWithChildren) {

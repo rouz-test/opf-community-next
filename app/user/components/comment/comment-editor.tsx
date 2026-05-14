@@ -75,6 +75,12 @@ export default function CommentEditor({
         color="#111827"
         _placeholder={{ color: '#9CA3AF' }}
         _focus={{
+          outline: 'none',
+          borderColor: '#F59E42',
+          boxShadow: '0 0 0 2px rgba(245, 158, 66, 0.15)',
+        }}
+        _focusVisible={{
+          outline: 'none',
           borderColor: '#F59E42',
           boxShadow: '0 0 0 2px rgba(245, 158, 66, 0.15)',
         }}

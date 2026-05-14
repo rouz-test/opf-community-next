@@ -438,15 +438,20 @@ export default function CommunityAuthorPage() {
                   type="button"
                   variant="ghost"
                   h="auto"
-                  px="4px"
+                  w="72px"
+                  px="0"
                   pb="12px"
-                  borderBottom="2px solid"
-                  borderColor={activityTab === 'posts' ? '#F97316' : 'transparent'}
+                  borderWidth="0"
+                  borderBottomWidth="2px"
+                  borderBottomStyle="solid"
+                  borderBottomColor={activityTab === 'posts' ? '#F97316' : 'transparent'}
                   borderRadius="0"
                   color={activityTab === 'posts' ? '#EA580C' : '#6B7280'}
                   fontSize="14px"
                   fontWeight="600"
                   _hover={{ bg: 'transparent', color: '#111827' }}
+                  _focus={{ outline: 'none', boxShadow: 'none' }}
+                  _focusVisible={{ outline: 'none', boxShadow: 'none' }}
                   onClick={() => changeActivityTab('posts')}
                 >
                   게시글
@@ -455,15 +460,20 @@ export default function CommunityAuthorPage() {
                   type="button"
                   variant="ghost"
                   h="auto"
-                  px="4px"
+                  w="72px"
+                  px="0"
                   pb="12px"
-                  borderBottom="2px solid"
-                  borderColor={activityTab === 'comments' ? '#F97316' : 'transparent'}
+                  borderWidth="0"
+                  borderBottomWidth="2px"
+                  borderBottomStyle="solid"
+                  borderBottomColor={activityTab === 'comments' ? '#F97316' : 'transparent'}
                   borderRadius="0"
                   color={activityTab === 'comments' ? '#EA580C' : '#6B7280'}
                   fontSize="14px"
                   fontWeight="600"
                   _hover={{ bg: 'transparent', color: '#111827' }}
+                  _focus={{ outline: 'none', boxShadow: 'none' }}
+                  _focusVisible={{ outline: 'none', boxShadow: 'none' }}
                   onClick={() => changeActivityTab('comments')}
                 >
                   댓글

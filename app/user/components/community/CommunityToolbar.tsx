@@ -160,7 +160,13 @@ export function CommunityToolbar({
               py="2.5"
               pr="4"
               fontSize="sm"
+              _focus={{
+                outline: 'none',
+                borderColor: 'orange.500',
+                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
+              }}
               _focusVisible={{
+                outline: 'none',
                 borderColor: 'orange.500',
                 boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
               }}
@@ -202,7 +208,13 @@ export function CommunityToolbar({
               py="2.5"
               pr="4"
               fontSize="sm"
+              _focus={{
+                outline: 'none',
+                borderColor: 'orange.500',
+                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
+              }}
               _focusVisible={{
+                outline: 'none',
                 borderColor: 'orange.500',
                 boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
               }}

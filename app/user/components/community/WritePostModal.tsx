@@ -473,7 +473,13 @@ export function WritePostModal({
                   fontSize="14px"
                   color="gray.900"
                   _placeholder={{ color: 'gray.400' }}
+                  _focus={{
+                    outline: 'none',
+                    borderColor: '#FF6900',
+                    boxShadow: '0 0 0 2px rgba(255, 105, 0, 0.18)',
+                  }}
                   _focusVisible={{
+                    outline: 'none',
                     borderColor: '#FF6900',
                     boxShadow: '0 0 0 2px rgba(255, 105, 0, 0.18)',
                   }}

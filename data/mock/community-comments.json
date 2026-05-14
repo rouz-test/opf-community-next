@@ -3138,5 +3138,77 @@
     "archivedBy": null,
     "deletedAt": "2026-05-14T05:26:44.699Z",
     "deletedBy": "author"
+  },
+  {
+    "id": "community-comment-1778742737455",
+    "contentId": "content-1778645949078",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "댓글입니다.",
+    "status": "published",
+    "likeCount": 1,
+    "isLikedByMe": true,
+    "createdAt": "2026-05-14T07:12:17.455Z",
+    "updatedAt": "2026-05-14T07:12:21.274Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-comment-1778742748346",
+    "contentId": "content-1778645949078",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": ""
+    },
+    "content": "익명 댓글입니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-05-14T07:12:28.346Z",
+    "updatedAt": "2026-05-14T07:12:28.346Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-reply-1778742774296",
+    "contentId": "content-1778645949078",
+    "parentId": "community-comment-1778742748346",
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": ""
+    },
+    "content": "대댓글입니다.",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-05-14T07:12:54.296Z",
+    "updatedAt": "2026-05-14T07:12:54.296Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
   }
 ]

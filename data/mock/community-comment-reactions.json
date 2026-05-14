@@ -194,5 +194,12 @@
     "accountId": "account-user-1",
     "type": "like",
     "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1778742741274",
+    "commentId": "community-comment-1778742737455",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T07:12:21.274Z"
   }
 ]
