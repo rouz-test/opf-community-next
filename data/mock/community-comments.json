@@ -3114,5 +3114,29 @@
     "archivedBy": null,
     "deletedAt": null,
     "deletedBy": null
+  },
+  {
+    "id": "community-comment-1778736304869",
+    "contentId": "content-1",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "댓글입니다.",
+    "status": "deleted",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-05-14T05:25:04.868Z",
+    "updatedAt": "2026-05-14T05:26:44.699Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": "2026-05-14T05:26:44.699Z",
+    "deletedBy": "author"
   }
 ]

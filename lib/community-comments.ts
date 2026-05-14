@@ -6,9 +6,11 @@ import type {
   CommunityCommentEntity,
   CommunityContentCommentStats,
 } from '@/types/community-comment';
+import type { CommunityCommentReaction } from '@/types/community-comment-reaction';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
 const COMMUNITY_COMMENTS_PATH = 'data/mock/community-comments.json';
+const COMMUNITY_COMMENT_REACTIONS_PATH = 'data/mock/community-comment-reactions.json';
 
 export const DEFAULT_ADMIN_COMMENT_AUTHOR: CommunityCommentAuthor = {
   type: 'admin',
@@ -29,6 +31,24 @@ export async function readCommunityComments() {
 
 export async function writeCommunityComments(comments: CommunityCommentEntity[]) {
   await writeJsonFile(COMMUNITY_COMMENTS_PATH, comments);
+}
+
+export async function readCommunityCommentReactions() {
+  try {
+    return await readJsonFile<CommunityCommentReaction[]>(COMMUNITY_COMMENT_REACTIONS_PATH);
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : null;
+
+    if (code === 'ENOENT') {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+export async function writeCommunityCommentReactions(reactions: CommunityCommentReaction[]) {
+  await writeJsonFile(COMMUNITY_COMMENT_REACTIONS_PATH, reactions);
 }
 
 export async function readCommunityContents() {
@@ -53,7 +73,16 @@ export function calculateCommunityCommentStats(
 export function buildCommunityCommentThreads(
   comments: CommunityCommentEntity[],
   contentId: string,
+  reactions: CommunityCommentReaction[] = [],
+  accountId = '',
 ): CommunityComment[] {
+  const likedCommentIds = new Set(
+    accountId
+      ? reactions
+          .filter((reaction) => reaction.type === 'like' && reaction.accountId === accountId)
+          .map((reaction) => reaction.commentId)
+      : [],
+  );
   const scopedComments = comments
     .filter((comment) => comment.contentId === contentId)
     .sort(sortByCreatedAtAsc);
@@ -64,6 +93,7 @@ export function buildCommunityCommentThreads(
   for (const comment of scopedComments) {
     nodeMap.set(comment.id, {
       ...comment,
+      isLikedByMe: accountId ? likedCommentIds.has(comment.id) : comment.isLikedByMe,
       replies: [],
       replyCount: 0,
     });

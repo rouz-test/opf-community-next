@@ -25,7 +25,10 @@ import {
   Sparkles,
   RotateCcw,
   X,
+  Check,
 } from 'lucide-react';
+import tagsData from '@/data/mock/tags.json';
+import type { Tag as CommunityTag } from '@/types/tag';
 
 export type CommunityToolbarProps = {
   searchQuery: string;
@@ -106,6 +109,9 @@ export function CommunityToolbar({
   const filterPanelRef = useRef<HTMLDivElement | null>(null);
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
   const mobileFilterModalRef = useRef<HTMLDivElement | null>(null);
+  const mobileTagOptions = (tagsData as CommunityTag[])
+    .filter((tag) => tag.status === 'active' && !tag.isDefault && allTags.includes(tag.name))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 
   useEffect(() => {
     if (!isFilterOpen) return;
@@ -389,54 +395,58 @@ export function CommunityToolbar({
                 </Button>
               </Flex>
 
-              <Box borderTopWidth="1px" borderColor="gray.100" pt="4">
-                <Flex mb="3" align="center" justify="space-between">
-                  <Text fontSize="sm" fontWeight="600" color="gray.700">
-                    태그 선택
+              <Box borderTopWidth="1px" borderColor="gray.100" pt="5">
+                <Flex mb="5" align="center" justify="space-between">
+                  <Text fontSize="14px" fontWeight="700" color="#8C8C8C">
+                    태그
                   </Text>
-                  {selectedTags.length > 0 ? (
-                    <Button
-                      type="button"
-                      onClick={onClearTags}
-                      variant="ghost"
-                      h="auto"
-                      minW="auto"
-                      px="0"
-                      py="0"
-                      fontSize="xs"
-                      fontWeight="600"
-                      color="orange.600"
-                      _hover={{ color: 'orange.700', bg: 'transparent' }}
-                    >
-                      전체 해제
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    onClick={onClearTags}
+                    variant="ghost"
+                    h="auto"
+                    minW="auto"
+                    px="0"
+                    py="0"
+                    color="#A3A3A3"
+                    _hover={{ color: '#6B7280', bg: 'transparent' }}
+                    aria-label="태그 필터 초기화"
+                  >
+                    <Icon as={RotateCcw} boxSize="5" />
+                  </Button>
                 </Flex>
 
-                <HStack align="stretch" flexWrap="wrap" gap="2">
-                  {allTags.map((tag) => {
-                    const selected = selectedTags.includes(tag);
+                <Flex direction="column" gap="18px">
+                  {mobileTagOptions.map((tag) => {
+                    const selected = selectedTags.includes(tag.name);
 
                     return (
                       <Button
-                        key={tag}
+                        key={tag.id}
                         type="button"
-                        onClick={() => onToggleTag(tag)}
-                        rounded="full"
-                        px="2.5"
-                        py="1"
+                        onClick={() => onToggleTag(tag.name)}
                         h="auto"
-                        fontSize="13px"
-                        fontWeight="600"
-                        bg={selected ? 'orange.500' : 'gray.100'}
-                        color={selected ? 'white' : 'gray.700'}
-                        _hover={{ bg: selected ? 'orange.600' : 'gray.200' }}
+                        minH="22px"
+                        w="full"
+                        justifyContent="space-between"
+                        rounded="none"
+                        bg="transparent"
+                        p="0"
+                        color="gray.500"
+                        fontWeight="500"
+                        _hover={{ bg: 'transparent', color: 'gray.700' }}
                       >
-                        #{tag}
+                        <Flex align="center" gap="7px" minW="0">
+                          <Box boxSize="8px" borderRadius="9999px" bg={tag.style.color} flexShrink={0} />
+                          <Text fontSize="14px" lineHeight="1" color={selected ? '#4B5563' : '#8C8C8C'} truncate>
+                            {tag.name}
+                          </Text>
+                        </Flex>
+                        {selected ? <Check size={14} color="#FF6900" strokeWidth={2.2} /> : <Box boxSize="14px" />}
                       </Button>
                     );
                   })}
-                </HStack>
+                </Flex>
               </Box>
             </Box>
           </Flex>

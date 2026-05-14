@@ -4,8 +4,10 @@ import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import {
   calculateCommunityCommentStats,
+  readCommunityCommentReactions,
   readCommunityComments,
   syncCommunityContentCommentStats,
+  writeCommunityCommentReactions,
   writeCommunityComments,
 } from '@/lib/community-comments';
 import type {
@@ -119,7 +121,10 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       | null;
     const actionActor: CommunityCommentActionActor =
       body?.actionActor === 'author' ? 'author' : 'admin';
-    const comments = await readCommunityComments();
+    const [comments, reactions] = await Promise.all([
+      readCommunityComments(),
+      readCommunityCommentReactions(),
+    ]);
     const targetIndex = comments.findIndex((comment) => comment.id === id);
 
     if (targetIndex === -1) {
@@ -139,6 +144,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     };
 
     await writeCommunityComments(nextComments);
+    await writeCommunityCommentReactions(reactions.filter((reaction) => reaction.commentId !== id));
     const syncResult = await syncCommunityContentCommentStats(
       nextComments[targetIndex].contentId,
       nextComments,

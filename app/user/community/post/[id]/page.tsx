@@ -56,6 +56,7 @@ import type { CommunityContent, CommunityContentBody } from '@/types/community-c
 import type {
   CommunityComment,
   CommunityCommentListResponse,
+  CommunityContentCommentStats,
 } from '@/types/community-comment';
 import type { Tag } from '@/types/tag';
 
@@ -575,6 +576,8 @@ export default function CommunityPostDetailPage() {
   const [hideTargetContent, setHideTargetContent] = useState<CommunityContent | null>(null);
   const [isDeletingContent, setIsDeletingContent] = useState(false);
   const [isHidingContent, setIsHidingContent] = useState(false);
+  const [deleteTargetComment, setDeleteTargetComment] = useState<CommunityComment | null>(null);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -609,7 +612,7 @@ export default function CommunityPostDetailPage() {
       setIsCommentsLoading(true);
       setCommentsError(null);
 
-      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}`, {
+      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}&accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
         cache: 'no-store',
       });
       const data = (await response.json().catch(() => null)) as CommunityCommentListResponse | { message?: string } | null;
@@ -704,6 +707,21 @@ export default function CommunityPostDetailPage() {
     await loadComments(content.author.id);
   }, [content, loadComments]);
 
+  const syncContentCommentStats = useCallback((stats: CommunityContentCommentStats) => {
+    setContent((prevContent) => {
+      if (!prevContent) return prevContent;
+
+      return {
+        ...prevContent,
+        stats: {
+          ...prevContent.stats,
+          commentCount: stats.commentCount,
+          replyCount: stats.replyCount,
+        },
+      };
+    });
+  }, []);
+
   const handleTogglePostLike = useCallback(async () => {
     if (!contentId || !content || isLikeSubmitting) return;
 
@@ -734,10 +752,47 @@ export default function CommunityPostDetailPage() {
       });
     } catch (error) {
       console.error('[CommunityPostDetailPage] failed to toggle like:', error);
+      toaster.create({
+        description: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
     } finally {
       setIsLikeSubmitting(false);
     }
   }, [content, contentId, isLikeSubmitting]);
+
+  const handleToggleCommentLike = useCallback(async (comment: CommunityComment) => {
+    try {
+      const method = comment.isLikedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-comments/${comment.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { item?: CommunityComment; liked?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.item) {
+        throw new Error(data?.message || '댓글 좋아요를 처리하지 못했습니다.');
+      }
+
+      await refreshComments();
+      return {
+        ...data.item,
+        isLikedByMe: Boolean(data.liked),
+      };
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '댓글 좋아요를 처리하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+      throw error;
+    }
+  }, [refreshComments]);
 
   const handleRequestEditContent = async () => {
     if (!contentId) return;
@@ -865,7 +920,7 @@ export default function CommunityPostDetailPage() {
       });
 
       const data = (await response.json().catch(() => null)) as
-        | { message?: string; matchedKeywords?: string[] }
+        | { message?: string; matchedKeywords?: string[]; stats?: CommunityContentCommentStats }
         | null;
 
       if (!response.ok) {
@@ -884,6 +939,9 @@ export default function CommunityPostDetailPage() {
 
       setCommentValue('');
       setCommentIdentity(defaultCommunityIdentity);
+      if (data?.stats) {
+        syncContentCommentStats(data.stats);
+      }
       await refreshComments();
     } catch (error) {
       window.alert(error instanceof Error ? error.message : '댓글을 등록하지 못했습니다.');
@@ -912,7 +970,7 @@ export default function CommunityPostDetailPage() {
       });
 
       const data = (await response.json().catch(() => null)) as
-        | { message?: string; matchedKeywords?: string[] }
+        | { message?: string; matchedKeywords?: string[]; stats?: CommunityContentCommentStats }
         | null;
 
       if (!response.ok) {
@@ -933,6 +991,9 @@ export default function CommunityPostDetailPage() {
       setReplyTargetName(null);
       setReplyValue('');
       setReplyIdentity(defaultCommunityIdentity);
+      if (data?.stats) {
+        syncContentCommentStats(data.stats);
+      }
       await refreshComments();
     } catch (error) {
       window.alert(error instanceof Error ? error.message : '답글을 등록하지 못했습니다.');
@@ -976,24 +1037,53 @@ export default function CommunityPostDetailPage() {
     return true;
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    const response = await fetch(`/api/mock/community-comments/${commentId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        actionActor: 'author',
-      }),
-    });
+  const handleRequestDeleteComment = (comment: CommunityComment) => {
+    setDeleteTargetComment(comment);
+  };
 
-    const data = (await response.json().catch(() => null)) as { message?: string } | null;
+  const handleConfirmDeleteComment = async () => {
+    if (!deleteTargetComment || isDeletingComment) return;
 
-    if (!response.ok) {
-      throw new Error(parseErrorMessage(data, '댓글을 삭제하지 못했습니다.'));
+    try {
+      setIsDeletingComment(true);
+
+      const response = await fetch(`/api/mock/community-comments/${deleteTargetComment.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          actionActor: 'author',
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { message?: string; stats?: CommunityContentCommentStats }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(parseErrorMessage(data, '댓글을 삭제하지 못했습니다.'));
+      }
+
+      setDeleteTargetComment(null);
+      if (data?.stats) {
+        syncContentCommentStats(data.stats);
+      }
+      await refreshComments();
+      toaster.create({
+        description: '댓글이 삭제되었습니다.',
+        type: 'success',
+        duration: 2000,
+      });
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '댓글을 삭제하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsDeletingComment(false);
     }
-
-    await refreshComments();
   };
 
   const handleArchiveComment = async () => {
@@ -1400,7 +1490,8 @@ export default function CommunityPostDetailPage() {
                         onReplySubmit={handleCreateReply}
                         onUpdateComment={handleUpdateComment}
                         onArchiveToggle={handleArchiveComment}
-                        onDeleteComment={handleDeleteComment}
+                        onDeleteComment={handleRequestDeleteComment}
+                        onToggleLike={handleToggleCommentLike}
                       />
                     ))}
                   </Flex>
@@ -1499,6 +1590,16 @@ export default function CommunityPostDetailPage() {
         isLoading={isHidingContent}
         onCancel={() => setHideTargetContent(null)}
         onConfirm={handleConfirmHideContent}
+      />
+
+      <ActionConfirmModal
+        isOpen={Boolean(deleteTargetComment)}
+        title="댓글을 삭제하시겠습니까?"
+        description="삭제한 댓글은 복구할 수 없습니다."
+        confirmLabel="삭제"
+        isLoading={isDeletingComment}
+        onCancel={() => setDeleteTargetComment(null)}
+        onConfirm={handleConfirmDeleteComment}
       />
     </Box>
   );

@@ -1,0 +1,198 @@
+[
+  {
+    "id": "comment-like-1001",
+    "commentId": "community-comment-1001",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1006",
+    "commentId": "community-reply-1006",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1012",
+    "commentId": "community-comment-1012",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1017",
+    "commentId": "community-comment-1017",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1023",
+    "commentId": "community-reply-1023",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1027",
+    "commentId": "community-comment-1027",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1032",
+    "commentId": "community-comment-1032",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1035",
+    "commentId": "community-reply-1035",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1038",
+    "commentId": "community-comment-1038",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1044",
+    "commentId": "community-comment-1044",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1049",
+    "commentId": "community-comment-1049",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1054",
+    "commentId": "community-reply-1054",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1058",
+    "commentId": "community-comment-1058",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1063",
+    "commentId": "community-comment-1063",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1071",
+    "commentId": "community-comment-1071",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1077",
+    "commentId": "community-reply-1077",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1",
+    "commentId": "community-comment-1",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-3",
+    "commentId": "community-comment-3",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1081",
+    "commentId": "community-comment-1081",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1086",
+    "commentId": "community-comment-1086",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1089",
+    "commentId": "community-reply-1089",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-7",
+    "commentId": "community-comment-7",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1094",
+    "commentId": "community-comment-1094",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1097",
+    "commentId": "community-reply-1097",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1099",
+    "commentId": "community-comment-1099",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1104",
+    "commentId": "community-comment-1104",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1109",
+    "commentId": "community-comment-1109",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  },
+  {
+    "id": "comment-like-1114",
+    "commentId": "community-reply-1114",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-05-14T00:00:00.000Z"
+  }
+]

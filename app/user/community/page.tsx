@@ -23,12 +23,19 @@ import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal
 import { CommunityToolbar } from '@/app/user/components/community/CommunityToolbar';
 import { CommunityWriteAction } from '@/app/user/components/community/CommunityWriteAction';
 import { toaster } from '@/app/user/components/ui/toaster';
+import {
+  DEFAULT_COMMUNITY_FILTER_PREFERENCES,
+  normalizeCommunityFilterPreferences,
+  type CommunitySortMode,
+  type CommunityViewMode,
+  type UserCommunityPreferences,
+} from '@/app/user/lib/community-filter-preferences';
 
 type CommunityPageState = {
   selectedTags: string[];
   searchQuery: string;
   showFollowingOnly: boolean;
-  sortBy: 'recommended' | 'latest';
+  sortBy: CommunitySortMode;
 };
 
 const POSTS_PAGE_SIZE = 20;
@@ -98,11 +105,11 @@ const formatRelativeDate = (dateString?: string) => {
 };
 
 export default function CommunityPage() {
-  const [viewMode, setViewMode] = useState<'feed' | 'board'>('feed');
-  const [sortBy, setSortBy] = useState<'recommended' | 'latest'>('recommended');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<CommunityViewMode>(DEFAULT_COMMUNITY_FILTER_PREFERENCES.viewMode);
+  const [sortBy, setSortBy] = useState<CommunitySortMode>(DEFAULT_COMMUNITY_FILTER_PREFERENCES.sortBy);
+  const [selectedTags, setSelectedTags] = useState<string[]>(DEFAULT_COMMUNITY_FILTER_PREFERENCES.selectedTags);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [showFollowingOnly, setShowFollowingOnly] = useState(DEFAULT_COMMUNITY_FILTER_PREFERENCES.showFollowingOnly);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
@@ -116,6 +123,7 @@ export default function CommunityPage() {
   const [hideTargetPost, setHideTargetPost] = useState<CommunityPost | null>(null);
   const [isHidingPost, setIsHidingPost] = useState(false);
   const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
+  const [isPreferencesLoaded, setIsPreferencesLoaded] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
@@ -194,6 +202,76 @@ export default function CommunityPage() {
   const toggleMobileTagFilterOpen = () => {
     setIsMobileTagFilterOpen((prev) => !prev);
   };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadPreferences = async () => {
+      try {
+        const response = await fetch(`/api/mock/user-preferences?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json().catch(() => null)) as UserCommunityPreferences | { message?: string } | null;
+
+        if (!response.ok || !data || !('community' in data)) {
+          throw new Error((data as { message?: string } | null)?.message || '필터 설정을 불러오지 못했습니다.');
+        }
+
+        if (isCancelled) return;
+
+        const preferences = normalizeCommunityFilterPreferences(data.community);
+        setViewMode(preferences.viewMode);
+        setSortBy(preferences.sortBy);
+        setShowFollowingOnly(preferences.showFollowingOnly);
+        setSelectedTags(preferences.selectedTags);
+        setRenderedPostCount(POSTS_PAGE_SIZE);
+      } catch (error) {
+        console.error('[CommunityPage] failed to load filter preferences:', error);
+      } finally {
+        if (!isCancelled) {
+          setIsPreferencesLoaded(true);
+        }
+      }
+    };
+
+    void loadPreferences();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPreferencesLoaded) return;
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      void fetch(`/api/mock/user-preferences?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          accountId: COMMUNITY_CURRENT_USER.accountId,
+          community: {
+            viewMode,
+            sortBy,
+            showFollowingOnly,
+            selectedTags,
+          },
+        }),
+      }).catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('[CommunityPage] failed to save filter preferences:', error);
+      });
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [isPreferencesLoaded, selectedTags, showFollowingOnly, sortBy, viewMode]);
 
   const handleCreatedContent = (createdContent: CommunityContent) => {
     const nextPost = mapCommunityContentToPost(createdContent);

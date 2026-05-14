@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Button, Flex, Portal, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Text } from '@chakra-ui/react';
 import { Archive, CornerDownRight, Heart, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,7 +25,8 @@ type CommentItemProps = {
   onReplySubmit: (comment: CommunityComment) => Promise<void>;
   onUpdateComment: (commentId: string, content: string) => Promise<boolean>;
   onArchiveToggle: (commentId: string, nextStatus: 'published' | 'archived') => Promise<void>;
-  onDeleteComment: (commentId: string) => Promise<void>;
+  onDeleteComment: (comment: CommunityComment) => void;
+  onToggleLike?: (comment: CommunityComment) => Promise<CommunityComment | void>;
 };
 
 function formatCommentDate(dateString: string) {
@@ -85,17 +86,17 @@ export default function CommentItem({
   onUpdateComment,
   onArchiveToggle,
   onDeleteComment,
+  onToggleLike,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(comment.content);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isLikeSubmitting, setIsLikeSubmitting] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isLikedByMe, setIsLikedByMe] = useState(comment.isLikedByMe);
   const [likeCount, setLikeCount] = useState(comment.likeCount);
   const actionRootRef = useRef<HTMLDivElement | null>(null);
-  const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   const isDeleted = comment.status === 'deleted';
   const isArchived = comment.status === 'archived';
@@ -113,7 +114,6 @@ export default function CommentItem({
 
       if (!(target instanceof Node)) return;
       if (actionRootRef.current?.contains(target)) return;
-      if (actionPanelRef.current?.contains(target)) return;
 
       setIsActionMenuOpen(false);
     };
@@ -152,19 +152,6 @@ export default function CommentItem({
     }
   };
 
-  const handleDelete = async () => {
-    const confirmed = window.confirm('이 댓글을 삭제하시겠습니까?');
-    if (!confirmed) return;
-    if (isDeleting) return;
-    try {
-      setIsDeleting(true);
-      await onDeleteComment(comment.id);
-      setIsActionMenuOpen(false);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const handleArchiveToggle = async () => {
     if (isArchiving) return;
 
@@ -177,11 +164,36 @@ export default function CommentItem({
     }
   };
 
-  const handleToggleLike = () => {
+  const handleToggleLike = async () => {
+    if (isLikeSubmitting) return;
+
     const nextIsLiked = !isLikedByMe;
+    const previousIsLiked = isLikedByMe;
+    const previousLikeCount = likeCount;
 
     setIsLikedByMe(nextIsLiked);
     setLikeCount((current) => Math.max(0, current + (nextIsLiked ? 1 : -1)));
+
+    if (!onToggleLike) return;
+
+    try {
+      setIsLikeSubmitting(true);
+      const nextComment = await onToggleLike({
+        ...comment,
+        isLikedByMe: previousIsLiked,
+        likeCount: previousLikeCount,
+      });
+
+      if (nextComment) {
+        setIsLikedByMe(nextComment.isLikedByMe);
+        setLikeCount(nextComment.likeCount);
+      }
+    } catch {
+      setIsLikedByMe(previousIsLiked);
+      setLikeCount(previousLikeCount);
+    } finally {
+      setIsLikeSubmitting(false);
+    }
   };
 
   return (
@@ -270,35 +282,36 @@ export default function CommentItem({
                     </Button>
 
                     {isActionMenuOpen ? (
-                      <Portal>
-                        <Box
-                          ref={actionPanelRef}
-                          position="fixed"
-                          top={`${actionRootRef.current?.getBoundingClientRect().bottom ?? 0}px`}
-                          left={`${Math.max(8, (actionRootRef.current?.getBoundingClientRect().right ?? 0) - 132)}px`}
-                          zIndex="popover"
-                          minW="132px"
-                          borderWidth="1px"
-                          borderColor="#E5E7EB"
-                          borderRadius="12px"
-                          bg="#FFFFFF"
-                          boxShadow="0 12px 24px rgba(15, 23, 42, 0.12)"
-                          py="6px"
-                        >
+                      <Box
+                        position="absolute"
+                        top="30px"
+                        right="0"
+                        zIndex="20"
+                        w="176px"
+                        overflow="hidden"
+                        rounded="xl"
+                        borderWidth="1px"
+                        borderColor="gray.200"
+                        bg="white"
+                        py="1.5"
+                        boxShadow="lg"
+                      >
                           {canArchive ? (
                             <Button
                               type="button"
                               variant="ghost"
                               justifyContent="flex-start"
-                              w="100%"
-                              h="34px"
-                              px="12px"
-                              borderRadius="0"
-                              fontSize="13px"
-                              fontWeight="600"
-                              color="#374151"
+                              gap="2"
+                              w="full"
+                              rounded="none"
+                              bg="transparent"
+                              px="3"
+                              py="2"
+                              fontSize="sm"
+                              fontWeight="400"
+                              color="gray.700"
                               disabled={isArchiving}
-                              _hover={{ bg: '#F9FAFB' }}
+                              _hover={{ bg: 'gray.50' }}
                               onClick={() => {
                                 void handleArchiveToggle();
                               }}
@@ -315,14 +328,16 @@ export default function CommentItem({
                               type="button"
                               variant="ghost"
                               justifyContent="flex-start"
-                              w="100%"
-                              h="34px"
-                              px="12px"
-                              borderRadius="0"
-                              fontSize="13px"
-                              fontWeight="600"
-                              color="#374151"
-                              _hover={{ bg: '#F9FAFB' }}
+                              gap="2"
+                              w="full"
+                              rounded="none"
+                              bg="transparent"
+                              px="3"
+                              py="2"
+                              fontSize="sm"
+                              fontWeight="400"
+                              color="gray.700"
+                              _hover={{ bg: 'gray.50' }}
                               onClick={() => {
                                 setEditValue(comment.content);
                                 setIsEditing(true);
@@ -340,17 +355,19 @@ export default function CommentItem({
                             type="button"
                             variant="ghost"
                             justifyContent="flex-start"
-                            w="100%"
-                            h="34px"
-                            px="12px"
-                            borderRadius="0"
-                            fontSize="13px"
-                            fontWeight="600"
+                            gap="2"
+                            w="full"
+                            rounded="none"
+                            bg="transparent"
+                            px="3"
+                            py="2"
+                            fontSize="sm"
+                            fontWeight="400"
                             color="#DC2626"
-                            disabled={isDeleting}
                             _hover={{ bg: '#FEF2F2' }}
                             onClick={() => {
-                              void handleDelete();
+                              setIsActionMenuOpen(false);
+                              onDeleteComment(comment);
                             }}
                           >
                             <Flex align="center" gap="8px">
@@ -359,7 +376,6 @@ export default function CommentItem({
                             </Flex>
                           </Button>
                         </Box>
-                      </Portal>
                     ) : null}
                   </Box>
                 ) : null
@@ -410,7 +426,10 @@ export default function CommentItem({
                   fontSize="12px"
                   fontWeight="500"
                   _hover={{ bg: 'transparent', color: '#374151' }}
-                  onClick={handleToggleLike}
+                  disabled={isLikeSubmitting}
+                  onClick={() => {
+                    void handleToggleLike();
+                  }}
                 >
                   <Flex align="center" gap="4px">
                     <Heart
@@ -491,6 +510,7 @@ export default function CommentItem({
                   onUpdateComment={onUpdateComment}
                   onArchiveToggle={onArchiveToggle}
                   onDeleteComment={onDeleteComment}
+                  onToggleLike={onToggleLike}
                 />
               ))}
             </Flex>

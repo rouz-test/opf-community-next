@@ -6,6 +6,7 @@ import {
   buildCommunityCommentThreads,
   calculateCommunityCommentStats,
   DEFAULT_ADMIN_COMMENT_AUTHOR,
+  readCommunityCommentReactions,
   readCommunityComments,
   readCommunityContents,
   syncCommunityContentCommentStats,
@@ -26,15 +27,19 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export async function GET(request: NextRequest) {
   try {
     const contentId = request.nextUrl.searchParams.get('contentId')?.trim();
+    const accountId = request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
     if (!contentId) {
       return NextResponse.json({ message: '콘텐츠 ID는 필수입니다.' }, { status: 400 });
     }
 
-    const comments = await readCommunityComments();
+    const [comments, reactions] = await Promise.all([
+      readCommunityComments(),
+      readCommunityCommentReactions(),
+    ]);
 
     return NextResponse.json(
       {
-        items: buildCommunityCommentThreads(comments, contentId),
+        items: buildCommunityCommentThreads(comments, contentId, reactions, accountId),
         stats: calculateCommunityCommentStats(comments, contentId),
       },
       { status: 200 },

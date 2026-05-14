@@ -1,0 +1,12 @@
+[
+  {
+    "accountId": "account-user-1",
+    "community": {
+      "viewMode": "feed",
+      "sortBy": "recommended",
+      "showFollowingOnly": false,
+      "selectedTags": []
+    },
+    "updatedAt": "2026-05-14T06:57:09.427Z"
+  }
+]
