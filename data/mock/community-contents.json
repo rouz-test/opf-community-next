@@ -907,7 +907,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:25:34.227Z",
-    "updatedAt": "2026-05-12T06:53:50.422Z",
+    "updatedAt": "2026-05-15T04:02:04.678Z",
     "publishedAt": "2026-04-28T07:41:01.449Z"
   },
   {
@@ -956,12 +956,12 @@
     "stats": {
       "viewCount": 0,
       "likeCount": 0,
-      "saveCount": 0,
+      "saveCount": 1,
       "commentCount": 0,
       "replyCount": 0
     },
     "createdAt": "2026-04-28T06:17:55.788Z",
-    "updatedAt": "2026-05-12T06:53:50.422Z",
+    "updatedAt": "2026-05-15T04:02:45.749Z",
     "publishedAt": "2026-04-28T07:41:05.578Z"
   },
   {
@@ -1094,13 +1094,13 @@
     },
     "stats": {
       "viewCount": 0,
-      "likeCount": 1,
-      "saveCount": 0,
+      "likeCount": 0,
+      "saveCount": 1,
       "commentCount": 5,
       "replyCount": 1
     },
     "createdAt": "2026-04-24T08:12:48.845Z",
-    "updatedAt": "2026-05-13T05:10:15.676Z",
+    "updatedAt": "2026-05-15T04:02:37.853Z",
     "publishedAt": "2026-04-24T08:12:48.845Z"
   },
   {
@@ -1730,13 +1730,13 @@
     },
     "stats": {
       "viewCount": 0,
-      "likeCount": 1,
+      "likeCount": 0,
       "saveCount": 0,
       "commentCount": 0,
       "replyCount": 0
     },
     "createdAt": "2026-04-23T08:05:34.843Z",
-    "updatedAt": "2026-05-13T05:14:19.977Z",
+    "updatedAt": "2026-05-15T04:03:01.924Z",
     "publishedAt": "2026-04-23T08:05:34.843Z"
   },
   {
@@ -1784,7 +1784,7 @@
       "replyCount": 1
     },
     "createdAt": "2026-04-23T10:00:00.000Z",
-    "updatedAt": "2026-05-13T05:09:52.000Z",
+    "updatedAt": "2026-05-15T04:02:25.961Z",
     "publishedAt": "2026-04-23T10:00:00.000Z"
   },
   {
@@ -1924,7 +1924,7 @@
       "replyCount": 4
     },
     "createdAt": "2026-04-18T08:00:00Z",
-    "updatedAt": "2026-05-13T05:09:59.080Z",
+    "updatedAt": "2026-05-15T04:02:13.798Z",
     "publishedAt": "2026-04-18T08:00:00Z"
   },
   {
@@ -2288,13 +2288,13 @@
     },
     "stats": {
       "viewCount": 392,
-      "likeCount": 48,
+      "likeCount": 47,
       "saveCount": 15,
       "commentCount": 13,
       "replyCount": 5
     },
     "createdAt": "2026-04-11T18:25:00Z",
-    "updatedAt": "2026-05-13T05:10:06.583Z",
+    "updatedAt": "2026-05-15T02:19:07.530Z",
     "publishedAt": "2026-04-11T18:25:00Z"
   }
 ]

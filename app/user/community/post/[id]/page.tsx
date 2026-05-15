@@ -564,6 +564,7 @@ export default function CommunityPostDetailPage() {
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [isReplySubmitting, setIsReplySubmitting] = useState(false);
   const [isLikeSubmitting, setIsLikeSubmitting] = useState(false);
+  const [isSaveSubmitting, setIsSaveSubmitting] = useState(false);
   const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
   const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
@@ -747,6 +748,7 @@ export default function CommunityPostDetailPage() {
       setContent({
         ...data.content,
         viewerState: {
+          ...content.viewerState,
           isLikedByMe: Boolean(data.liked),
         },
       });
@@ -761,6 +763,47 @@ export default function CommunityPostDetailPage() {
       setIsLikeSubmitting(false);
     }
   }, [content, contentId, isLikeSubmitting]);
+
+  const handleTogglePostSave = useCallback(async () => {
+    if (!contentId || !content || isSaveSubmitting) return;
+
+    try {
+      setIsSaveSubmitting(true);
+
+      const isSavedByMe = Boolean(content.viewerState?.isSavedByMe);
+      const response = await fetch(`/api/mock/community-contents/${contentId}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method: isSavedByMe ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; saved?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(parseErrorMessage(data, '저장을 처리하지 못했습니다.'));
+      }
+
+      setContent({
+        ...data.content,
+        viewerState: {
+          ...content.viewerState,
+          isSavedByMe: Boolean(data.saved),
+        },
+      });
+    } catch (error) {
+      console.error('[CommunityPostDetailPage] failed to toggle save:', error);
+      toaster.create({
+        description: error instanceof Error ? error.message : '저장을 처리하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    } finally {
+      setIsSaveSubmitting(false);
+    }
+  }, [content, contentId, isSaveSubmitting]);
 
   const handleToggleCommentLike = useCallback(async (comment: CommunityComment) => {
     try {
@@ -1389,10 +1432,27 @@ export default function CommunityPostDetailPage() {
                       {getCommentTotalCount(content.stats.commentCount, content.stats.replyCount)}
                     </Text>
                   </Flex>
-                  <Flex align="center" gap="6px">
-                    <Bookmark size={16} />
-                    <Text fontSize="13px" fontWeight="600">{content.stats.saveCount}</Text>
-                  </Flex>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      void handleTogglePostSave();
+                    }}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color={content.viewerState?.isSavedByMe ? '#F97316' : '#6B7280'}
+                    _hover={{ bg: 'transparent', color: '#F97316' }}
+                    disabled={isSaveSubmitting}
+                  >
+                    <Flex align="center" gap="6px">
+                      <Bookmark
+                        size={16}
+                        fill={content.viewerState?.isSavedByMe ? 'currentColor' : 'none'}
+                      />
+                      <Text fontSize="13px" fontWeight="600">{content.stats.saveCount}</Text>
+                    </Flex>
+                  </Button>
                 </Flex>
               </Flex>
             </Box>

@@ -35,6 +35,7 @@ type FeedPostCardProps = {
   formatDate: (dateString?: string) => string;
   searchQuery: string;
   onToggleLike?: (post: CommunityPost) => void;
+  onToggleSave?: (post: CommunityPost) => void;
   onRequestDelete?: (post: CommunityPost) => void;
   onRequestEdit?: (post: CommunityPost) => void;
   onRequestHide?: (post: CommunityPost) => void;
@@ -85,6 +86,7 @@ export function FeedPostCard({
   formatDate,
   searchQuery,
   onToggleLike,
+  onToggleSave,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
@@ -103,7 +105,7 @@ export function FeedPostCard({
   const isOwnPost = post.author.accountId === 'account-user-1';
   const router = useRouter();
   const commentCount = post.commentCount ?? 0;
-  const [isPostBookmarked, setIsPostBookmarked] = useState(false);
+  const [fallbackIsSaved, setFallbackIsSaved] = useState(post.isSavedByMe);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
   const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);
@@ -128,6 +130,7 @@ export function FeedPostCard({
   const truncatedContent = truncateText(post.content, maxContentLength);
   const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
   const displayLikeCount = onToggleLike ? post.likes : fallbackLikeCount;
+  const displayIsSaved = onToggleSave ? post.isSavedByMe : fallbackIsSaved;
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -387,18 +390,23 @@ export function FeedPostCard({
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setIsPostBookmarked((prev) => !prev);
+                if (onToggleSave) {
+                  onToggleSave(post);
+                  return;
+                }
+
+                setFallbackIsSaved((prev) => !prev);
               }}
               minW="auto"
               h="auto"
               bg="transparent"
               p="0"
-              color={isPostBookmarked ? 'orange.500' : 'gray.500'}
+              color={displayIsSaved ? 'orange.500' : 'gray.500'}
               _hover={{ bg: 'transparent', color: 'orange.500' }}
               aria-label="북마크"
               title="북마크 표시"
             >
-              <Icon as={Bookmark} boxSize="20px" fill={isPostBookmarked ? 'currentColor' : 'none'} />
+              <Icon as={Bookmark} boxSize="20px" fill={displayIsSaved ? 'currentColor' : 'none'} />
             </Button>
           </HStack>
         </Flex>

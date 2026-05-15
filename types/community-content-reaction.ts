@@ -1,4 +1,4 @@
-export type CommunityContentReactionType = 'like';
+export type CommunityContentReactionType = 'like' | 'save';
 
 export type CommunityContentReaction = {
   id: string;

@@ -133,7 +133,7 @@ function ProfileSummaryCard({
 export default function MyPageCommunityPage() {
   const router = useRouter();
   const [communityViewMode, setCommunityViewMode] = useState<'feed' | 'board'>('feed');
-  const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments' | 'hidden'>('posts');
+  const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments' | 'liked' | 'saved' | 'hidden'>('posts');
   const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
@@ -270,6 +270,10 @@ export default function MyPageCommunityPage() {
   const baseCommunityPosts =
     activeCommunityTab === 'posts'
       ? mypagePosts
+      : activeCommunityTab === 'liked'
+        ? allPublishedPosts.filter((post) => post.isLikedByMe)
+      : activeCommunityTab === 'saved'
+        ? allPublishedPosts.filter((post) => post.isSavedByMe)
       : activeCommunityTab === 'hidden'
         ? hiddenPosts
         : mypageCommentedPosts;
@@ -336,6 +340,7 @@ export default function MyPageCommunityPage() {
       const nextPost = {
         ...mapCommunityContentToPost(data.content),
         isLikedByMe: Boolean(data.liked),
+        isSavedByMe: post.isSavedByMe,
       };
 
       setAllPublishedPosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
@@ -344,6 +349,41 @@ export default function MyPageCommunityPage() {
     } catch (error) {
       toaster.create({
         title: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleToggleSavePost = async (post: CommunityPost) => {
+    try {
+      const method = post.isSavedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; saved?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(data?.message || '저장을 처리하지 못했습니다.');
+      }
+
+      const nextPost = {
+        ...mapCommunityContentToPost(data.content),
+        isLikedByMe: post.isLikedByMe,
+        isSavedByMe: Boolean(data.saved),
+      };
+
+      setAllPublishedPosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+      setMypagePosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+      setHiddenPosts((prev) => prev.map((item) => (item.id === nextPost.id ? nextPost : item)));
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '저장을 처리하지 못했습니다.',
         type: 'error',
       });
     }
@@ -583,11 +623,15 @@ export default function MyPageCommunityPage() {
           {['게시글', '댓글', '좋아요', '저장', '숨김'].map((tab, index) => {
             const isPostsTab = index === 0;
             const isCommentsTab = index === 1;
+            const isLikedTab = index === 2;
+            const isSavedTab = index === 3;
             const isHiddenTab = index === 4;
-            const isClickable = isPostsTab || isCommentsTab || isHiddenTab;
+            const isClickable = isPostsTab || isCommentsTab || isLikedTab || isSavedTab || isHiddenTab;
             const isActive =
               (isPostsTab && activeCommunityTab === 'posts') ||
               (isCommentsTab && activeCommunityTab === 'comments') ||
+              (isLikedTab && activeCommunityTab === 'liked') ||
+              (isSavedTab && activeCommunityTab === 'saved') ||
               (isHiddenTab && activeCommunityTab === 'hidden');
 
             return (
@@ -611,6 +655,10 @@ export default function MyPageCommunityPage() {
                     ? () => setActiveCommunityTab('posts')
                     : isCommentsTab
                       ? () => setActiveCommunityTab('comments')
+                      : isLikedTab
+                        ? () => setActiveCommunityTab('liked')
+                      : isSavedTab
+                        ? () => setActiveCommunityTab('saved')
                       : isHiddenTab
                         ? () => setActiveCommunityTab('hidden')
                       : undefined
@@ -757,6 +805,10 @@ export default function MyPageCommunityPage() {
             <Text fontSize="14px" color="#6B7280">
               {activeCommunityTab === 'posts'
                 ? '작성한 게시글이 아직 없습니다.'
+                : activeCommunityTab === 'liked'
+                  ? '좋아요를 누른 게시글이 아직 없습니다.'
+                : activeCommunityTab === 'saved'
+                  ? '저장한 게시글이 아직 없습니다.'
                 : activeCommunityTab === 'hidden'
                   ? '숨김 처리한 게시글이 아직 없습니다.'
                   : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
@@ -775,6 +827,7 @@ export default function MyPageCommunityPage() {
               onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
               onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
               onToggleLike={handleToggleLikePost}
+              onToggleSave={handleToggleSavePost}
               ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
             />
           ))
@@ -791,6 +844,7 @@ export default function MyPageCommunityPage() {
               onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
               onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
               onToggleLike={handleToggleLikePost}
+              onToggleSave={handleToggleSavePost}
               ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
             />
           ))

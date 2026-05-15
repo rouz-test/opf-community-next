@@ -18,12 +18,14 @@ type PostAction = (post: CommunityPost) => void | Promise<void>;
 function HighlightPostCard({
   post,
   onToggleLike,
+  onToggleSave,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
 }: {
   post: CommunityPost;
   onToggleLike?: PostAction;
+  onToggleSave?: PostAction;
   onRequestDelete?: PostAction;
   onRequestEdit?: PostAction;
   onRequestHide?: PostAction;
@@ -35,6 +37,7 @@ function HighlightPostCard({
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
   const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);
+  const [fallbackIsSaved, setFallbackIsSaved] = useState(post.isSavedByMe);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
   const resolvedTags = useMemo(() => {
     const sourceNames = post.tags ?? [];
@@ -46,6 +49,7 @@ function HighlightPostCard({
   }, [post.tags]);
   const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
   const displayLikeCount = onToggleLike ? post.likes : fallbackLikeCount;
+  const displayIsSaved = onToggleSave ? post.isSavedByMe : fallbackIsSaved;
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -265,7 +269,29 @@ function HighlightPostCard({
 
           <HStack gap="4">
             <Icon as={Share2} boxSize="20px" />
-            <Icon as={Bookmark} boxSize="20px" />
+            <Button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (onToggleSave) {
+                  onToggleSave(post);
+                  return;
+                }
+
+                setFallbackIsSaved((prev) => !prev);
+              }}
+              minW="auto"
+              h="auto"
+              bg="transparent"
+              p="0"
+              color={displayIsSaved ? 'orange.500' : 'gray.500'}
+              _hover={{ bg: 'transparent', color: 'orange.500' }}
+              aria-label="북마크"
+              title="북마크 표시"
+            >
+              <Icon as={Bookmark} boxSize="20px" fill={displayIsSaved ? 'currentColor' : 'none'} />
+            </Button>
           </HStack>
         </Flex>
       </Box>
@@ -276,12 +302,14 @@ function HighlightPostCard({
 export function HighlightCarousel({
   posts,
   onToggleLike,
+  onToggleSave,
   onRequestDelete,
   onRequestEdit,
   onRequestHide,
 }: {
   posts: CommunityPost[];
   onToggleLike?: PostAction;
+  onToggleSave?: PostAction;
   onRequestDelete?: PostAction;
   onRequestEdit?: PostAction;
   onRequestHide?: PostAction;
@@ -364,6 +392,7 @@ export function HighlightCarousel({
                     key={post.id}
                     post={post}
                     onToggleLike={onToggleLike}
+                    onToggleSave={onToggleSave}
                     onRequestDelete={onRequestDelete}
                     onRequestEdit={onRequestEdit}
                     onRequestHide={onRequestHide}

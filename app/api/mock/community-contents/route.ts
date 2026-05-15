@@ -246,6 +246,12 @@ export async function GET(request: NextRequest) {
                 reaction.contentId === item.id &&
                 reaction.accountId === viewerAccountId,
             ),
+            isSavedByMe: reactions.some(
+              (reaction) =>
+                reaction.type === 'save' &&
+                reaction.contentId === item.id &&
+                reaction.accountId === viewerAccountId,
+            ),
           }
         : item.viewerState,
     }));

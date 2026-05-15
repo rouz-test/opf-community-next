@@ -114,6 +114,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
                   reaction.contentId === content.id &&
                   reaction.accountId === viewerAccountId,
               ),
+              isSavedByMe: reactions.some(
+                (reaction) =>
+                  reaction.type === 'save' &&
+                  reaction.contentId === content.id &&
+                  reaction.accountId === viewerAccountId,
+              ),
             }
           : content.viewerState,
       },

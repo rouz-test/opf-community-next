@@ -60,6 +60,7 @@ export type CommunityContent = {
   publishedAt: string | null;
   viewerState?: {
     isLikedByMe?: boolean;
+    isSavedByMe?: boolean;
   };
 };
 

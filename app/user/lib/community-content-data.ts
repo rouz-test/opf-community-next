@@ -50,8 +50,10 @@ export interface CommunityPost {
   updatedAt?: string;
   views: number;
   likes: number;
+  saves: number;
   commentCount: number;
   isLikedByMe: boolean;
+  isSavedByMe: boolean;
   tags?: string[];
   images?: string[];
   isNotice?: boolean;
@@ -287,6 +289,15 @@ function isLikedByCurrentUser(contentId: string) {
   );
 }
 
+function isSavedByCurrentUser(contentId: string) {
+  return contentReactions.some(
+    (reaction) =>
+      reaction.type === 'save' &&
+      reaction.contentId === contentId &&
+      reaction.accountId === COMMUNITY_CURRENT_USER.accountId,
+  );
+}
+
 export function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
   const resolvedTags = resolveTags(content.tagIds, tags).map((tag) => tag.name);
   const mappedType = content.flags.isNotice ? 'notice' : 'community';
@@ -302,8 +313,10 @@ export function mapCommunityContentToPost(content: CommunityContent): CommunityP
     updatedAt: content.updatedAt,
     views: content.stats.viewCount,
     likes: content.stats.likeCount,
+    saves: content.stats.saveCount,
     commentCount: content.stats.commentCount + content.stats.replyCount,
     isLikedByMe: content.viewerState?.isLikedByMe ?? isLikedByCurrentUser(content.id),
+    isSavedByMe: content.viewerState?.isSavedByMe ?? isSavedByCurrentUser(content.id),
     tags: resolvedTags,
     images: extractImageSources(content.content),
     isNotice: content.flags.isNotice,

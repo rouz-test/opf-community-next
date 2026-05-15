@@ -326,6 +326,7 @@ export default function CommunityPage() {
       const nextPost = {
         ...mapCommunityContentToPost(data.content),
         isLikedByMe: Boolean(data.liked),
+        isSavedByMe: post.isSavedByMe,
       };
 
       setCreatedPosts((prev) =>
@@ -341,6 +342,49 @@ export default function CommunityPage() {
     } catch (error) {
       toaster.create({
         description: error instanceof Error ? error.message : '좋아요를 처리하지 못했습니다.',
+        type: 'error',
+        duration: 2000,
+      });
+    }
+  };
+
+  const handleToggleSavePost = async (post: CommunityPost) => {
+    try {
+      const method = post.isSavedByMe ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { content?: CommunityContent; saved?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !data?.content) {
+        throw new Error(data?.message || '저장을 처리하지 못했습니다.');
+      }
+
+      const nextPost = {
+        ...mapCommunityContentToPost(data.content),
+        isLikedByMe: post.isLikedByMe,
+        isSavedByMe: Boolean(data.saved),
+      };
+
+      setCreatedPosts((prev) =>
+        prev.some((item) => item.id === nextPost.id)
+          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
+          : prev,
+      );
+      setUpdatedPosts((prev) =>
+        prev.some((item) => item.id === nextPost.id)
+          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
+          : [nextPost, ...prev.filter((item) => item.id !== nextPost.id)],
+      );
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : '저장을 처리하지 못했습니다.',
         type: 'error',
         duration: 2000,
       });
@@ -519,6 +563,7 @@ export default function CommunityPage() {
                   <HighlightCarousel
                     posts={highlightPosts}
                     onToggleLike={handleToggleLikePost}
+                    onToggleSave={handleToggleSavePost}
                     onRequestDelete={handleRequestDeletePost}
                     onRequestEdit={handleRequestEditPost}
                     onRequestHide={handleRequestHidePost}
@@ -565,6 +610,7 @@ export default function CommunityPage() {
                         formatDate={formatRelativeDate}
                         searchQuery={searchQuery}
                         onToggleLike={handleToggleLikePost}
+                        onToggleSave={handleToggleSavePost}
                         onRequestDelete={handleRequestDeletePost}
                         onRequestEdit={handleRequestEditPost}
                         onRequestHide={handleRequestHidePost}
@@ -579,6 +625,7 @@ export default function CommunityPage() {
                       formatDate={formatRelativeDate}
                       searchQuery={searchQuery}
                       onToggleLike={handleToggleLikePost}
+                      onToggleSave={handleToggleSavePost}
                       onRequestDelete={handleRequestDeletePost}
                       onRequestEdit={handleRequestEditPost}
                       onRequestHide={handleRequestHidePost}
