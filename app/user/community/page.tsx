@@ -5,11 +5,11 @@ import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import {
   mockCommunityPosts,
   mockNotices,
-  orangePickArticles,
   type CommunityPost,
   COMMUNITY_CURRENT_USER,
   mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
+import { orangePickArticles } from '@/data/orange-pick-articles';
 import type { CommunityContent } from '@/types/community-content';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/app/user/components/community/HighlightCarousel';

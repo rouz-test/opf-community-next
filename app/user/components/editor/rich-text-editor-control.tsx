@@ -97,7 +97,9 @@ export function createBooleanControl(config: BooleanControlConfig) {
       const disabled = isDisabled ? isDisabled(editor) : false
       const dynamicProps = getProps ? getProps(editor) : {}
       const variant =
-        getVariant && !getProps ? getVariant(editor) : dynamicProps.variant
+        (getVariant && !getProps ? getVariant(editor) : dynamicProps.variant) as
+          | IconButtonProps["variant"]
+          | undefined
 
       return (
         <ButtonControl

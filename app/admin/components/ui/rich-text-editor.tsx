@@ -6,7 +6,6 @@ import {
   Flex,
   HStack,
   Icon,
-  Text,
 } from '@chakra-ui/react';
 import type { Editor } from '@tiptap/react';
 import { EditorContent } from '@tiptap/react';

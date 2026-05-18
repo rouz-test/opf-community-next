@@ -1481,11 +1481,7 @@ export default function CommunityPostDetailPage() {
                   </Box>
                 ) : null}
 
-                {content.flags.isNotice ? (
-                  <Text fontSize="13px" color="#6B7280">
-                    공지글에는 댓글을 작성할 수 없습니다.
-                  </Text>
-                ) : !isLoggedIn ? (
+                {!isLoggedIn ? (
                   <Text fontSize="13px" color="#6B7280">
                     댓글을 작성하려면 로그인해주세요.
                   </Text>

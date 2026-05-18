@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -21,22 +21,6 @@ export default function AdminSidebar() {
       ]),
     ),
   );
-
-  useEffect(() => {
-    setOpenSections((prev) => {
-      const next = { ...prev };
-      adminSidebarSections.forEach((section) => {
-        const hasActiveItem = section.items.some(
-          (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
-        );
-
-        if (hasActiveItem) {
-          next[section.title] = true;
-        }
-      });
-      return next;
-    });
-  }, [pathname]);
 
   return (
     <Box
@@ -60,6 +44,7 @@ export default function AdminSidebar() {
               const hasActiveItem = section.items.some(
                 (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
               );
+              const isSectionOpen = openSections[section.title] || hasActiveItem;
 
               return (
                 <VStack key={section.title} gap="6px" align="stretch">
@@ -105,14 +90,14 @@ export default function AdminSidebar() {
                     <Text
                       fontSize="10px"
                       color={hasActiveItem ? '#F59E42' : '#B6BDC7'}
-                      transform={openSections[section.title] ? 'rotate(180deg)' : 'rotate(0deg)'}
+                      transform={isSectionOpen ? 'rotate(180deg)' : 'rotate(0deg)'}
                       transition="transform 0.2s ease"
                     >
                       ▾
                     </Text>
                   </Button>
 
-                  {openSections[section.title] ? (
+                  {isSectionOpen ? (
                     <VStack gap="2px" align="stretch" pb="8px" pl="42px" pt="2px">
                       {section.items.map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);

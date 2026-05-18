@@ -1,10 +1,11 @@
 'use client';
 
 import { ShieldCheck } from 'lucide-react';
-import { communityAuthors } from '@/data/mockCommunityPosts';
+import Image from 'next/image';
+import { COMMUNITY_CURRENT_USER } from '@/app/user/lib/community-content-data';
 
 export default function MyPageSettingsProfilePage() {
-  const realProfile = communityAuthors.startupDreamerReal;
+  const realProfile = COMMUNITY_CURRENT_USER;
 
   return (
     <div className="mx-auto w-full max-w-[960px]">
@@ -25,9 +26,11 @@ export default function MyPageSettingsProfilePage() {
             <h2 className="text-sm font-semibold text-gray-900">프로필 사진</h2>
             <div className="mt-5 flex flex-col items-start gap-4">
               <div className="h-16 w-16 overflow-hidden rounded-full ring-1 ring-gray-200">
-                <img
+                <Image
                   src={realProfile.avatar}
                   alt={realProfile.name}
+                  width={64}
+                  height={64}
                   className="h-full w-full object-cover"
                 />
               </div>

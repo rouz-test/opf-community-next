@@ -2,7 +2,6 @@ import communityCommentsData from '@/data/mock/community-comments.json';
 import communityContentReactionsData from '@/data/mock/community-content-reactions.json';
 import communityContentsData from '@/data/mock/community-contents.json';
 import tagsData from '@/data/mock/tags.json';
-import { orangePickArticles } from '@/data/mockCommunityPosts';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type { CommunityComment, CommunityCommentEntity } from '@/types/community-comment';
@@ -349,5 +348,3 @@ export function getCommunityPostById(postId: string) {
 export function getCommentsByPostId(postId: string) {
   return mockComments.filter((comment) => comment.postId === postId);
 }
-
-export { orangePickArticles };

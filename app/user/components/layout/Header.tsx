@@ -10,8 +10,8 @@ import { CommunityProfileCard } from '@/app/user/components/community/CommunityP
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { useMobileNav } from '@/app/user/components/providers/MobileNavProvider';
 import { useProfileMenu } from '@/app/user/components/providers/ProfileMenuProvider';
-import { communityAuthors } from '@/data/mockCommunityPosts';
 import { getCommunityIdentityLabel } from '@/app/user/lib/community-identity';
+import { COMMUNITY_CURRENT_USER } from '@/app/user/lib/community-content-data';
 
 export default function Header() {
   const [profileModeToast, setProfileModeToast] = useState<string | null>(null);
@@ -39,14 +39,7 @@ export default function Header() {
     }
   };
 
-  const accountUser1RealProfile = communityAuthors.startupDreamerReal;
-  const mobileCommunityHeaderProfileUser = {
-    ...accountUser1RealProfile,
-    postsCount: 12,
-    commentsCount: 45,
-  };
-
-  const headerProfileAvatar = accountUser1RealProfile.avatar;
+  const headerProfileAvatar = COMMUNITY_CURRENT_USER.avatar;
 
   const getProfileMenuAnchor = (element: HTMLElement | null) => {
     if (!element) return undefined;
@@ -223,7 +216,7 @@ export default function Header() {
                           anchor: getProfileMenuAnchor(mobileCommunityProfileTriggerRef.current),
                         })
                       }
-                      currentUser={mobileCommunityHeaderProfileUser}
+                      currentUser={COMMUNITY_CURRENT_USER}
                     />
                   </Box>
                 ) : null}

@@ -35,7 +35,7 @@ import {
   saveCommunityPostDraft,
 } from '@/app/user/lib/community-draft';
 import type { ContentEditorJsonValue } from '@/app/user/components/editor/content-editor';
-import type { CommunityContent, CommunityContentAuthor, CommunityContentPayload } from '@/types/community-content';
+import type { CommunityContent, CommunityContentAuthor, CommunityContentBody, CommunityContentPayload } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
 
 export type WritePostModalProps = {
@@ -67,6 +67,14 @@ const EMPTY_CONTENT: ContentEditorJsonValue = {
     },
   ],
 };
+
+const toCommunityContentBody = (value: ContentEditorJsonValue): CommunityContentBody => ({
+  type: value.type ?? 'doc',
+  content: value.content?.map(toCommunityContentBody),
+  text: value.text,
+  attrs: value.attrs,
+  marks: value.marks,
+});
 
 type WriteErrors = {
   title?: string;
@@ -272,12 +280,12 @@ export function WritePostModal({
   };
 
   const getBlockedWordValidationText = () =>
-    [title.trim(), extractTextFromContentBody(content)].filter(Boolean).join('\n');
+    [title.trim(), extractTextFromContentBody(toCommunityContentBody(content))].filter(Boolean).join('\n');
 
   const handleSaveDraft = () => {
     saveCommunityPostDraft({
       title: title.trim(),
-      content,
+      content: toCommunityContentBody(content),
       selectedTags,
       isPromotion,
       profileModeOverride,
@@ -340,7 +348,7 @@ export function WritePostModal({
 
     const payload: CommunityContentPayload = {
       title: title.trim(),
-      content,
+      content: toCommunityContentBody(content),
       tagIds: selectedTags,
       status: 'published',
       author,
