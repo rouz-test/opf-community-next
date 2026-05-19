@@ -43,67 +43,55 @@ function ProfileSummaryCard({
 }) {
   return (
     <Box
-      borderWidth="1px"
-      borderColor="#E5E7EB"
       borderRadius="20px"
       bg="#FFFFFF"
-      px={{ base: '14px', sm: '16px' }}
-      py={{ base: '14px', sm: '16px' }}
-      boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
+      px="20px"
+      py="18px"
+      boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
     >
-      <Flex align="center" justify="space-between" gap="12px">
-        <Flex minW="0" align="center" gap={{ base: '12px', sm: '16px' }}>
-          <Box
-            position="relative"
-            boxSize={{ base: '40px', sm: '48px' }}
-            overflow="hidden"
-            rounded="full"
-            borderWidth="1px"
-            borderColor="#E5E7EB"
-          >
-            {avatar ? (
-              <Image src={avatar} alt={title} w="100%" h="100%" objectFit="cover" />
-            ) : (
-              <Box w="100%" h="100%" bgGradient="linear(to-br, gray.200, gray.300)" />
-            )}
-          </Box>
-          <Box minW="0">
-            <Flex align="center" gap="6px">
-              <Text fontSize={{ base: '15px', sm: '16px' }} fontWeight="700" color="#111827" lineClamp="1">
-                {title}
-              </Text>
-              {badge ? <BadgeCheck size={16} color="#3B82F6" /> : null}
-            </Flex>
-            <Text mt="2px" fontSize={{ base: '11px', sm: '12px' }} color="#6B7280" lineClamp="1">
-              {subtitle}
-            </Text>
-          </Box>
-        </Flex>
+      <Text fontSize="14px" fontWeight="500" color="#6B7280" mb="14px">
+        내 프로필
+      </Text>
 
-        <Button
-          type="button"
-          onClick={onEditClick}
-          h={{ base: '32px', sm: '36px' }}
-          px="14px"
-          borderRadius="10px"
-          borderWidth="1px"
-          borderColor="#E5E7EB"
-          bg="#FFFFFF"
-          color="#6B7280"
-          fontSize={{ base: '12px', sm: '14px' }}
-          fontWeight="600"
-          _hover={{ bg: '#F9FAFB', color: '#374151', borderColor: '#D1D5DB' }}
+      <Box h="1px" bg="#E5E7EB" mb="20px" />
+
+      <Flex align="center" gap="14px" mb="22px">
+        <Box
+          position="relative"
+          boxSize="64px"
+          flexShrink="0"
+          overflow="hidden"
+          rounded="full"
         >
-          수정하기
-        </Button>
+          {avatar ? (
+            <Image src={avatar} alt={title} w="100%" h="100%" objectFit="cover" />
+          ) : (
+            <Box w="100%" h="100%" bgGradient="linear(to-br, gray.200, gray.300)" />
+          )}
+        </Box>
+
+        <Box minW="0" flex="1">
+          <Flex align="center" gap="6px" mb="4px">
+            <Text fontSize="18px" fontWeight="700" color="#111827" lineClamp="1">
+              {title}
+            </Text>
+            {badge ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+          </Flex>
+          <Text fontSize="14px" fontWeight="500" color="#6B7280" lineClamp="1">
+            코마소프트
+          </Text>
+          <Text mt="2px" fontSize="14px" color="#6B7280" lineClamp="1">
+            {subtitle}
+          </Text>
+        </Box>
       </Flex>
 
-      <Grid mt="14px" templateColumns="repeat(2, minmax(0, 1fr))" gap="8px" borderRadius="16px" bg="#F9FAFB" px="12px" py="12px" textAlign="center">
-        <Box>
-          <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+      <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="16px" mb="20px">
+        <Box textAlign="center">
+          <Text fontSize="18px" fontWeight="700" color="#111827">
             892
           </Text>
-          <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+          <Text mt="4px" fontSize="14px" color="#9CA3AF">
             팔로워
           </Text>
         </Box>
@@ -113,19 +101,36 @@ function ProfileSummaryCard({
           h="auto"
           p="0"
           borderRadius="12px"
-          _hover={{ bg: '#F3F4F6' }}
+          _hover={{ bg: 'transparent' }}
+          _focus={{ outline: 'none', boxShadow: 'none' }}
+          _focusVisible={{ outline: 'none', boxShadow: 'none' }}
           onClick={onFollowingClick}
         >
           <Box w="100%">
-            <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
+            <Text fontSize="18px" fontWeight="700" color="#111827">
               124
             </Text>
-            <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
+            <Text mt="4px" fontSize="14px" color="#9CA3AF">
               팔로잉
             </Text>
           </Box>
         </Button>
       </Grid>
+
+      <Button
+        type="button"
+        w="100%"
+        h="42px"
+        borderRadius="12px"
+        bg="#3F3F46"
+        color="#FFFFFF"
+        fontSize="14px"
+        fontWeight="700"
+        _hover={{ bg: '#27272A' }}
+        onClick={onEditClick}
+      >
+        프로필 수정
+      </Button>
     </Box>
   );
 }
@@ -299,8 +304,6 @@ export default function MyPageCommunityPage() {
   };
 
   const realProfile = COMMUNITY_CURRENT_USER;
-  const followerCount = 892;
-  const followingCount = 124;
 
   const followingProfiles = useMemo(() => {
     const seen = new Set<string>();
@@ -564,117 +567,78 @@ export default function MyPageCommunityPage() {
 
   return (
     <Box mx="auto" w="100%" maxW="1120px">
-      <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
-        커뮤니티
-      </Text>
-
-      <Grid mt="16px" gap="16px" alignItems="start" templateColumns={{ base: '1fr', xl: 'minmax(0, 1fr) 220px' }}>
-        <Box>
-          <Text mb="8px" fontSize="14px" fontWeight="600" color="#6B7280">
-            내 프로필
+      <Grid templateColumns={{ base: '1fr', xl: 'minmax(0, 1fr) 320px' }} gap="24px" alignItems="start">
+        <Flex direction="column" minW="0">
+          <Text fontSize="20px" fontWeight="700" color="#111827">
+            커뮤니티
           </Text>
-          <ProfileSummaryCard
-            title={realProfile.name}
-            subtitle={realProfile.position ?? '직무'}
-            badge="✓"
-            avatar={realProfile.avatar}
-            onFollowingClick={() => setIsFollowingModalOpen(true)}
-            onEditClick={() => router.push('/user/mypage/settings/profile')}
-          />
-        </Box>
 
-        <Box>
-          <Text mb="8px" fontSize="14px" fontWeight="600" color="#6B7280">
-            팔로우 현황
-          </Text>
-          <Box
-            borderWidth="1px"
-            borderColor="#E5E7EB"
-            borderRadius="20px"
-            bg="#FFFFFF"
-            px={{ base: '14px', sm: '16px' }}
-            py={{ base: '14px', sm: '16px' }}
-            boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
-          >
-            <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap={{ base: '8px', sm: '16px' }} textAlign="center">
-              <Box>
-                <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
-                  {followerCount}
-                </Text>
-                <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
-                  팔로워
-                </Text>
-              </Box>
-              <Box>
-                <Text fontSize={{ base: '20px', sm: '22px' }} fontWeight="700" color="#111827">
-                  {followingCount}
-                </Text>
-                <Text mt="4px" fontSize="11px" letterSpacing="0.14em" textTransform="uppercase" color="#9CA3AF">
-                  팔로잉
-                </Text>
-              </Box>
-            </Grid>
+          <Box display={{ base: 'block', xl: 'none' }} mt="16px" mb="24px">
+            <ProfileSummaryCard
+              title={realProfile.name}
+              subtitle={realProfile.position ?? '직무'}
+              badge="✓"
+              avatar={realProfile.avatar}
+              onFollowingClick={() => setIsFollowingModalOpen(true)}
+              onEditClick={() => router.push('/user/mypage/settings/profile')}
+            />
           </Box>
-        </Box>
-      </Grid>
 
-      <Box mt="40px" borderBottom="1px solid" borderColor="#E5E7EB">
-        <Flex align="center" gap="4px" wrap="wrap">
-          {['게시글', '댓글', '좋아요', '저장', '숨김'].map((tab, index) => {
-            const isPostsTab = index === 0;
-            const isCommentsTab = index === 1;
-            const isLikedTab = index === 2;
-            const isSavedTab = index === 3;
-            const isHiddenTab = index === 4;
-            const isClickable = isPostsTab || isCommentsTab || isLikedTab || isSavedTab || isHiddenTab;
-            const isActive =
-              (isPostsTab && activeCommunityTab === 'posts') ||
-              (isCommentsTab && activeCommunityTab === 'comments') ||
-              (isLikedTab && activeCommunityTab === 'liked') ||
-              (isSavedTab && activeCommunityTab === 'saved') ||
-              (isHiddenTab && activeCommunityTab === 'hidden');
+          <Box mt="16px" borderBottom="1px solid" borderColor="#E5E7EB">
+            <Flex align="center" gap="4px" wrap="wrap">
+              {['게시글', '댓글', '좋아요', '저장', '숨김'].map((tab, index) => {
+                const isPostsTab = index === 0;
+                const isCommentsTab = index === 1;
+                const isLikedTab = index === 2;
+                const isSavedTab = index === 3;
+                const isHiddenTab = index === 4;
+                const isClickable = isPostsTab || isCommentsTab || isLikedTab || isSavedTab || isHiddenTab;
+                const isActive =
+                  (isPostsTab && activeCommunityTab === 'posts') ||
+                  (isCommentsTab && activeCommunityTab === 'comments') ||
+                  (isLikedTab && activeCommunityTab === 'liked') ||
+                  (isSavedTab && activeCommunityTab === 'saved') ||
+                  (isHiddenTab && activeCommunityTab === 'hidden');
 
-            return (
-              <Button
-                key={tab}
-                type="button"
-                variant="ghost"
-                h="48px"
-                px="16px"
-                borderRadius="0"
-                position="relative"
-                color={
-                  isActive ? '#111827' : isClickable ? '#6B7280' : '#D1D5DB'
-                }
-                fontSize="14px"
-                fontWeight="600"
-                cursor={isClickable ? 'pointer' : 'default'}
-                _hover={isClickable ? { bg: 'transparent', color: '#111827' } : { bg: 'transparent' }}
-                onClick={
-                  isPostsTab
-                    ? () => setActiveCommunityTab('posts')
-                    : isCommentsTab
-                      ? () => setActiveCommunityTab('comments')
-                      : isLikedTab
-                        ? () => setActiveCommunityTab('liked')
-                      : isSavedTab
-                        ? () => setActiveCommunityTab('saved')
-                      : isHiddenTab
-                        ? () => setActiveCommunityTab('hidden')
-                      : undefined
-                }
-              >
-                {tab}
-                {isActive ? (
-                  <Box position="absolute" bottom="0" insetX="0" h="2px" bg="#F97316" />
-                ) : null}
-              </Button>
-            );
-          })}
-        </Flex>
-      </Box>
+                return (
+                  <Button
+                    key={tab}
+                    type="button"
+                    variant="ghost"
+                    h="48px"
+                    px="16px"
+                    borderRadius="0"
+                    position="relative"
+                    color={isActive ? '#111827' : isClickable ? '#6B7280' : '#D1D5DB'}
+                    fontSize="14px"
+                    fontWeight="600"
+                    cursor={isClickable ? 'pointer' : 'default'}
+                    _hover={isClickable ? { bg: 'transparent', color: '#111827' } : { bg: 'transparent' }}
+                    onClick={
+                      isPostsTab
+                        ? () => setActiveCommunityTab('posts')
+                        : isCommentsTab
+                          ? () => setActiveCommunityTab('comments')
+                          : isLikedTab
+                            ? () => setActiveCommunityTab('liked')
+                            : isSavedTab
+                              ? () => setActiveCommunityTab('saved')
+                              : isHiddenTab
+                                ? () => setActiveCommunityTab('hidden')
+                                : undefined
+                    }
+                  >
+                    {tab}
+                    {isActive ? (
+                      <Box position="absolute" bottom="0" insetX="0" h="2px" bg="#F97316" />
+                    ) : null}
+                  </Button>
+                );
+              })}
+            </Flex>
+          </Box>
 
-      <Flex mt="16px" wrap="wrap" align="center" gap="12px">
+          <Flex mt="16px" wrap="wrap" align="center" gap="12px">
         <Box ref={filterRef} position="relative">
           <Button
             type="button"
@@ -788,68 +752,83 @@ export default function MyPageCommunityPage() {
             </Flex>
           </Button>
         </Flex>
-      </Flex>
+          </Flex>
 
-      <Flex mt="16px" direction="column" gap="16px">
-        {activeCommunityPosts.length === 0 ? (
-          <Box
-            borderWidth="1px"
-            borderStyle="dashed"
-            borderColor="#D1D5DB"
-            borderRadius="20px"
-            bg="#FFFFFF"
-            px="24px"
-            py="48px"
-            textAlign="center"
-          >
-            <Text fontSize="14px" color="#6B7280">
-              {activeCommunityTab === 'posts'
-                ? '작성한 게시글이 아직 없습니다.'
-                : activeCommunityTab === 'liked'
-                  ? '좋아요를 누른 게시글이 아직 없습니다.'
-                : activeCommunityTab === 'saved'
-                  ? '저장한 게시글이 아직 없습니다.'
-                : activeCommunityTab === 'hidden'
-                  ? '숨김 처리한 게시글이 아직 없습니다.'
-                  : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
-            </Text>
+          <Flex mt="16px" direction="column" gap="16px">
+            {activeCommunityPosts.length === 0 ? (
+              <Box
+                borderWidth="1px"
+                borderStyle="dashed"
+                borderColor="#D1D5DB"
+                borderRadius="20px"
+                bg="#FFFFFF"
+                px="24px"
+                py="48px"
+                textAlign="center"
+              >
+                <Text fontSize="14px" color="#6B7280">
+                  {activeCommunityTab === 'posts'
+                    ? '작성한 게시글이 아직 없습니다.'
+                    : activeCommunityTab === 'liked'
+                      ? '좋아요를 누른 게시글이 아직 없습니다.'
+                      : activeCommunityTab === 'saved'
+                        ? '저장한 게시글이 아직 없습니다.'
+                        : activeCommunityTab === 'hidden'
+                          ? '숨김 처리한 게시글이 아직 없습니다.'
+                          : '댓글을 남긴 게시글이 아직 없습니다. 댓글을 남기면 해당 게시글과 내 댓글이 함께 표시됩니다.'}
+                </Text>
+              </Box>
+            ) : communityViewMode === 'feed' ? (
+              activeCommunityPosts.map((post) => (
+                <FeedPostCard
+                  key={post.id}
+                  post={post}
+                  formatDate={formatDate}
+                  searchQuery=""
+                  enableOwnPostMenu
+                  hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
+                  onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
+                  onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
+                  onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
+                  onToggleLike={handleToggleLikePost}
+                  onToggleSave={handleToggleSavePost}
+                  ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
+                />
+              ))
+            ) : (
+              activeCommunityPosts.map((post) => (
+                <BoardPostRow
+                  key={post.id}
+                  post={post}
+                  formatDate={formatDate}
+                  searchQuery=""
+                  enableOwnPostMenu
+                  hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
+                  onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
+                  onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
+                  onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
+                  onToggleLike={handleToggleLikePost}
+                  onToggleSave={handleToggleSavePost}
+                  ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
+                />
+              ))
+            )}
+          </Flex>
+        </Flex>
+
+        <Box display={{ base: 'none', xl: 'block' }}>
+          <Box position="sticky" top="16px">
+            <ProfileSummaryCard
+              title={realProfile.name}
+              subtitle={realProfile.position ?? '직무'}
+              badge="✓"
+              avatar={realProfile.avatar}
+              onFollowingClick={() => setIsFollowingModalOpen(true)}
+              onEditClick={() => router.push('/user/mypage/settings/profile')}
+            />
           </Box>
-        ) : communityViewMode === 'feed' ? (
-          activeCommunityPosts.map((post) => (
-            <FeedPostCard
-              key={post.id}
-              post={post}
-              formatDate={formatDate}
-              searchQuery=""
-              enableOwnPostMenu
-              hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
-              onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
-              onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
-              onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
-              onToggleLike={handleToggleLikePost}
-              onToggleSave={handleToggleSavePost}
-              ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
-            />
-          ))
-        ) : (
-          activeCommunityPosts.map((post) => (
-            <BoardPostRow
-              key={post.id}
-              post={post}
-              formatDate={formatDate}
-              searchQuery=""
-              enableOwnPostMenu
-              hideActionLabel={activeCommunityTab === 'hidden' ? '숨김 해제' : '숨김'}
-              onRequestHide={activeCommunityTab === 'hidden' ? handleRequestRestoreHiddenPost : handleRequestHidePost}
-              onRequestDelete={activeCommunityTab === 'hidden' ? undefined : handleRequestDeletePost}
-              onRequestEdit={activeCommunityTab === 'hidden' ? undefined : handleRequestEditPost}
-              onToggleLike={handleToggleLikePost}
-              onToggleSave={handleToggleSavePost}
-              ownPostMenuActions={activeCommunityTab === 'hidden' ? ['hide'] : ['edit', 'delete', 'hide']}
-            />
-          ))
-        )}
-      </Flex>
+        </Box>
+      </Grid>
 
       <WritePostModal
         isOpen={isWriteModalOpen}

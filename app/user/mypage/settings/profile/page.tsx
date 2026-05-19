@@ -1,7 +1,7 @@
 'use client';
 
+import { Image } from '@chakra-ui/react';
 import { ShieldCheck } from 'lucide-react';
-import Image from 'next/image';
 import { COMMUNITY_CURRENT_USER } from '@/app/user/lib/community-content-data';
 
 export default function MyPageSettingsProfilePage() {
@@ -26,13 +26,13 @@ export default function MyPageSettingsProfilePage() {
             <h2 className="text-sm font-semibold text-gray-900">프로필 사진</h2>
             <div className="mt-5 flex flex-col items-start gap-4">
               <div className="h-16 w-16 overflow-hidden rounded-full ring-1 ring-gray-200">
-                <Image
-                  src={realProfile.avatar}
-                  alt={realProfile.name}
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover"
-                />
+	                <Image
+	                  src={realProfile.avatar}
+	                  alt={realProfile.name}
+	                  h="100%"
+	                  w="100%"
+	                  objectFit="cover"
+	                />
               </div>
               <button
                 type="button"

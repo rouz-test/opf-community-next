@@ -1,10 +1,10 @@
 'use client';
 
-import { Box, Button, Flex, Link as ChakraLink, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Link as ChakraLink, Text, VStack } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, LogOut, MessageSquareText, School, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { BookOpen, ChevronDown, GraduationCap, LogOut, Settings } from 'lucide-react';
+import { useState, useSyncExternalStore } from 'react';
 import type { ElementType } from 'react';
 
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
@@ -33,11 +33,11 @@ type SidebarSectionItem = {
 };
 
 const sidebarItems: Array<SidebarLinkItem | SidebarSectionItem> = [
-  { label: '커뮤니티', href: '/user/mypage/community', icon: MessageSquareText },
+  { label: '커뮤니티', href: '/user/mypage/community', icon: BookOpen },
   {
     label: '캠퍼스',
     href: '/user/mypage/campus',
-    icon: School,
+    icon: GraduationCap,
     children: [
       { label: '신청 내역', disabled: true },
       { label: '팀 빌딩', disabled: true },
@@ -52,7 +52,7 @@ const sidebarItems: Array<SidebarLinkItem | SidebarSectionItem> = [
     children: [
       { label: '프로필', href: '/user/mypage/settings/profile' },
       { label: '프로덕트', href: '/user/mypage/settings/product' },
-      { label: '알림', href: '/user/mypage/settings/notifications' },
+      { label: '알림 및 계정', href: '/user/mypage/settings/notifications' },
     ],
   },
 ];
@@ -69,6 +69,18 @@ function isDisabledChild(child: SidebarChildLink | SidebarChildDisabled): child 
   return 'disabled' in child && child.disabled;
 }
 
+function subscribeToHydration() {
+  return () => {};
+}
+
+function getHydratedSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
 function SidebarLink({
   item,
   isActive,
@@ -80,22 +92,56 @@ function SidebarLink({
 
   return (
     <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
-      <Link href={item.href}>
+      <Link href={item.href} style={{ display: 'block', width: '100%', outline: 'none' }}>
         <Flex
+          position="relative"
           align="center"
-          gap="12px"
+          gap="10px"
+          h="40px"
           px="16px"
-          py="12px"
-          borderRadius="14px"
-          bg={isActive ? '#FFF7ED' : 'transparent'}
-          color={isActive ? '#F97316' : '#4B5563'}
-          fontSize="14px"
-          fontWeight="700"
+          borderRadius="8px"
+          bg={isActive ? '#FFF4E8' : 'transparent'}
+          color={isActive ? '#F59E42' : '#374151'}
+          fontSize="16px"
+          fontWeight="600"
           transition="background-color 0.2s ease, color 0.2s ease"
-          _hover={{ bg: isActive ? '#FFF7ED' : '#F9FAFB', color: isActive ? '#F97316' : '#111827' }}
+          _hover={{ bg: isActive ? '#FFF4E8' : '#FFFFFF', color: isActive ? '#F59E42' : '#374151' }}
           aria-current={isActive ? 'page' : undefined}
+          _focus={{
+            outline: 'none',
+            boxShadow: 'none',
+            bg: isActive ? '#FFF4E8' : 'transparent',
+            color: isActive ? '#F59E42' : '#374151',
+          }}
+          _focusVisible={{
+            outline: 'none',
+            boxShadow: 'none',
+            bg: isActive ? '#FFF4E8' : 'transparent',
+            color: isActive ? '#F59E42' : '#374151',
+          }}
         >
-          <Icon size={17} />
+          {isActive ? (
+            <Box
+              position="absolute"
+              left="0"
+              top="50%"
+              h="20px"
+              w="3px"
+              transform="translateY(-50%)"
+              borderRightRadius="9999px"
+              bg="#F59E42"
+            />
+          ) : null}
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="16px"
+            h="16px"
+            color={isActive ? '#F59E42' : '#6B7280'}
+          >
+            <Icon size={16} strokeWidth={1.9} />
+          </Box>
           <Text as="span" flex="1">
             {item.label}
           </Text>
@@ -110,6 +156,8 @@ export default function MyPageSidebar() {
   const router = useRouter();
   const { setIsLoggedIn } = useAuth();
   const [manuallyOpenSections, setManuallyOpenSections] = useState<Record<string, boolean>>({});
+  const isMounted = useSyncExternalStore(subscribeToHydration, getHydratedSnapshot, getServerSnapshot);
+  const activePathname = isMounted ? pathname : '';
 
   const handleLogout = () => {
     setIsLoggedIn(false);
@@ -117,166 +165,219 @@ export default function MyPageSidebar() {
   };
 
   return (
-    <Box display={{ base: 'none', lg: 'block' }} position="sticky" top="24px">
+    <Box
+      as="aside"
+      display={{ base: 'none', lg: 'block' }}
+      position="sticky"
+      top="0"
+      alignSelf="start"
+      w="260px"
+      minH="calc(100vh - 92px)"
+      bg="transparent"
+    >
       <Box
-        borderRadius="20px"
-        bg="#FFFFFF"
-        boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
-        overflow="hidden"
+        display="flex"
+        flexDirection="column"
+        minH="calc(100vh - 92px)"
+        bg="transparent"
       >
-        <Box px="24px" py="22px" borderBottom="1px solid" borderColor="#F3F4F6">
-          <Text fontSize="18px" fontWeight="800" color="#111827">
+        <Flex minH="84px" align="center" px="24px" py="20px">
+          <Text fontSize="20px" fontWeight="800" color="#4B5563" letterSpacing="-0.02em">
             마이페이지
           </Text>
-          <Text mt="4px" fontSize="12px" color="#9CA3AF">
-            내 활동과 설정을 관리합니다.
-          </Text>
-        </Box>
-
-        <Flex as="nav" direction="column" gap="6px" px="14px" py="16px">
-          {sidebarItems.map((item) => {
-            if (!hasChildren(item)) {
-              return <SidebarLink key={item.href} item={item} isActive={isRouteActive(pathname, item.href)} />;
-            }
-
-            const Icon = item.icon;
-            const isActive = isRouteActive(pathname, item.href);
-            const isOpen = isActive || Boolean(manuallyOpenSections[item.label]);
-
-            return (
-              <Box key={item.label}>
-                <Button
-                  type="button"
-                  unstyled
-                  display="flex"
-                  w="100%"
-                  alignItems="center"
-                  gap="12px"
-                  px="16px"
-                  py="12px"
-                  borderRadius="14px"
-                  bg={isActive ? '#FFF7ED' : 'transparent'}
-                  color={isActive ? '#F97316' : '#4B5563'}
-                  fontSize="14px"
-                  fontWeight="700"
-                  textAlign="left"
-                  transition="background-color 0.2s ease, color 0.2s ease"
-                  _hover={{ bg: isActive ? '#FFF7ED' : '#F9FAFB', color: isActive ? '#F97316' : '#111827' }}
-                  aria-expanded={isOpen}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => {
-                    setManuallyOpenSections((prev) => ({
-                      ...prev,
-                      [item.label]: !isOpen,
-                    }));
-                  }}
-                >
-                  <Icon size={17} />
-                  <Text as="span" flex="1">
-                    {item.label}
-                  </Text>
-                  <Box transition="transform 0.2s ease" transform={isOpen ? 'rotate(180deg)' : 'rotate(0deg)'}>
-                    <ChevronDown size={16} />
-                  </Box>
-                </Button>
-
-                {isOpen ? (
-                  <Flex as="ul" direction="column" gap="2px" mt="6px" pl="45px" pr="4px">
-                    {item.children.map((child) => {
-                      if (isDisabledChild(child)) {
-                        return (
-                          <Box
-                            as="li"
-                            key={child.label}
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="space-between"
-                            gap="8px"
-                            px="12px"
-                            py="9px"
-                            borderRadius="10px"
-                            color="#C4C7CD"
-                            fontSize="13px"
-                            fontWeight="600"
-                            cursor="not-allowed"
-                            aria-disabled="true"
-                          >
-                            <Text as="span">{child.label}</Text>
-                            <Text
-                              as="span"
-                              px="6px"
-                              py="2px"
-                              borderRadius="999px"
-                              bg="#F3F4F6"
-                              color="#A1A7B0"
-                              fontSize="10px"
-                              fontWeight="700"
-                            >
-                              준비중
-                            </Text>
-                          </Box>
-                        );
-                      }
-
-                      const isChildActive = isRouteActive(pathname, child.href);
-
-                      return (
-                        <Box as="li" key={child.href}>
-                          <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
-                            <Link href={child.href}>
-                              <Box
-                                px="12px"
-                                py="9px"
-                                borderRadius="10px"
-                                bg={isChildActive ? '#FFF7ED' : 'transparent'}
-                                color={isChildActive ? '#F97316' : '#6B7280'}
-                                fontSize="13px"
-                                fontWeight="600"
-                                transition="background-color 0.2s ease, color 0.2s ease"
-                                _hover={{
-                                  bg: isChildActive ? '#FFF7ED' : '#F9FAFB',
-                                  color: isChildActive ? '#F97316' : '#111827',
-                                }}
-                                aria-current={isChildActive ? 'page' : undefined}
-                              >
-                                {child.label}
-                              </Box>
-                            </Link>
-                          </ChakraLink>
-                        </Box>
-                      );
-                    })}
-                  </Flex>
-                ) : null}
-              </Box>
-            );
-          })}
         </Flex>
 
-        <Box px="14px" pb="16px" pt="8px" borderTop="1px solid" borderColor="#F3F4F6">
-          <Button
-            type="button"
-            unstyled
-            display="flex"
-            w="100%"
-            alignItems="center"
-            gap="12px"
-            px="16px"
-            py="12px"
-            borderRadius="14px"
-            color="#6B7280"
-            fontSize="14px"
-            fontWeight="700"
-            textAlign="left"
-            transition="background-color 0.2s ease, color 0.2s ease"
-            _hover={{ bg: '#F9FAFB', color: '#111827' }}
-            onClick={handleLogout}
-          >
-            <LogOut size={17} />
-            <Text as="span" flex="1">
-              로그아웃
-            </Text>
-          </Button>
+        <Box as="nav" flex="1" overflowY="auto" px="20px" pb="24px" pt="6px">
+          <VStack gap="10px" align="stretch">
+            {sidebarItems.map((item) => {
+              if (!hasChildren(item)) {
+                return <SidebarLink key={item.href} item={item} isActive={isRouteActive(activePathname, item.href)} />;
+              }
+
+              const Icon = item.icon;
+              const hasActiveChild = item.children.some(
+                (child) => !isDisabledChild(child) && isRouteActive(activePathname, child.href),
+              );
+              const isDirectActive = activePathname === item.href;
+              const isActive = isDirectActive && !hasActiveChild;
+              const isOpen = hasActiveChild || isDirectActive || Boolean(manuallyOpenSections[item.label]);
+
+              return (
+                <VStack key={item.label} gap="6px" align="stretch">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    justifyContent="space-between"
+                    position="relative"
+                    h="40px"
+                    px="16px"
+                    borderRadius="8px"
+                    bg={isActive ? '#FFF4E8' : 'transparent'}
+                    color={isActive ? '#F59E42' : '#374151'}
+                    fontSize="16px"
+                    fontWeight="600"
+                    minW="100%"
+                    transition="background-color 0.2s ease, color 0.2s ease"
+                    _hover={{ bg: isActive ? '#FFF4E8' : '#FFFFFF', color: isActive ? '#F59E42' : '#374151' }}
+                    _active={{ bg: isActive ? '#FFF4E8' : 'transparent', color: isActive ? '#F59E42' : '#374151' }}
+                    _focus={{
+                      outline: 'none',
+                      boxShadow: 'none',
+                      bg: isActive ? '#FFF4E8' : 'transparent',
+                      color: isActive ? '#F59E42' : '#374151',
+                    }}
+                    _focusVisible={{
+                      outline: 'none',
+                      boxShadow: 'none',
+                      bg: isActive ? '#FFF4E8' : 'transparent',
+                      color: isActive ? '#F59E42' : '#374151',
+                    }}
+                    aria-expanded={isOpen}
+                    aria-current={isDirectActive ? 'page' : undefined}
+                    onClick={() => {
+                      setManuallyOpenSections((prev) => ({
+                        ...prev,
+                        [item.label]: !isOpen,
+                      }));
+                    }}
+                  >
+                    {isActive ? (
+                      <Box
+                        position="absolute"
+                        left="0"
+                        top="50%"
+                        h="20px"
+                        w="3px"
+                        transform="translateY(-50%)"
+                        borderRightRadius="9999px"
+                        bg="#F59E42"
+                      />
+                    ) : null}
+                    <Flex align="center" gap="10px">
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        w="16px"
+                        h="16px"
+                        color={isActive ? '#F59E42' : '#6B7280'}
+                      >
+                        <Icon size={16} strokeWidth={1.9} />
+                      </Box>
+                      <Text fontSize="16px" fontWeight="600" lineHeight="1">
+                        {item.label}
+                      </Text>
+                    </Flex>
+                    <Box
+                      color={isActive ? '#F59E42' : '#B6BDC7'}
+                      transition="transform 0.2s ease"
+                      transform={isOpen ? 'rotate(180deg)' : 'rotate(0deg)'}
+                    >
+                      <ChevronDown size={14} />
+                    </Box>
+                  </Button>
+
+                  {isOpen ? (
+                    <VStack as="ul" gap="0" align="stretch" pb="8px" pl="42px" pt="2px">
+                      {item.children.map((child) => {
+                        if (isDisabledChild(child)) {
+                          return (
+                            <Box
+                              as="li"
+                              key={child.label}
+                              display="flex"
+                              alignItems="center"
+                              minH="44px"
+                              px="8px"
+                              borderRadius="6px"
+                              color="#B6BDC7"
+                              fontSize="16px"
+                              fontWeight="500"
+                              cursor="not-allowed"
+                              aria-disabled="true"
+                            >
+                              <Text as="span">{child.label}</Text>
+                            </Box>
+                          );
+                        }
+
+                        const isChildActive = isRouteActive(activePathname, child.href);
+
+                        return (
+                          <Box as="li" key={child.href}>
+                            <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+                              <Link href={child.href} style={{ display: 'block', width: '100%', outline: 'none' }}>
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  minH="44px"
+                                  px="8px"
+                                  borderRadius="6px"
+                                  bg={isChildActive ? '#FFF8F1' : 'transparent'}
+                                  color={isChildActive ? '#F59E42' : '#6B7280'}
+                                  fontSize="16px"
+                                  fontWeight="500"
+                                  transition="background-color 0.2s ease, color 0.2s ease"
+                                  _hover={{
+                                    bg: isChildActive ? '#FFF8F1' : '#FFFFFF',
+                                    color: isChildActive ? '#F59E42' : '#6B7280',
+                                  }}
+                                  aria-current={isChildActive ? 'page' : undefined}
+                                  _focus={{
+                                    outline: 'none',
+                                    boxShadow: 'none',
+                                    bg: isChildActive ? '#FFF8F1' : 'transparent',
+                                    color: isChildActive ? '#F59E42' : '#6B7280',
+                                  }}
+                                  _focusVisible={{
+                                    outline: 'none',
+                                    boxShadow: 'none',
+                                    bg: isChildActive ? '#FFF8F1' : 'transparent',
+                                    color: isChildActive ? '#F59E42' : '#6B7280',
+                                  }}
+                                >
+                                  {child.label}
+                                </Box>
+                              </Link>
+                            </ChakraLink>
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+                  ) : null}
+                </VStack>
+              );
+            })}
+          </VStack>
+
+          <Box mt="10px">
+            <Button
+              type="button"
+              variant="ghost"
+              justifyContent="flex-start"
+              h="40px"
+              w="100%"
+              gap="10px"
+              px="16px"
+              borderRadius="8px"
+              color="#374151"
+              fontSize="16px"
+              fontWeight="600"
+              transition="background-color 0.2s ease, color 0.2s ease"
+              _hover={{ bg: '#FFFFFF', color: '#374151' }}
+              _active={{ bg: 'transparent', color: '#374151' }}
+              _focus={{ outline: 'none', boxShadow: 'none', bg: 'transparent', color: '#374151' }}
+              _focusVisible={{ outline: 'none', boxShadow: 'none', bg: 'transparent', color: '#374151' }}
+              onClick={handleLogout}
+            >
+              <Box display="flex" alignItems="center" justifyContent="center" w="16px" h="16px" color="#6B7280">
+                <LogOut size={16} strokeWidth={1.9} />
+              </Box>
+              <Text fontSize="16px" fontWeight="600" lineHeight="1">
+                로그아웃
+              </Text>
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Box>

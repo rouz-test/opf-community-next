@@ -18,22 +18,22 @@ export default function MyPageLayout({ children }: { children: ReactNode }) {
   const isSettingsRoute = pathname.startsWith('/user/mypage/settings');
 
   return (
-    <Box minH="100vh" bg="#F3F4F6">
+    <Box minH="100vh" bg="#FFFFFF">
       <Grid
         maxW="1400px"
         mx="auto"
-        gap={{ base: '0', lg: '24px' }}
-        px={{ base: '0', lg: '24px' }}
-        py={{ base: '0', lg: '24px' }}
-        templateColumns={{ base: '1fr', lg: '244px minmax(0, 1fr)' }}
+        gap={{ base: '0', lg: '6' }}
+        px={{ base: '0', lg: '4' }}
+        py="0"
+        templateColumns={{ base: '1fr', lg: '260px minmax(0, 1fr)' }}
       >
         <MyPageSidebar />
 
         <Box
           minW="0"
-          px={{ base: '16px', sm: '24px', lg: '16px' }}
-          py={isSettingsRoute ? { base: '0', lg: '8px' } : { base: '24px', lg: '8px' }}
-          bg="#F3F4F6"
+          px={{ base: '16px', sm: '24px', lg: '0' }}
+          py={isSettingsRoute ? { base: '0', lg: '30px' } : { base: '24px', lg: '30px' }}
+          bg="#FFFFFF"
         >
           {isSettingsRoute ? (
             <Box
