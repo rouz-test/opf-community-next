@@ -154,7 +154,7 @@ export default function MyPageSettingsProductPage() {
   return (
     <Box mx="auto" w="100%" maxW="960px">
       <Box>
-        <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
+        <Text fontSize="20px" fontWeight="700" color="#111827">
           프로덕트
         </Text>
         <Text mt="4px" fontSize="14px" color="#6B7280">

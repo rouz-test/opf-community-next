@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   List,
   Search,
+  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -31,6 +32,7 @@ function ProfileSummaryCard({
   subtitle,
   badge,
   avatar,
+  onFollowerClick,
   onFollowingClick,
   onEditClick,
 }: {
@@ -38,9 +40,22 @@ function ProfileSummaryCard({
   subtitle: string;
   badge?: string;
   avatar?: string;
+  onFollowerClick?: () => void;
   onFollowingClick?: () => void;
   onEditClick?: () => void;
 }) {
+  const statButtonStyle = {
+    h: '64px',
+    p: '0',
+    borderRadius: '12px',
+    bg: 'transparent',
+    color: '#111827',
+    _hover: { bg: '#FFF8F1', color: '#F59E42' },
+    _active: { bg: '#FFF4E8', color: '#F59E42' },
+    _focus: { outline: 'none', boxShadow: 'none' },
+    _focusVisible: { outline: 'none', boxShadow: '0 0 0 2px rgba(245, 158, 66, 0.18)' },
+  };
+
   return (
     <Box
       borderRadius="20px"
@@ -87,32 +102,46 @@ function ProfileSummaryCard({
       </Flex>
 
       <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="16px" mb="20px">
-        <Box textAlign="center">
-          <Text fontSize="18px" fontWeight="700" color="#111827">
-            892
-          </Text>
-          <Text mt="4px" fontSize="14px" color="#9CA3AF">
-            팔로워
-          </Text>
-        </Box>
         <Button
           type="button"
           variant="ghost"
-          h="auto"
-          p="0"
-          borderRadius="12px"
-          _hover={{ bg: 'transparent' }}
-          _focus={{ outline: 'none', boxShadow: 'none' }}
-          _focusVisible={{ outline: 'none', boxShadow: 'none' }}
-          onClick={onFollowingClick}
+          aria-label="팔로워 목록 보기"
+          onClick={onFollowerClick}
+          {...statButtonStyle}
         >
-          <Box w="100%">
-            <Text fontSize="18px" fontWeight="700" color="#111827">
+          <Box w="100%" textAlign="center">
+            <Text fontSize="18px" fontWeight="700">
+              892
+            </Text>
+            <Flex mt="4px" align="center" justify="center" gap="4px">
+              <Text fontSize="14px" color="currentColor" opacity="0.62">
+                팔로워
+              </Text>
+              <Text fontSize="13px" color="currentColor" opacity="0.62">
+                ›
+              </Text>
+            </Flex>
+          </Box>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label="팔로잉 목록 보기"
+          onClick={onFollowingClick}
+          {...statButtonStyle}
+        >
+          <Box w="100%" textAlign="center">
+            <Text fontSize="18px" fontWeight="700">
               124
             </Text>
-            <Text mt="4px" fontSize="14px" color="#9CA3AF">
-              팔로잉
-            </Text>
+            <Flex mt="4px" align="center" justify="center" gap="4px">
+              <Text fontSize="14px" color="currentColor" opacity="0.62">
+                팔로잉
+              </Text>
+              <Text fontSize="13px" color="currentColor" opacity="0.62">
+                ›
+              </Text>
+            </Flex>
           </Box>
         </Button>
       </Grid>
@@ -141,7 +170,7 @@ export default function MyPageCommunityPage() {
   const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments' | 'liked' | 'saved' | 'hidden'>('posts');
   const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [followListModalType, setFollowListModalType] = useState<'followers' | 'following' | null>(null);
   const [allPublishedPosts, setAllPublishedPosts] = useState<CommunityPost[]>([]);
   const [mypagePosts, setMypagePosts] = useState<CommunityPost[]>([]);
   const [hiddenPosts, setHiddenPosts] = useState<CommunityPost[]>([]);
@@ -170,20 +199,24 @@ export default function MyPageCommunityPage() {
   }, [isFilterOpen]);
 
   useEffect(() => {
-    if (!isFollowingModalOpen) return;
+    if (!followListModalType) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsFollowingModalOpen(false);
+        setFollowListModalType(null);
       }
     };
 
     window.addEventListener('keydown', handleEscape);
 
     return () => {
+      document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [isFollowingModalOpen]);
+  }, [followListModalType]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -579,7 +612,8 @@ export default function MyPageCommunityPage() {
               subtitle={realProfile.position ?? '직무'}
               badge="✓"
               avatar={realProfile.avatar}
-              onFollowingClick={() => setIsFollowingModalOpen(true)}
+              onFollowerClick={() => setFollowListModalType('followers')}
+              onFollowingClick={() => setFollowListModalType('following')}
               onEditClick={() => router.push('/user/mypage/settings/profile')}
             />
           </Box>
@@ -823,7 +857,8 @@ export default function MyPageCommunityPage() {
               subtitle={realProfile.position ?? '직무'}
               badge="✓"
               avatar={realProfile.avatar}
-              onFollowingClick={() => setIsFollowingModalOpen(true)}
+              onFollowerClick={() => setFollowListModalType('followers')}
+              onFollowingClick={() => setFollowListModalType('following')}
               onEditClick={() => router.push('/user/mypage/settings/profile')}
             />
           </Box>
@@ -880,79 +915,118 @@ export default function MyPageCommunityPage() {
         }}
       />
 
-      {isFollowingModalOpen ? (
-        <Flex position="fixed" inset="0" zIndex="50" align="center" justify="center" bg="rgba(0, 0, 0, 0.5)" px="16px">
-          <Button
-            type="button"
-            aria-label="팔로잉 목록 닫기"
-            position="absolute"
-            inset="0"
-            variant="ghost"
-            onClick={() => setIsFollowingModalOpen(false)}
-          />
-
+      {followListModalType ? (
+        <Flex
+          position="fixed"
+          inset="0"
+          zIndex="50"
+          align="center"
+          justify="center"
+          bg="rgba(0, 0, 0, 0.5)"
+          px="16px"
+          onClick={() => setFollowListModalType(null)}
+        >
           <Box
             position="relative"
             zIndex="1"
             maxH="80vh"
             w="100%"
-            maxW="448px"
-            overflowY="auto"
-            borderRadius="20px"
+            maxW="500px"
+            overflow="hidden"
+            borderRadius="18px"
             bg="#FFFFFF"
-            px="20px"
-            py="20px"
-            boxShadow="0 24px 64px rgba(15, 23, 42, 0.24)"
+            px={{ base: '20px', sm: '30px' }}
+            py={{ base: '24px', sm: '32px' }}
+            boxShadow="0 28px 70px rgba(0, 0, 0, 0.28)"
+            onClick={(event) => event.stopPropagation()}
           >
-            <Flex align="center" justify="space-between" mb="16px">
-              <Text fontSize="16px" fontWeight="700" color="#111827">
-                팔로잉 목록
+            <Flex align="center" justify="space-between" gap="16px">
+              <Text fontSize="18px" fontWeight="800" color="#3F3F46" letterSpacing="-0.02em">
+                팔로워, 팔로잉 목록
               </Text>
               <Button
                 type="button"
+                aria-label="팔로워, 팔로잉 목록 닫기"
                 variant="ghost"
                 minW="auto"
-                h="28px"
-                px="4px"
+                h="32px"
+                w="32px"
+                p="0"
                 color="#9CA3AF"
-                _hover={{ bg: 'transparent', color: '#4B5563' }}
-                onClick={() => setIsFollowingModalOpen(false)}
-                aria-label="팔로잉 목록 닫기"
+                _hover={{ bg: '#F3F4F6', color: '#4B5563' }}
+                _focus={{ outline: 'none', boxShadow: 'none' }}
+                onClick={() => setFollowListModalType(null)}
               >
-                ×
+                <X size={20} />
               </Button>
             </Flex>
 
-            <Text borderRadius="14px" bg="#F9FAFB" px="12px" py="10px" fontSize="12px" color="#6B7280">
-              팔로우와 팔로잉은 실명 프로필 기준으로만 제공됩니다. 익명 작성은 별도 팔로우를 만들지 않습니다.
-            </Text>
-
-            <Box position="relative" mt="16px">
-              <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" color="#9CA3AF">
+            <Box position="relative" mt="18px">
+              <Box position="absolute" left="16px" top="50%" transform="translateY(-50%)" color="#9CA3AF">
                 <Search size={16} />
               </Box>
               <Input
-                h="44px"
-                pl="40px"
+                h="42px"
+                pl="44px"
                 pr="16px"
-                borderRadius="12px"
-                borderColor="#E5E7EB"
-                placeholder="사용자 검색..."
+                borderWidth="0"
+                borderRadius="10px"
+                bg="#FFFFFF"
+                boxShadow="0 12px 30px rgba(223, 223, 223, 0.45)"
+                fontSize="13px"
+                placeholder="계정을 검색해보세요."
                 _placeholder={{ color: '#9CA3AF' }}
                 _focus={{
-                  borderColor: '#FDBA74',
-                  boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.14)',
+                  boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.14), 0 12px 30px rgba(223, 223, 223, 0.45)',
                 }}
               />
             </Box>
 
-            <Flex mt="16px" direction="column" gap="12px">
-              {followingProfiles.map((profile) => {
+            <Grid
+              mt="24px"
+              templateColumns="repeat(2, minmax(0, 1fr))"
+              borderBottom="1px solid"
+              borderColor="#E5E7EB"
+            >
+              {[
+                { type: 'followers' as const, label: '팔로워', count: 124 },
+                { type: 'following' as const, label: '팔로잉', count: 82 },
+              ].map((tab) => {
+                const isActive = followListModalType === tab.type;
+
+                return (
+                  <Button
+                    key={tab.type}
+                    type="button"
+                    h="44px"
+                    borderRadius="0"
+                    borderBottom={isActive ? '2px solid' : '2px solid transparent'}
+                    borderColor={isActive ? '#FF5A00' : 'transparent'}
+                    bg="transparent"
+                    color={isActive ? '#3F3F46' : '#6B7280'}
+                    fontSize="14px"
+                    fontWeight="800"
+                    _hover={{ bg: 'transparent', color: '#FF5A00' }}
+                    _focus={{ outline: 'none', boxShadow: 'none' }}
+                    onClick={() => setFollowListModalType(tab.type)}
+                  >
+                    {tab.label}
+                    <Text as="span" ml="12px" color="currentColor">
+                      {tab.count}
+                    </Text>
+                  </Button>
+                );
+              })}
+            </Grid>
+
+            <Flex mt="16px" maxH="380px" overflowY="auto" direction="column" gap="10px" pr="2px">
+              {followingProfiles.map((profile, index) => {
                 const displayName =
                   profile.mode === 'real'
                     ? ('name' in profile && profile.name ? profile.name : profile.nickname)
                     : profile.name;
                 const profilePosition = 'position' in profile ? profile.position : undefined;
+                const isFollowing = followListModalType === 'following' || index !== 2;
 
                 return (
                   <Flex
@@ -962,45 +1036,44 @@ export default function MyPageCommunityPage() {
                     gap="12px"
                     borderWidth="1px"
                     borderColor="#E5E7EB"
-                    borderRadius="16px"
+                    borderRadius="18px"
                     bg="#FFFFFF"
-                    px="16px"
-                    py="14px"
+                    px="14px"
+                    py="12px"
+                    boxShadow="0 8px 20px rgba(223, 223, 223, 0.32)"
                   >
                     <Flex minW="0" align="center" gap="12px">
-                      <Box position="relative" boxSize="40px" overflow="hidden" rounded="full" borderWidth="1px" borderColor="#E5E7EB">
+                      <Box position="relative" boxSize="26px" overflow="hidden" rounded="full" flexShrink="0">
                         <Image src={profile.avatar} alt={displayName} w="100%" h="100%" objectFit="cover" />
                       </Box>
                       <Box minW="0">
                         <Flex align="center" gap="4px">
-                          <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
+                          <Text fontSize="13px" fontWeight="800" color="#111827" lineClamp="1">
                             {displayName}
                           </Text>
                           {profile.mode === 'real' ? <BadgeCheck size={14} color="#3B82F6" /> : null}
                         </Flex>
-                        <Text mt="2px" fontSize="11px" color="#6B7280" lineClamp="1">
-                          {profilePosition ?? '커뮤니티 활동 중'}
-                        </Text>
                         <Text mt="2px" fontSize="11px" color="#9CA3AF" lineClamp="1">
-                          {profile.mode === 'real'
-                            ? '인증된 실명 프로필입니다.'
-                            : '실명 프로필로 활동 중입니다.'}
+                          코마소프트 · {profilePosition ?? '디자이너'}
                         </Text>
                       </Box>
                     </Flex>
 
                     <Button
                       type="button"
-                      h="32px"
-                      px="10px"
-                      borderRadius="10px"
-                      bg="#F3F4F6"
-                      color="#6B7280"
-                      fontSize="11px"
-                      fontWeight="600"
-                      _hover={{ bg: '#E5E7EB', color: '#374151' }}
+                      h="38px"
+                      minW="68px"
+                      px="14px"
+                      borderRadius="12px"
+                      bg={isFollowing ? '#F8F8F8' : '#333333'}
+                      color={isFollowing ? '#4B5563' : '#FFFFFF'}
+                      fontSize="13px"
+                      fontWeight="800"
+                      _hover={{
+                        bg: isFollowing ? '#EFEFEF' : '#222222',
+                      }}
                     >
-                      팔로잉
+                      {isFollowing ? '팔로잉' : '팔로우'}
                     </Button>
                   </Flex>
                 );

@@ -458,7 +458,7 @@ function GridImages({
   return (
     <Box mb="3" display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap="2">
       {visibleImages.map((image, index) => (
-        <Box key={index} position="relative" aspectRatio="16 / 9" overflow="hidden" rounded="lg" bg="gray.100">
+        <Box key={index} position="relative" aspectRatio="16 / 9" overflow="hidden" rounded="lg">
           <Image src={image} alt={`post-${index}`} h="full" w="full" objectFit="cover" />
           {index === 1 && imagesLength > 2 ? (
             <Flex position="absolute" inset="0" align="center" justify="center" bg="blackAlpha.600" fontSize="2xl" fontWeight="700" color="white">

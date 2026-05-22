@@ -3,7 +3,7 @@
 import { Box, Button, Flex, Image, Link as ChakraLink, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, Bookmark, Eye, Heart, Megaphone, MessageSquare } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Bookmark, Eye, Heart, Megaphone, MessageSquare, Share2 } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
@@ -1049,12 +1049,9 @@ export default function CommunityContentDetailPage() {
               color="#6B7280"
               _hover={{ bg: '#F9FAFB', color: '#111827' }}
             >
-              <Link href="/admin/community/content">
-                <Flex align="center" gap="6px">
-                  <ArrowLeft size={16} />
-                  <Text as="span" fontSize="13px" fontWeight="600">
-                    목록으로
-                  </Text>
+              <Link href="/admin/community/content" aria-label="콘텐츠 목록으로 이동">
+                <Flex align="center" justify="center">
+                  <ArrowLeft size={24} style={{ width: 24, height: 24 }} />
                 </Flex>
               </Link>
             </Button>
@@ -1106,7 +1103,7 @@ export default function CommunityContentDetailPage() {
             ) : null}
           </Flex>
 
-          <Text fontSize="28px" fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
+          <Text fontSize="18px" fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
             {content.title}
           </Text>
 
@@ -1118,7 +1115,7 @@ export default function CommunityContentDetailPage() {
             </Flex>
           ) : null}
 
-          <Flex align="center" gap="12px" borderBottom="1px solid" borderColor="#E5E7EB" pb="18px">
+          <Flex align="center" gap="12px" pb="18px">
             <Flex
               align="center"
               justify="center"
@@ -1141,7 +1138,7 @@ export default function CommunityContentDetailPage() {
                 </Text>
                 {content.author.visibility !== 'anonymous' ? <BadgeCheck size={16} color="#3B82F6" /> : null}
               </Flex>
-              <Text mt="2px" fontSize="13px" color="#6B7280">
+              <Text mt="2px" fontSize="12px" color="#6B7280">
                 {content.author.visibility === 'anonymous' ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}
               </Text>
             </Box>
@@ -1157,32 +1154,57 @@ export default function CommunityContentDetailPage() {
             )}
           </Flex>
 
-          <Flex align="center" justify="space-between" borderTop="1px solid" borderColor="#E5E7EB" mt="24px" pt="16px">
-            <Flex align="center" gap="18px" color="#6B7280">
+          <Flex align="center" justify="space-between" mt="24px" color="#6B7280">
+            <Flex align="center" gap="16px">
               <Flex align="center" gap="6px">
-                <Eye size={16} />
-                <Text fontSize="13px" fontWeight="600">{content.stats.viewCount}</Text>
+                <Eye size={20} />
+                <Text fontSize="14px">{content.stats.viewCount}</Text>
               </Flex>
               <Flex align="center" gap="6px">
-                <Heart size={16} />
-                <Text fontSize="13px" fontWeight="600">{content.stats.likeCount}</Text>
+                <Heart size={20} />
+                <Text fontSize="14px">{content.stats.likeCount}</Text>
               </Flex>
               <Flex align="center" gap="6px">
-                <MessageSquare size={16} />
-                <Text fontSize="13px" fontWeight="600">{content.stats.commentCount + content.stats.replyCount}</Text>
+                <MessageSquare size={20} />
+                <Text fontSize="14px">{content.stats.commentCount + content.stats.replyCount}</Text>
               </Flex>
-              <Flex align="center" gap="6px">
-                <Bookmark size={16} />
-                <Text fontSize="13px" fontWeight="600">{content.stats.saveCount}</Text>
-              </Flex>
+            </Flex>
+
+            <Flex align="center" gap="16px">
+              <Button
+                type="button"
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                p="0"
+                color="#6B7280"
+                _hover={{ bg: 'transparent', color: '#3B82F6' }}
+                aria-label="공유"
+                title="공유하기"
+              >
+                <Share2 size={20} />
+              </Button>
+              <Button
+                type="button"
+                minW="auto"
+                h="auto"
+                bg="transparent"
+                p="0"
+                color="#6B7280"
+                _hover={{ bg: 'transparent', color: '#F97316' }}
+                aria-label="저장"
+                title="저장"
+              >
+                <Bookmark size={20} />
+              </Button>
             </Flex>
           </Flex>
         </Box>
 
         <Box overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="18px" bg="#FFFFFF">
-          <Box px="24px" py="20px" borderBottom="1px solid" borderColor="#E5E7EB">
+          <Box px="24px" py="20px">
             <Flex align="center" gap="6px" mb="16px">
-              <Text fontSize="18px" fontWeight="700" color="#111827">
+              <Text fontSize="16px" fontWeight="700" color="#111827">
                 댓글
               </Text>
               <Text fontSize="13px" color="#6B7280">

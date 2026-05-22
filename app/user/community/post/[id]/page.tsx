@@ -22,6 +22,7 @@ import {
   MessageSquare,
   MoreHorizontal,
   Pencil,
+  Share2,
   Trash2,
   EyeOff,
 } from 'lucide-react';
@@ -1145,7 +1146,8 @@ export default function CommunityPostDetailPage() {
 
     return mockCommunityPosts
       .filter((item) => item.author.id === content.author.id && item.id !== content.id)
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 3);
   }, [content]);
 
   if (isLoading) {
@@ -1215,12 +1217,9 @@ export default function CommunityPostDetailPage() {
                   color="#6B7280"
                   _hover={{ bg: '#F9FAFB', color: '#111827' }}
                 >
-                  <Link href="/user/community">
-                    <Flex align="center" gap="6px">
-                      <ArrowLeft size={16} />
-                      <Text as="span" fontSize="13px" fontWeight="600">
-                        목록으로
-                      </Text>
+                  <Link href="/user/community" aria-label="커뮤니티 목록으로 이동">
+                    <Flex align="center" justify="center">
+                      <ArrowLeft size={24} style={{ width: 24, height: 24 }} />
                     </Flex>
                   </Link>
                 </Button>
@@ -1348,7 +1347,7 @@ export default function CommunityPostDetailPage() {
                 ) : null}
               </Flex>
 
-              <Text fontSize={{ base: '24px', md: '28px' }} fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
+              <Text fontSize="18px" fontWeight="700" lineHeight="1.45" color="#111827" mb="14px">
                 {content.title}
               </Text>
 
@@ -1360,7 +1359,7 @@ export default function CommunityPostDetailPage() {
               </Flex>
             ) : null}
 
-              <Flex align="center" gap="12px" borderBottom="1px solid" borderColor="#E5E7EB" pb="18px">
+              <Flex align="center" gap="12px" pb="18px">
                 <Flex
                   align="center"
                   justify="center"
@@ -1383,7 +1382,7 @@ export default function CommunityPostDetailPage() {
                     </Text>
                     {!isAnonymousContent ? <BadgeCheck size={16} color="#3B82F6" /> : null}
                   </Flex>
-                  <Text mt="2px" fontSize="13px" color="#6B7280">
+                  <Text mt="2px" fontSize="12px" color="#6B7280">
                     {isAnonymousContent ? publishedAtDisplay : `실명 프로필 · ${publishedAtDisplay}`}
                   </Text>
                 </Box>
@@ -1399,11 +1398,11 @@ export default function CommunityPostDetailPage() {
                 )}
               </Flex>
 
-              <Flex align="center" justify="space-between" borderTop="1px solid" borderColor="#E5E7EB" mt="24px" pt="16px">
-                <Flex align="center" gap={{ base: '12px', md: '18px' }} color="#6B7280" wrap="wrap">
+              <Flex align="center" justify="space-between" mt="24px" color="#6B7280">
+                <Flex align="center" gap="16px" wrap="wrap">
                   <Flex align="center" gap="6px">
-                    <Eye size={16} />
-                    <Text fontSize="13px" fontWeight="600">{content.stats.viewCount}</Text>
+                    <Eye size={20} />
+                    <Text fontSize="14px">{content.stats.viewCount}</Text>
                   </Flex>
                   <Button
                     type="button"
@@ -1420,18 +1419,34 @@ export default function CommunityPostDetailPage() {
                   >
                     <Flex align="center" gap="6px">
                       <Heart
-                        size={16}
+                        size={20}
                         fill={content.viewerState?.isLikedByMe ? 'currentColor' : 'none'}
                       />
-                      <Text fontSize="13px" fontWeight="600">{content.stats.likeCount}</Text>
+                      <Text fontSize="14px">{content.stats.likeCount}</Text>
                     </Flex>
                   </Button>
                   <Flex align="center" gap="6px">
-                    <MessageSquare size={16} />
-                    <Text fontSize="13px" fontWeight="600">
+                    <MessageSquare size={20} />
+                    <Text fontSize="14px">
                       {getCommentTotalCount(content.stats.commentCount, content.stats.replyCount)}
                     </Text>
                   </Flex>
+                </Flex>
+
+                <Flex align="center" gap="16px">
+                  <Button
+                    type="button"
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color="#6B7280"
+                    _hover={{ bg: 'transparent', color: '#3B82F6' }}
+                    aria-label="공유"
+                    title="공유하기"
+                  >
+                    <Share2 size={20} />
+                  </Button>
                   <Button
                     type="button"
                     onClick={() => {
@@ -1447,10 +1462,9 @@ export default function CommunityPostDetailPage() {
                   >
                     <Flex align="center" gap="6px">
                       <Bookmark
-                        size={16}
+                        size={20}
                         fill={content.viewerState?.isSavedByMe ? 'currentColor' : 'none'}
                       />
-                      <Text fontSize="13px" fontWeight="600">{content.stats.saveCount}</Text>
                     </Flex>
                   </Button>
                 </Flex>
@@ -1463,9 +1477,9 @@ export default function CommunityPostDetailPage() {
               bg="#FFFFFF"
               boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
             >
-              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }} borderBottom="1px solid" borderColor="#E5E7EB">
+              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
                 <Flex align="center" gap="6px" mb="16px">
-                  <Text fontSize="18px" fontWeight="700" color="#111827">
+                  <Text fontSize="16px" fontWeight="700" color="#111827">
                     댓글
                   </Text>
                   <Text fontSize="13px" color="#6B7280">
@@ -1589,14 +1603,28 @@ export default function CommunityPostDetailPage() {
                 <Flex direction="column" gap="10px">
                   {authorOtherPosts.map((post) => (
                     <Box key={post.id} borderBottom="1px solid" borderColor="#F3F4F6" pb="10px" _last={{ borderBottom: 'none', pb: 0 }}>
-                      <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
+                      <ChakraLink asChild display="block" w="100%" _hover={{ textDecoration: 'none' }}>
                         <Link href={`/user/community/post/${post.id}`}>
-                          <Text fontSize="13px" fontWeight="600" color="#111827" lineClamp="2">
-                            {post.title}
-                          </Text>
-                          <Text mt="4px" fontSize="12px" color="#9CA3AF">
-                            {new Date(post.createdAt).toLocaleDateString('ko-KR')}
-                          </Text>
+                          <Flex align="center" justify="space-between" gap="12px" w="100%">
+                            <Box minW="0" flex="1">
+                              <Text display="block" fontSize="13px" fontWeight="600" color="#111827">
+                                {post.title}
+                              </Text>
+                              <Text display="block" mt="4px" fontSize="12px" color="#9CA3AF">
+                                {new Date(post.createdAt).toLocaleDateString('ko-KR')}
+                              </Text>
+                            </Box>
+                            {post.images?.[0] ? (
+                              <Image
+                                src={post.images[0]}
+                                alt={`${post.title} 대표 이미지`}
+                                boxSize="64px"
+                                flexShrink={0}
+                                borderRadius="12px"
+                                objectFit="cover"
+                              />
+                            ) : null}
+                          </Flex>
                         </Link>
                       </ChakraLink>
                     </Box>

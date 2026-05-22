@@ -1,20 +1,21 @@
 'use client';
 
-import { Box, Button, Flex, Switch, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
+import UserSwitch from '@/app/user/components/ui/switch';
 
 function NotificationRow({
   title,
   description,
   checked,
-  onToggle,
+  onCheckedChange,
   showDivider = false,
 }: {
   title: string;
   description?: string;
   checked: boolean;
-  onToggle: () => void;
+  onCheckedChange: (checked: boolean) => void;
   showDivider?: boolean;
 }) {
   return (
@@ -37,24 +38,7 @@ function NotificationRow({
         ) : null}
       </Box>
 
-      <Switch.Root checked={checked} onCheckedChange={onToggle}>
-        <Switch.HiddenInput />
-        <Switch.Control
-          w="44px"
-          h="24px"
-          bg={checked ? '#F97316' : '#E5E7EB'}
-          borderRadius="9999px"
-          transition="background-color 0.2s ease"
-        >
-          <Switch.Thumb
-            boxSize="20px"
-            bg="#FFFFFF"
-            boxShadow="sm"
-            transform={checked ? 'translateX(20px)' : 'translateX(2px)'}
-            transition="transform 0.2s ease"
-          />
-        </Switch.Control>
-      </Switch.Root>
+      <UserSwitch checked={checked} onCheckedChange={onCheckedChange} />
     </Flex>
   );
 }
@@ -82,7 +66,7 @@ export default function MyPageSettingsNotificationsPage() {
   return (
     <Box mx="auto" w="100%" maxW="960px">
       <Box>
-        <Text fontSize={{ base: '26px', md: '30px' }} fontWeight="700" color="#111827">
+        <Text fontSize="20px" fontWeight="700" color="#111827">
           알림
         </Text>
         <Text mt="4px" fontSize="14px" color="#6B7280">
@@ -101,12 +85,12 @@ export default function MyPageSettingsNotificationsPage() {
                 title="서비스 알림 이메일 정보 수신"
                 description="*모집 알림, 멘션 알림 등 중요한 알림이 전송됩니다."
                 checked={isServiceEmailEnabled}
-                onToggle={() => setIsServiceEmailEnabled((prev) => !prev)}
+                onCheckedChange={setIsServiceEmailEnabled}
               />
               <NotificationRow
                 title="뉴스레터 정보 수신"
                 checked={isNewsletterEnabled}
-                onToggle={() => setIsNewsletterEnabled((prev) => !prev)}
+                onCheckedChange={setIsNewsletterEnabled}
                 showDivider
               />
             </Flex>
