@@ -20,9 +20,15 @@ import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
 const COMMUNITY_CONTENT_REACTIONS_PATH = 'data/mock/community-content-reactions.json';
+const COMMUNITY_FOLLOWS_PATH = 'data/mock/community-follows.json';
 const TAGS_PATH = 'data/mock/tags.json';
 
 type CreateCommunityContentRequestBody = Partial<CommunityContentPayload>;
+
+type CommunityFollowRelation = {
+  followerAccountId: string;
+  followingAccountId: string;
+};
 
 const DEFAULT_STATS: CommunityContentStats = {
   viewCount: 0,
@@ -123,12 +129,19 @@ export async function GET(request: NextRequest) {
   try {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
     const reactions = await readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH);
+    const follows = await readJsonFile<CommunityFollowRelation[]>(COMMUNITY_FOLLOWS_PATH).catch(() => []);
     const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const query = parseCommunityContentListQuery(request.nextUrl.searchParams);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const hiddenByAuthorOnly = request.nextUrl.searchParams.get('hiddenByAuthorOnly') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
     const viewerAccountId = getViewerAccountId(request);
+    const followingOnly = request.nextUrl.searchParams.get('followingOnly') === 'true';
+    const followingAuthorIds = new Set(
+      follows
+        .filter((relation) => relation.followerAccountId === viewerAccountId)
+        .map((relation) => relation.followingAccountId),
+    );
 
     let filteredItems = isValidContentStatus(query.status)
       ? normalizedContents.filter((item) => item.status === query.status)
@@ -138,6 +151,11 @@ export async function GET(request: NextRequest) {
       const hiddenByAuthor = isHiddenByAuthor(content);
       const referenceDate = getContentReferenceDate(content);
       const resolvedTags = resolveTags(content.tagIds, tags);
+
+      if (followingOnly) {
+        if (!viewerAccountId) return false;
+        if (!followingAuthorIds.has(content.author.id)) return false;
+      }
 
       if (hiddenByAuthorOnly) {
         if (!includeHiddenByAuthor) return false;

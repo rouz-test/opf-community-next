@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import {
-  mockCommunityPosts,
-  mockNotices,
   type CommunityPost,
   COMMUNITY_CURRENT_USER,
   mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
 import { orangePickArticles } from '@/data/orange-pick-articles';
-import type { CommunityContent } from '@/types/community-content';
+import tagsData from '@/data/mock/tags.json';
+import type { CommunityContent, CommunityContentListResponse } from '@/types/community-content';
+import type { Tag as CommunityTag } from '@/types/tag';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { HighlightCarousel } from '@/app/user/components/community/HighlightCarousel';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
@@ -31,58 +31,18 @@ import {
   type UserCommunityPreferences,
 } from '@/app/user/lib/community-filter-preferences';
 
-type CommunityPageState = {
-  selectedTags: string[];
-  searchQuery: string;
-  showFollowingOnly: boolean;
-  sortBy: CommunitySortMode;
-};
-
 const POSTS_PAGE_SIZE = 20;
 
-const getAllTags = (posts: CommunityPost[]) =>
-  Array.from(new Set(posts.flatMap((post) => post.tags || [])));
+const communityTags = tagsData as CommunityTag[];
+
+const getAllTags = () =>
+  communityTags
+    .filter((tag) => tag.status === 'active' && !tag.isDefault)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((tag) => tag.name);
 
 const getHighlightPosts = (posts: CommunityPost[], notices: CommunityPost[]) =>
   [...notices, ...posts].filter((post) => post.isNotice || post.isPinned);
-
-const filterPosts = (
-  posts: CommunityPost[],
-  { selectedTags, searchQuery, showFollowingOnly, sortBy }: CommunityPageState,
-) => {
-  let filteredPosts = [...posts];
-
-  if (selectedTags.length > 0) {
-    filteredPosts = filteredPosts.filter((post) =>
-      post.tags?.some((tag) => selectedTags.includes(tag)),
-    );
-  }
-
-  if (searchQuery.trim()) {
-    const keyword = searchQuery.trim().toLowerCase();
-    filteredPosts = filteredPosts.filter(
-      (post) =>
-        post.title.toLowerCase().includes(keyword) ||
-        post.content.toLowerCase().includes(keyword) ||
-        (post.tags || []).some((tag) => tag.toLowerCase().includes(keyword)),
-    );
-  }
-
-  if (showFollowingOnly) {
-    filteredPosts = filteredPosts.filter((post) => Boolean(post.highlightedComment));
-  }
-
-  if (sortBy === 'recommended') {
-    filteredPosts.sort((a, b) => b.likes - a.likes);
-  } else {
-    filteredPosts.sort(
-      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime(),
-    );
-  }
-
-  return filteredPosts;
-};
-
 
 const formatRelativeDate = (dateString?: string) => {
   if (!dateString) return '방금 전';
@@ -109,12 +69,17 @@ export default function CommunityPage() {
   const [sortBy, setSortBy] = useState<CommunitySortMode>(DEFAULT_COMMUNITY_FILTER_PREFERENCES.sortBy);
   const [selectedTags, setSelectedTags] = useState<string[]>(DEFAULT_COMMUNITY_FILTER_PREFERENCES.selectedTags);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFollowingOnly, setShowFollowingOnly] = useState(DEFAULT_COMMUNITY_FILTER_PREFERENCES.showFollowingOnly);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isMobileTagFilterOpen, setIsMobileTagFilterOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const [renderedPostCount, setRenderedPostCount] = useState(POSTS_PAGE_SIZE);
-  const [createdPosts, setCreatedPosts] = useState<CommunityPost[]>([]);
+  const [serverPosts, setServerPosts] = useState<CommunityPost[]>([]);
+  const [highlightServerPosts, setHighlightServerPosts] = useState<CommunityPost[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isPostsLoading, setIsPostsLoading] = useState(true);
+  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false);
   const [updatedPosts, setUpdatedPosts] = useState<CommunityPost[]>([]);
   const [deletedPostIds, setDeletedPostIds] = useState<string[]>([]);
   const [authorHiddenPostIds, setAuthorHiddenPostIds] = useState<string[]>([]);
@@ -133,45 +98,29 @@ export default function CommunityPage() {
 
   const baseCommunityPosts = useMemo(
     () =>
-      [
-        ...createdPosts,
-        ...mockCommunityPosts
-          .map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post)
-          .filter((post) => !createdPosts.some((created) => created.id === post.id)),
-      ]
+      serverPosts
+        .map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post)
         .filter((post) => !deletedPostIds.includes(post.id) && !authorHiddenPostIds.includes(post.id)),
-    [authorHiddenPostIds, createdPosts, deletedPostIds, updatedPosts],
+    [authorHiddenPostIds, deletedPostIds, serverPosts, updatedPosts],
   );
 
-  const allTags = useMemo(() => getAllTags(baseCommunityPosts), [baseCommunityPosts]);
+  const allTags = useMemo(() => getAllTags(), []);
 
   const highlightPosts = useMemo(
     () =>
       getHighlightPosts(
-        baseCommunityPosts,
-        mockNotices.filter((post) => !deletedPostIds.includes(post.id) && !authorHiddenPostIds.includes(post.id)),
+        highlightServerPosts
+          .map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post)
+          .filter((post) => !deletedPostIds.includes(post.id) && !authorHiddenPostIds.includes(post.id)),
+        [],
       ),
-    [authorHiddenPostIds, baseCommunityPosts, deletedPostIds],
+    [authorHiddenPostIds, deletedPostIds, highlightServerPosts, updatedPosts],
   );
 
-  const visiblePosts = useMemo(
-    () =>
-      filterPosts(baseCommunityPosts, {
-        selectedTags,
-        searchQuery,
-        showFollowingOnly,
-        sortBy,
-      }),
-    [baseCommunityPosts, searchQuery, selectedTags, showFollowingOnly, sortBy],
-  );
-  const renderedPosts = useMemo(
-    () => visiblePosts.slice(0, renderedPostCount),
-    [renderedPostCount, visiblePosts],
-  );
-  const hasMorePosts = renderedPostCount < visiblePosts.length;
+  const visiblePosts = baseCommunityPosts;
+  const hasMorePosts = currentPage < totalPages;
 
   const toggleTag = (tag: string) => {
-    setRenderedPostCount(POSTS_PAGE_SIZE);
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag],
     );
@@ -182,12 +131,10 @@ export default function CommunityPage() {
   };
 
   const toggleFollowingOnly = () => {
-    setRenderedPostCount(POSTS_PAGE_SIZE);
     setShowFollowingOnly((prev) => !prev);
   };
 
   const clearSelectedTags = () => {
-    setRenderedPostCount(POSTS_PAGE_SIZE);
     setSelectedTags([]);
   };
 
@@ -202,6 +149,127 @@ export default function CommunityPage() {
   const toggleMobileTagFilterOpen = () => {
     setIsMobileTagFilterOpen((prev) => !prev);
   };
+
+  const fetchCommunityPosts = useCallback(
+    async (page: number, mode: 'replace' | 'append' = 'replace') => {
+      if (mode === 'replace') {
+        setIsPostsLoading(true);
+      } else {
+        setIsLoadingMorePosts(true);
+      }
+
+      try {
+        const searchParams = new URLSearchParams({
+          status: 'published',
+          page: String(page),
+          pageSize: String(POSTS_PAGE_SIZE),
+          accountId: COMMUNITY_CURRENT_USER.accountId,
+          sortKey: sortBy === 'recommended' ? 'like' : 'date',
+          sortDirection: 'desc',
+        });
+
+        const search = debouncedSearchQuery.trim();
+        if (search) {
+          searchParams.set('search', search);
+        }
+
+        for (const tag of selectedTags) {
+          searchParams.append('tag', tag);
+        }
+
+        if (showFollowingOnly) {
+          searchParams.set('followingOnly', 'true');
+        }
+
+        const response = await fetch(`/api/mock/community-contents?${searchParams.toString()}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json().catch(() => null)) as CommunityContentListResponse | { message?: string } | null;
+
+        if (!response.ok || !data || !('items' in data)) {
+          throw new Error((data as { message?: string } | null)?.message || '게시글 목록을 불러오지 못했습니다.');
+        }
+
+        const nextPosts = data.items.map(mapCommunityContentToPost);
+
+        setServerPosts((prev) => {
+          if (mode === 'replace') return nextPosts;
+
+          const merged = [...prev];
+          for (const nextPost of nextPosts) {
+            const existingIndex = merged.findIndex((post) => post.id === nextPost.id);
+            if (existingIndex >= 0) {
+              merged[existingIndex] = nextPost;
+            } else {
+              merged.push(nextPost);
+            }
+          }
+          return merged;
+        });
+        setCurrentPage(data.meta.page);
+        setTotalPages(data.meta.totalPages);
+      } catch (error) {
+        toaster.create({
+          description: error instanceof Error ? error.message : '게시글 목록을 불러오지 못했습니다.',
+          type: 'error',
+          duration: 2000,
+        });
+      } finally {
+        if (mode === 'replace') {
+          setIsPostsLoading(false);
+        } else {
+          setIsLoadingMorePosts(false);
+        }
+      }
+    },
+    [debouncedSearchQuery, selectedTags, showFollowingOnly, sortBy],
+  );
+
+  const fetchHighlightPosts = useCallback(async () => {
+    try {
+      const searchParams = new URLSearchParams({
+        status: 'published',
+        page: '1',
+        pageSize: '20',
+        accountId: COMMUNITY_CURRENT_USER.accountId,
+        sortKey: 'date',
+        sortDirection: 'desc',
+      });
+      searchParams.append('flag', 'notice');
+      searchParams.append('flag', 'pinned');
+
+      const response = await fetch(`/api/mock/community-contents?${searchParams.toString()}`, {
+        cache: 'no-store',
+      });
+      const data = (await response.json().catch(() => null)) as CommunityContentListResponse | { message?: string } | null;
+
+      if (!response.ok || !data || !('items' in data)) {
+        throw new Error((data as { message?: string } | null)?.message || '캐러셀 게시글을 불러오지 못했습니다.');
+      }
+
+      setHighlightServerPosts(data.items.map(mapCommunityContentToPost));
+    } catch (error) {
+      console.error('[CommunityPage] failed to load highlight posts:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    void fetchCommunityPosts(1, 'replace');
+  }, [fetchCommunityPosts]);
+
+  useEffect(() => {
+    void fetchHighlightPosts();
+  }, [fetchHighlightPosts]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -224,7 +292,6 @@ export default function CommunityPage() {
         setSortBy(preferences.sortBy);
         setShowFollowingOnly(preferences.showFollowingOnly);
         setSelectedTags(preferences.selectedTags);
-        setRenderedPostCount(POSTS_PAGE_SIZE);
       } catch (error) {
         console.error('[CommunityPage] failed to load filter preferences:', error);
       } finally {
@@ -273,21 +340,15 @@ export default function CommunityPage() {
     };
   }, [isPreferencesLoaded, selectedTags, showFollowingOnly, sortBy, viewMode]);
 
-  const handleCreatedContent = (createdContent: CommunityContent) => {
-    const nextPost = mapCommunityContentToPost(createdContent);
-    setCreatedPosts((prev) => [nextPost, ...prev.filter((post) => post.id !== nextPost.id)]);
-    setRenderedPostCount((prev) => Math.max(prev, POSTS_PAGE_SIZE));
+  const handleCreatedContent = () => {
     setIsWriteModalOpen(false);
     setEditingContent(null);
+    void fetchCommunityPosts(1, 'replace');
+    void fetchHighlightPosts();
   };
 
   const handleUpdatedContent = (updatedContent: CommunityContent) => {
     const nextPost = mapCommunityContentToPost(updatedContent);
-    setCreatedPosts((prev) =>
-      prev.some((post) => post.id === nextPost.id)
-        ? prev.map((post) => (post.id === nextPost.id ? nextPost : post))
-        : prev,
-    );
     setUpdatedPosts((prev) =>
       prev.some((post) => post.id === nextPost.id)
         ? prev.map((post) => (post.id === nextPost.id ? nextPost : post))
@@ -295,6 +356,8 @@ export default function CommunityPage() {
     );
     setIsWriteModalOpen(false);
     setEditingContent(null);
+    void fetchCommunityPosts(1, 'replace');
+    void fetchHighlightPosts();
   };
 
   const handleRequestDeletePost = (post: CommunityPost) => {
@@ -329,11 +392,6 @@ export default function CommunityPage() {
         isSavedByMe: post.isSavedByMe,
       };
 
-      setCreatedPosts((prev) =>
-        prev.some((item) => item.id === nextPost.id)
-          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
-          : prev,
-      );
       setUpdatedPosts((prev) =>
         prev.some((item) => item.id === nextPost.id)
           ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
@@ -372,11 +430,6 @@ export default function CommunityPage() {
         isSavedByMe: Boolean(data.saved),
       };
 
-      setCreatedPosts((prev) =>
-        prev.some((item) => item.id === nextPost.id)
-          ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
-          : prev,
-      );
       setUpdatedPosts((prev) =>
         prev.some((item) => item.id === nextPost.id)
           ? prev.map((item) => (item.id === nextPost.id ? nextPost : item))
@@ -431,7 +484,6 @@ export default function CommunityPage() {
       }
 
       setDeletedPostIds((prev) => [...prev, deleteTargetPost.id]);
-      setCreatedPosts((prev) => prev.filter((post) => post.id !== deleteTargetPost.id));
       setDeleteTargetPost(null);
       toaster.create({
         description: '게시글이 삭제되었습니다.',
@@ -474,7 +526,6 @@ export default function CommunityPage() {
       }
 
       setAuthorHiddenPostIds((prev) => [...prev, hideTargetPost.id]);
-      setCreatedPosts((prev) => prev.filter((post) => post.id !== hideTargetPost.id));
       setHideTargetPost(null);
       toaster.create({
         description: '게시글이 숨김 처리되었습니다.',
@@ -508,13 +559,14 @@ export default function CommunityPage() {
 
   useEffect(() => {
     if (!hasMorePosts) return;
+    if (isPostsLoading || isLoadingMorePosts) return;
     if (!loadMoreRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const firstEntry = entries[0];
         if (!firstEntry?.isIntersecting) return;
-        setRenderedPostCount((prev) => Math.min(prev + POSTS_PAGE_SIZE, visiblePosts.length));
+        void fetchCommunityPosts(currentPage + 1, 'append');
       },
       {
         rootMargin: '240px 0px',
@@ -526,7 +578,7 @@ export default function CommunityPage() {
     return () => {
       observer.disconnect();
     };
-  }, [hasMorePosts, visiblePosts.length]);
+  }, [currentPage, fetchCommunityPosts, hasMorePosts, isLoadingMorePosts, isPostsLoading]);
 
   return (
     <Box as="main" minH="screen" bg="gray.50">
@@ -573,19 +625,16 @@ export default function CommunityPage() {
                 <CommunityToolbar
                   searchQuery={searchQuery}
                   onSearchQueryChange={(value) => {
-                    setRenderedPostCount(POSTS_PAGE_SIZE);
                     setSearchQuery(value);
                   }}
                   showFollowingOnly={showFollowingOnly}
                   onToggleFollowingOnly={toggleFollowingOnly}
                   sortBy={sortBy}
                   onSortByChange={(value) => {
-                    setRenderedPostCount(POSTS_PAGE_SIZE);
                     setSortBy(value);
                   }}
                   viewMode={viewMode}
                   onViewModeChange={(value) => {
-                    setRenderedPostCount(POSTS_PAGE_SIZE);
                     setViewMode(value);
                   }}
                   isFilterOpen={isFilterOpen}
@@ -601,7 +650,13 @@ export default function CommunityPage() {
               </Flex>
 
               <Flex as="section" direction="column" gap="4">
-                {renderedPosts.map((post) => {
+                {isPostsLoading ? (
+                  <Flex align="center" justify="center" py="10">
+                    <Spinner size="sm" color="#FF6900" />
+                  </Flex>
+                ) : null}
+
+                {!isPostsLoading && visiblePosts.map((post) => {
                   if (viewMode === 'board') {
                     return (
                       <BoardPostRow
@@ -633,7 +688,7 @@ export default function CommunityPage() {
                   );
                 })}
 
-                {visiblePosts.length === 0 ? (
+                {!isPostsLoading && visiblePosts.length === 0 ? (
                   <Box rounded="lg" borderWidth="1px" borderStyle="dashed" borderColor="gray.300" bg="white" p="10" textAlign="center">
                     <Text fontSize="sm" color="gray.500">
                       검색 결과가 없습니다.
@@ -643,7 +698,7 @@ export default function CommunityPage() {
 
                 {hasMorePosts ? (
                   <Flex ref={loadMoreRef} align="center" justify="center" py="6">
-                    <Spinner size="sm" color="#FF6900" />
+                    {isLoadingMorePosts ? <Spinner size="sm" color="#FF6900" /> : null}
                   </Flex>
                 ) : null}
               </Flex>

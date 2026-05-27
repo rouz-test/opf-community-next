@@ -1,0 +1,18 @@
+[
+  {
+    "followerAccountId": "account-user-1",
+    "followingAccountId": "admin-1"
+  },
+  {
+    "followerAccountId": "account-user-1",
+    "followingAccountId": "user-999"
+  },
+  {
+    "followerAccountId": "account-user-1",
+    "followingAccountId": "user-11"
+  },
+  {
+    "followerAccountId": "account-user-1",
+    "followingAccountId": "user-22"
+  }
+]
