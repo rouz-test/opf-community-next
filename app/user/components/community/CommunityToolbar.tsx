@@ -226,10 +226,10 @@ export function CommunityToolbar({
               type="button"
               onClick={onToggleTagFilterOpen}
               gap="2"
-              rounded="lg"
-              borderWidth="1px"
-              borderColor={isTagFilterOpen ? 'orange.200' : 'gray.200'}
+              borderRadius="10px"
+              borderWidth="0"
               bg={isTagFilterOpen ? 'orange.50' : 'white'}
+              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
               px="3"
               py="2.5"
               fontSize="sm"
@@ -384,50 +384,53 @@ export function CommunityToolbar({
               _hover={{ bg: 'transparent' }}
               _active={{ bg: 'transparent' }}
             />
-            <Box position="relative" zIndex="10" maxH="80vh" w="full" maxW="md" overflowY="auto" rounded="2xl" bg="white" p="5" boxShadow="2xl">
-              <Flex mb="4" align="center" justify="space-between">
-                <Text fontSize="base" fontWeight="600" color="gray.900">
-                  태그 필터
+            <Box
+              position="relative"
+              zIndex="10"
+              maxH="80vh"
+              w="full"
+              maxW="360px"
+              overflowY="auto"
+              rounded="30px"
+              bg="white"
+              p="6"
+              boxShadow="0 20px 60px rgba(15, 23, 42, 0.18)"
+            >
+              <Flex mb="6" align="center" justify="space-between">
+                <Text fontSize="16px" fontWeight="700" letterSpacing="-0.02em" color="gray.900">
+                  태그 설정
                 </Text>
-                <Button
-                  type="button"
-                  onClick={onToggleTagFilterOpen}
-                  variant="ghost"
-                  minW="auto"
-                  h="auto"
-                  px="0"
-                  py="0"
-                  fontSize="xl"
-                  lineHeight="none"
-                  color="gray.400"
-                  _hover={{ color: 'gray.600', bg: 'transparent' }}
-                  aria-label="태그 필터 닫기"
-                >
-                  ×
-                </Button>
-              </Flex>
-
-              <Box borderTopWidth="1px" borderColor="gray.100" pt="5">
-                <Flex mb="5" align="center" justify="space-between">
-                  <Text fontSize="14px" fontWeight="700" color="#8C8C8C">
-                    태그
-                  </Text>
+                <HStack gap="3">
                   <Button
                     type="button"
                     onClick={onClearTags}
-                    variant="ghost"
-                    h="auto"
                     minW="auto"
-                    px="0"
-                    py="0"
-                    color="#A3A3A3"
-                    _hover={{ color: '#6B7280', bg: 'transparent' }}
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color="#FF6900"
+                    _hover={{ bg: 'transparent', color: '#E55F00' }}
                     aria-label="태그 필터 초기화"
                   >
                     <Icon as={RotateCcw} boxSize="5" />
                   </Button>
-                </Flex>
+                  <Button
+                    type="button"
+                    onClick={onToggleTagFilterOpen}
+                    minW="auto"
+                    h="auto"
+                    bg="transparent"
+                    p="0"
+                    color="gray.500"
+                    _hover={{ color: 'gray.700', bg: 'transparent' }}
+                    aria-label="태그 필터 닫기"
+                  >
+                    <Icon as={X} boxSize="5" />
+                  </Button>
+                </HStack>
+              </Flex>
 
+              <Box>
                 <Flex direction="column" gap="18px">
                   {mobileTagOptions.map((tag) => {
                     const selected = selectedTags.includes(tag.name);

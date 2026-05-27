@@ -50,6 +50,8 @@ function HighlightPostCard({
   const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
   const displayLikeCount = onToggleLike ? post.likes : fallbackLikeCount;
   const displayIsSaved = onToggleSave ? post.isSavedByMe : fallbackIsSaved;
+  const mobileVisibleTags = resolvedTags.slice(0, 3);
+  const hiddenMobileTagCount = Math.max(0, resolvedTags.length - mobileVisibleTags.length);
 
   const handleAuthorAvatarClick = (event: React.MouseEvent) => {
     if (isAnonymousPost) return;
@@ -220,19 +222,41 @@ function HighlightPostCard({
             </Flex>
           ) : null}
           {post.type === 'notice' && resolvedTags.length > 0 ? <Box h="6" w="1px" bg="gray.200" /> : null}
-          {resolvedTags.map((tag) => (
-            <UserTagBadge key={tag.id} tag={tag} />
-          ))}
+          <Box display={{ base: 'contents', md: 'none' }}>
+            {mobileVisibleTags.map((tag) => (
+              <UserTagBadge key={tag.id} tag={tag} />
+            ))}
+            {hiddenMobileTagCount > 0 ? (
+              <Flex
+                align="center"
+                justify="center"
+                h="20px"
+                borderRadius="10px"
+                bg="#F3F4F6"
+                px="10px"
+                fontSize="11px"
+                fontWeight="700"
+                color="#6B7280"
+              >
+                +{hiddenMobileTagCount}
+              </Flex>
+            ) : null}
+          </Box>
+          <Box display={{ base: 'none', md: 'contents' }}>
+            {resolvedTags.map((tag) => (
+              <UserTagBadge key={tag.id} tag={tag} />
+            ))}
+          </Box>
         </HStack>
 
         <Text mt="12px" lineClamp="1" fontSize="16px" fontWeight="700" color="gray.900" lineHeight="16px">
           {post.title}
         </Text>
-        <Text mt="4" lineClamp={{ base: 3, md: 3 }} flex="1" fontSize="14px" lineHeight="1.65" color="gray.600">
+        <Text mt="4" lineClamp={3} minH="69.3px" fontSize="14px" lineHeight="1.65" color="gray.600">
           {post.content}
         </Text>
 
-        <Flex mt="25px" align="center" justify="space-between" color="gray.500">
+        <Flex mt="auto" align="center" justify="space-between" color="gray.500">
           <HStack gap="4">
             <Button
               type="button"
