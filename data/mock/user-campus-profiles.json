@@ -1,0 +1,24 @@
+[
+  {
+    "accountId": "account-user-1",
+    "status": "participant",
+    "applicationIds": ["campus-application-user-1"],
+    "teamIds": ["campus-team-user-1"],
+    "settings": {
+      "allowCampusNotification": true
+    },
+    "createdAt": "2026-03-18T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-999",
+    "status": "applicant",
+    "applicationIds": ["campus-application-user-999"],
+    "teamIds": [],
+    "settings": {
+      "allowCampusNotification": true
+    },
+    "createdAt": "2026-04-23T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  }
+]

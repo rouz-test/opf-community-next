@@ -1,0 +1,71 @@
+[
+  {
+    "accountId": "account-user-1",
+    "status": "active",
+    "auth": {
+      "provider": "kakao",
+      "socialEmail": "park.minsu@example.com"
+    },
+    "verification": {
+      "realName": "박민수",
+      "phoneNumber": "010-74**-17**",
+      "verifiedAt": "2026-03-18T09:00:00.000Z"
+    },
+    "contact": {
+      "additionalEmail": "contact.minsu@example.com"
+    },
+    "profile": {
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      "company": "코마소프트",
+      "position": "스타트업 개발자"
+    },
+    "createdAt": "2026-03-18T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "admin-1",
+    "status": "active",
+    "auth": {
+      "provider": "google",
+      "socialEmail": "admin@example.com"
+    },
+    "verification": {
+      "realName": "관리자",
+      "phoneNumber": "010-00**-00**",
+      "verifiedAt": "2026-03-01T09:00:00.000Z"
+    },
+    "contact": {
+      "additionalEmail": null
+    },
+    "profile": {
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+      "company": "코마소프트",
+      "position": "커뮤니티 관리자"
+    },
+    "createdAt": "2026-03-01T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-999",
+    "status": "active",
+    "auth": {
+      "provider": "google",
+      "socialEmail": "lee.hojun@example.com"
+    },
+    "verification": {
+      "realName": "이호준",
+      "phoneNumber": "010-12**-34**",
+      "verifiedAt": "2026-04-23T09:00:00.000Z"
+    },
+    "contact": {
+      "additionalEmail": null
+    },
+    "profile": {
+      "avatar": "",
+      "company": "코마소프트",
+      "position": "디자이너"
+    },
+    "createdAt": "2026-04-23T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  }
+]

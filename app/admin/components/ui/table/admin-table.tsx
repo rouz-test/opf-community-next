@@ -114,14 +114,15 @@ export function AdminTableBody({ children, ...rest }: AdminTableBodyProps) {
 
 type AdminTableRowProps = {
   children: ReactNode;
-};
+} & React.ComponentProps<typeof Table.Row>;
 
-export function AdminTableRow({ children }: AdminTableRowProps) {
+export function AdminTableRow({ children, ...rest }: AdminTableRowProps) {
   return (
     <Table.Row
       borderBottomWidth="1px"
       borderBottomColor="#E5E7EB"
       _hover={{ bg: '#FCFCFD' }}
+      {...rest}
     >
       {children}
     </Table.Row>

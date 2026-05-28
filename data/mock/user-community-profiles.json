@@ -1,0 +1,53 @@
+[
+  {
+    "accountId": "account-user-1",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "stats": {
+      "postCount": 12,
+      "commentCount": 45,
+      "followerCount": 892,
+      "followingCount": 124
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-03-18T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "admin-1",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "stats": {
+      "postCount": 24,
+      "commentCount": 8,
+      "followerCount": 1024,
+      "followingCount": 12
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-03-01T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-999",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "stats": {
+      "postCount": 6,
+      "commentCount": 13,
+      "followerCount": 124,
+      "followingCount": 82
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": false
+    },
+    "createdAt": "2026-04-23T09:00:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  }
+]

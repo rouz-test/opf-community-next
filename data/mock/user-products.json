@@ -1,0 +1,26 @@
+[
+  {
+    "productId": "product-user-1-1",
+    "ownerAccountId": "account-user-1",
+    "status": "published",
+    "name": "오렌지파크",
+    "summary": "스타트업 커뮤니티와 캠퍼스 활동을 연결하는 서비스",
+    "industry": "기업 IT",
+    "category": "소셜·커뮤니티",
+    "link": "https://www.orangepark.or.kr/",
+    "createdAt": "2026-03-18T09:30:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "productId": "product-user-999-1",
+    "ownerAccountId": "user-999",
+    "status": "published",
+    "name": "팀메이트",
+    "summary": "초기 스타트업 팀 빌딩을 돕는 매칭 솔루션",
+    "industry": "기업 IT",
+    "category": "인력매칭 플랫폼",
+    "link": null,
+    "createdAt": "2026-04-23T09:30:00.000Z",
+    "updatedAt": "2026-05-28T09:00:00.000Z"
+  }
+]
