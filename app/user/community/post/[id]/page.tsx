@@ -40,6 +40,7 @@ import {
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import CommentItem from '@/app/user/components/comment/comment-item';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import ActivitySuspendedModal from '@/app/user/components/modal/activity-suspended-modal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
 import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
@@ -51,6 +52,10 @@ import {
   COMMUNITY_CURRENT_USER,
   mockCommunityPosts,
 } from '@/app/user/lib/community-content-data';
+import {
+  COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE,
+  fetchCommunitySuspensionStatus,
+} from '@/app/user/lib/community-suspension';
 import tagsData from '@/data/mock/tags.json';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
@@ -571,6 +576,7 @@ export default function CommunityPostDetailPage() {
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
   const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
   const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+  const [isActivitySuspendedModalOpen, setIsActivitySuspendedModalOpen] = useState(false);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
@@ -951,6 +957,11 @@ export default function CommunityPostDetailPage() {
     try {
       setIsCommentSubmitting(true);
 
+      if (await fetchCommunitySuspensionStatus(COMMUNITY_CURRENT_USER.accountId)) {
+        setIsActivitySuspendedModalOpen(true);
+        return;
+      }
+
       const response = await fetch('/api/mock/community-comments', {
         method: 'POST',
         headers: {
@@ -978,6 +989,11 @@ export default function CommunityPostDetailPage() {
           return;
         }
 
+        if (data?.message === COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE) {
+          setIsActivitySuspendedModalOpen(true);
+          return;
+        }
+
         throw new Error(parseErrorMessage(data, '댓글을 등록하지 못했습니다.'));
       }
 
@@ -999,6 +1015,11 @@ export default function CommunityPostDetailPage() {
 
     try {
       setIsReplySubmitting(true);
+
+      if (await fetchCommunitySuspensionStatus(COMMUNITY_CURRENT_USER.accountId)) {
+        setIsActivitySuspendedModalOpen(true);
+        return;
+      }
 
       const response = await fetch('/api/mock/community-comments', {
         method: 'POST',
@@ -1025,6 +1046,11 @@ export default function CommunityPostDetailPage() {
             data.matchedKeywords,
             replyValue,
           );
+          return;
+        }
+
+        if (data?.message === COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE) {
+          setIsActivitySuspendedModalOpen(true);
           return;
         }
 
@@ -1643,6 +1669,10 @@ export default function CommunityPostDetailPage() {
         description={blockedWordModalDescription}
         matchedKeywords={matchedBlockedKeywords}
         sourceText={blockedWordSourceText}
+      />
+      <ActivitySuspendedModal
+        isOpen={isActivitySuspendedModalOpen}
+        onClose={() => setIsActivitySuspendedModalOpen(false)}
       />
 
       <WritePostModal

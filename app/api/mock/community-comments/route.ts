@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
+import { COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE, isAccountCommunitySuspended } from '@/lib/community-suspension';
 import {
   buildCommunityCommentThreads,
   calculateCommunityCommentStats,
@@ -127,6 +128,13 @@ export async function POST(request: NextRequest) {
             avatar: typeof body.author.avatar === 'string' ? body.author.avatar : '',
           }
         : DEFAULT_ADMIN_COMMENT_AUTHOR;
+
+    if (author.type === 'user' && (await isAccountCommunitySuspended(author.id))) {
+      return NextResponse.json(
+        { message: COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE },
+        { status: 403 },
+      );
+    }
 
     const now = new Date().toISOString();
     const nextComment: CommunityCommentEntity = {

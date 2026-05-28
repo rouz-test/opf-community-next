@@ -3,6 +3,12 @@
     "accountId": "account-user-1",
     "defaultIdentity": "real",
     "isVerified": true,
+    "moderation": {
+      "isSuspended": true,
+      "suspendedAt": "2026-05-28T08:59:24.355Z",
+      "suspendedByAdminId": "admin-1",
+      "suspensionReason": null
+    },
     "stats": {
       "postCount": 12,
       "commentCount": 45,
@@ -14,12 +20,18 @@
       "allowCommentNotification": true
     },
     "createdAt": "2026-03-18T09:00:00.000Z",
-    "updatedAt": "2026-05-28T09:00:00.000Z"
+    "updatedAt": "2026-05-28T08:59:24.355Z"
   },
   {
     "accountId": "admin-1",
     "defaultIdentity": "real",
     "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
     "stats": {
       "postCount": 24,
       "commentCount": 8,
@@ -37,6 +49,12 @@
     "accountId": "user-999",
     "defaultIdentity": "real",
     "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
     "stats": {
       "postCount": 6,
       "commentCount": 13,

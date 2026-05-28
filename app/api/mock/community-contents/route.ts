@@ -6,6 +6,7 @@ import {
   isCommunityContentListSortKey,
   parseCommunityContentListQuery,
 } from '@/lib/community-content-list';
+import { COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE, isAccountCommunitySuspended } from '@/lib/community-suspension';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import { normalizeTagIds, resolveTags } from '@/lib/tags';
@@ -321,6 +322,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { message: '작성자 정보는 필수입니다.' },
         { status: 400 },
+      );
+    }
+
+    if (
+      body.author.type === 'user' &&
+      typeof body.author.id === 'string' &&
+      (await isAccountCommunitySuspended(body.author.id))
+    ) {
+      return NextResponse.json(
+        { message: COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE },
+        { status: 403 },
       );
     }
 

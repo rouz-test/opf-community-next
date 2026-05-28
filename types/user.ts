@@ -49,6 +49,12 @@ export type UserCommunityProfile = {
   accountId: string;
   defaultIdentity: CommunityDefaultIdentity;
   isVerified: boolean;
+  moderation?: {
+    isSuspended: boolean;
+    suspendedAt: string | null;
+    suspendedByAdminId: string | null;
+    suspensionReason: string | null;
+  };
   stats: {
     postCount: number;
     commentCount: number;

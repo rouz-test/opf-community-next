@@ -19,8 +19,13 @@ import { Button } from '@/app/user/components/ui/button';
 import { toaster } from '@/app/user/components/ui/toaster';
 import ContentEditor from '@/app/user/components/editor/content-editor';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
+import ActivitySuspendedModal from '@/app/user/components/modal/activity-suspended-modal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
+import {
+  COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE,
+  fetchCommunitySuspensionStatus,
+} from '@/app/user/lib/community-suspension';
 import tagsData from '@/data/mock/tags.json';
 import { getBlockedWords } from '@/lib/blocked-words';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
@@ -45,6 +50,7 @@ export type WritePostModalProps = {
   onUpdated?: (content: CommunityContent) => void;
   editingContent?: CommunityContent | null;
   currentUser: {
+    accountId?: string;
     name: string;
     nickname: string;
     avatar: string;
@@ -112,6 +118,7 @@ export function WritePostModal({
   onCreated,
   onUpdated,
   editingContent,
+  currentUser,
 }: WritePostModalProps) {
   const { defaultCommunityIdentity } = useAuth();
   const normalizedDefaultIdentity =
@@ -128,6 +135,7 @@ export function WritePostModal({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [showClosePrompt, setShowClosePrompt] = useState(false);
   const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+  const [isActivitySuspendedModalOpen, setIsActivitySuspendedModalOpen] = useState(false);
   const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
   const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
@@ -304,6 +312,21 @@ export function WritePostModal({
   };
 
   const handleSubmit = async () => {
+    try {
+      const isSuspended = await fetchCommunitySuspensionStatus(currentUser.accountId ?? TEMP_AUTHOR_ID);
+      if (isSuspended) {
+        setIsActivitySuspendedModalOpen(true);
+        return;
+      }
+    } catch (error) {
+      toaster.create({
+        description: error instanceof Error ? error.message : COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE,
+        type: 'error',
+        duration: 2000,
+      });
+      return;
+    }
+
     if (!title.trim()) {
       setErrors({ title: '제목을 입력해 주세요.' });
       return;
@@ -383,6 +406,11 @@ export function WritePostModal({
             errorData.matchedKeywords,
             getBlockedWordValidationText(),
           );
+          return;
+        }
+
+        if (errorData?.message === COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE) {
+          setIsActivitySuspendedModalOpen(true);
           return;
         }
 
@@ -823,6 +851,10 @@ export function WritePostModal({
         description={blockedWordModalDescription}
         matchedKeywords={matchedBlockedKeywords}
         sourceText={blockedWordSourceText}
+      />
+      <ActivitySuspendedModal
+        isOpen={isActivitySuspendedModalOpen}
+        onClose={() => setIsActivitySuspendedModalOpen(false)}
       />
     </>
   );
