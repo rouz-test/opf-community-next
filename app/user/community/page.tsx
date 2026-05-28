@@ -711,12 +711,14 @@ export default function CommunityPage() {
         </Grid>
       </Box>
 
-      <CommunityWriteAction
-        onClick={() => {
-          setEditingContent(null);
-          setIsWriteModalOpen(true);
-        }}
-      />
+      {isLoggedIn ? (
+        <CommunityWriteAction
+          onClick={() => {
+            setEditingContent(null);
+            setIsWriteModalOpen(true);
+          }}
+        />
+      ) : null}
 
       <WritePostModal
         isOpen={isWriteModalOpen}

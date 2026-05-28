@@ -12,6 +12,7 @@ import { resolveTags } from '@/lib/tags';
 import type { Tag } from '@/types/tag';
 
 const tags = tagsData as Tag[];
+const CAROUSEL_SLIDE_GAP = '10px';
 
 type PostAction = (post: CommunityPost) => void | Promise<void>;
 
@@ -400,7 +401,7 @@ export function HighlightCarousel({
         transition="filter 0.2s"
         _hover={{ filter: 'drop-shadow(0 14px 34px rgba(255, 105, 0, 0.16))' }}
       >
-        <Box overflow="hidden" rounded="3xl">
+        <Box overflow="hidden" rounded="3xl" mx={`-${CAROUSEL_SLIDE_GAP}`}>
           <Flex
             touchAction="pan-y"
             transition="transform 0.5s ease-out"
@@ -410,7 +411,7 @@ export function HighlightCarousel({
             onTouchEnd={handleTouchEnd}
           >
             {pages.map((pagePosts, pageIndex) => (
-              <Box key={pageIndex} w="full" flexShrink={0}>
+              <Box key={pageIndex} w="full" flexShrink={0} px={CAROUSEL_SLIDE_GAP}>
                 {pagePosts.map((post) => (
                   <HighlightPostCard
                     key={post.id}

@@ -41,6 +41,7 @@ export function CommunityWriteAction({
       onClick={onClick}
       aria-label="글쓰기"
       title="글쓰기"
+      variant="plain"
       position="fixed"
       right="4"
       bottom="6"
@@ -48,19 +49,25 @@ export function CommunityWriteAction({
       display={{ base: 'inline-flex', lg: 'none' }}
       h="14"
       w="14"
+      minW="14"
       rounded="full"
-      bgGradient="linear(to-br, orange.400, orange.500)"
+      bg="#FF6900"
       color="white"
-      boxShadow="0 12px 30px rgba(0,0,0,0.25)"
-      borderWidth="1px"
-      borderColor="blackAlpha.50"
+      boxShadow="0 12px 30px rgba(255, 105, 0, 0.32)"
+      border="0"
       transition="all 0.2s"
       _hover={{
+        bg: '#F25F00',
         transform: 'scale(1.05)',
-        boxShadow: '0 16px 36px rgba(0,0,0,0.3)',
+        boxShadow: '0 16px 36px rgba(255, 105, 0, 0.38)',
       }}
       _active={{
+        bg: '#E85A00',
         transform: 'translateY(1px) scale(0.95)',
+      }}
+      _focusVisible={{
+        outline: 'none',
+        boxShadow: '0 0 0 3px rgba(255, 105, 0, 0.24), 0 12px 30px rgba(255, 105, 0, 0.32)',
       }}
     >
       <SquarePen size={20} />
