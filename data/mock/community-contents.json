@@ -1,5 +1,106 @@
 [
   {
+    "id": "content-1780042477769",
+    "title": "2차 테스트입니다",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "테스트용 텍스트입니다."
+            }
+          ],
+          "attrs": {
+            "textAlign": null
+          }
+        }
+      ]
+    },
+    "tagIds": [
+      "tag_1777524546970",
+      "tag_1777524560496",
+      "tag_1777522919444"
+    ],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "anonymous",
+      "displayName": "익명",
+      "identifierType": "name",
+      "identifierValue": "박민수"
+    },
+    "flags": {
+      "isPinned": false,
+      "isNotice": false,
+      "isPromoted": true,
+      "isHiddenByAuthor": false
+    },
+    "stats": {
+      "viewCount": 0,
+      "likeCount": 0,
+      "saveCount": 0,
+      "commentCount": 0,
+      "replyCount": 0
+    },
+    "createdAt": "2026-05-29T08:14:37.769Z",
+    "updatedAt": "2026-05-29T08:14:37.769Z",
+    "publishedAt": "2026-05-29T08:14:37.769Z"
+  },
+  {
+    "id": "content-1780042433014",
+    "title": "작성자 동일 체크입니다",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "간단한 테스트를 진행할 예정입니다."
+            }
+          ],
+          "attrs": {
+            "textAlign": null
+          }
+        }
+      ]
+    },
+    "tagIds": [
+      "tag_1776318266291",
+      "tag_1777275819911"
+    ],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수"
+    },
+    "flags": {
+      "isPinned": false,
+      "isNotice": false,
+      "isPromoted": false,
+      "isHiddenByAuthor": false
+    },
+    "stats": {
+      "viewCount": 0,
+      "likeCount": 0,
+      "saveCount": 0,
+      "commentCount": 0,
+      "replyCount": 0
+    },
+    "createdAt": "2026-05-29T08:13:53.014Z",
+    "updatedAt": "2026-05-29T08:13:53.014Z",
+    "publishedAt": "2026-05-29T08:13:53.014Z"
+  },
+  {
     "id": "content-1779431759971",
     "title": "작성자의 다른 글 테스트",
     "content": {
@@ -50,9 +151,9 @@
       "type": "user",
       "id": "account-user-1",
       "visibility": "public",
-      "displayName": "이호준",
+      "displayName": "박민수",
       "identifierType": "name",
-      "identifierValue": "이호준"
+      "identifierValue": "박민수"
     },
     "flags": {
       "isPinned": false,
@@ -142,7 +243,7 @@
       "visibility": "anonymous",
       "displayName": "익명",
       "identifierType": "name",
-      "identifierValue": "이호준"
+      "identifierValue": "박민수"
     },
     "flags": {
       "isPinned": false,
@@ -843,9 +944,9 @@
       "type": "user",
       "id": "account-user-1",
       "visibility": "public",
-      "displayName": "이호준",
+      "displayName": "박민수",
       "identifierType": "name",
-      "identifierValue": "이호준"
+      "identifierValue": "박민수"
     },
     "flags": {
       "isPinned": false,

@@ -3,10 +3,10 @@
     "accountId": "account-user-1",
     "community": {
       "viewMode": "feed",
-      "sortBy": "recommended",
+      "sortBy": "latest",
       "showFollowingOnly": false,
       "selectedTags": []
     },
-    "updatedAt": "2026-05-28T08:59:30.265Z"
+    "updatedAt": "2026-05-29T08:13:58.789Z"
   }
 ]

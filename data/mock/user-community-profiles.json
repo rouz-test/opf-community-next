@@ -4,9 +4,9 @@
     "defaultIdentity": "real",
     "isVerified": true,
     "moderation": {
-      "isSuspended": true,
-      "suspendedAt": "2026-05-28T08:59:24.355Z",
-      "suspendedByAdminId": "admin-1",
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
       "suspensionReason": null
     },
     "stats": {
@@ -20,7 +20,7 @@
       "allowCommentNotification": true
     },
     "createdAt": "2026-03-18T09:00:00.000Z",
-    "updatedAt": "2026-05-28T08:59:24.355Z"
+    "updatedAt": "2026-05-28T09:00:00.000Z"
   },
   {
     "accountId": "admin-1",
@@ -67,5 +67,235 @@
     },
     "createdAt": "2026-04-23T09:00:00.000Z",
     "updatedAt": "2026-05-28T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-11",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 312,
+      "followingCount": 52
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-12T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-22",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 268,
+      "followingCount": 41
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-13T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-33",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 184,
+      "followingCount": 67
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-14T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-44",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 159,
+      "followingCount": 34
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-15T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-55",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 221,
+      "followingCount": 48
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-16T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-66",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 143,
+      "followingCount": 39
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-17T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-77",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 276,
+      "followingCount": 58
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-18T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-88",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 198,
+      "followingCount": 22
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-19T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-99",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 0,
+      "followerCount": 167,
+      "followingCount": 73
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-20T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
+  },
+  {
+    "accountId": "user-101",
+    "defaultIdentity": "real",
+    "isVerified": true,
+    "moderation": {
+      "isSuspended": false,
+      "suspendedAt": null,
+      "suspendedByAdminId": null,
+      "suspensionReason": null
+    },
+    "stats": {
+      "postCount": 1,
+      "commentCount": 2,
+      "followerCount": 132,
+      "followingCount": 46
+    },
+    "settings": {
+      "allowFollowerNotification": true,
+      "allowCommentNotification": true
+    },
+    "createdAt": "2026-04-21T09:00:00.000Z",
+    "updatedAt": "2026-05-29T09:00:00.000Z"
   }
 ]

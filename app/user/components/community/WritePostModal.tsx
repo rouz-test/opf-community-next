@@ -50,7 +50,7 @@ export type WritePostModalProps = {
   onUpdated?: (content: CommunityContent) => void;
   editingContent?: CommunityContent | null;
   currentUser: {
-    accountId?: string;
+    accountId: string;
     name: string;
     nickname: string;
     avatar: string;
@@ -60,9 +60,6 @@ export type WritePostModalProps = {
 
 const WRITE_MAX_TITLE_LENGTH = 200;
 const tags = tagsData as Tag[];
-const TEMP_PROFILE_IMAGE = 'https://placehold.co/40x40/png';
-const TEMP_AUTHOR_NAME = '이호준';
-const TEMP_AUTHOR_ID = 'account-user-1';
 
 const EMPTY_CONTENT: ContentEditorJsonValue = {
   type: 'doc',
@@ -313,7 +310,7 @@ export function WritePostModal({
 
   const handleSubmit = async () => {
     try {
-      const isSuspended = await fetchCommunitySuspensionStatus(currentUser.accountId ?? TEMP_AUTHOR_ID);
+      const isSuspended = await fetchCommunitySuspensionStatus(currentUser.accountId);
       if (isSuspended) {
         setIsActivitySuspendedModalOpen(true);
         return;
@@ -362,11 +359,11 @@ export function WritePostModal({
 
     const author: CommunityContentAuthor = {
       type: 'user',
-      id: TEMP_AUTHOR_ID,
+      id: currentUser.accountId,
       visibility: profileMode === 'anonymous' ? 'anonymous' : 'public',
-      displayName: profileMode === 'anonymous' ? '익명' : TEMP_AUTHOR_NAME,
+      displayName: profileMode === 'anonymous' ? '익명' : currentUser.name,
       identifierType: 'name',
-      identifierValue: TEMP_AUTHOR_NAME,
+      identifierValue: currentUser.name,
     };
 
     const payload: CommunityContentPayload = {
@@ -546,8 +543,8 @@ export function WritePostModal({
                       <HStack gap="2" minW="0">
                         {profileMode === 'real' ? (
                           <Image
-                            src={TEMP_PROFILE_IMAGE}
-                            alt="임시 프로필 이미지"
+                            src={currentUser.avatar}
+                            alt={`${currentUser.name} 프로필 이미지`}
                             h="20px"
                             w="20px"
                             rounded="full"
