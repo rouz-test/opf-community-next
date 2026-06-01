@@ -28,8 +28,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 export async function GET(request: NextRequest) {
   try {
     const contentId = request.nextUrl.searchParams.get('contentId')?.trim();
+    const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
     const accountId = request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
-    if (!contentId) {
+    if (!contentId && !authorId) {
       return NextResponse.json({ message: '콘텐츠 ID는 필수입니다.' }, { status: 400 });
     }
 
@@ -38,10 +39,39 @@ export async function GET(request: NextRequest) {
       readCommunityCommentReactions(),
     ]);
 
+    if (authorId && !contentId) {
+      const likedCommentIds = new Set(
+        accountId
+          ? reactions
+              .filter((reaction) => reaction.type === 'like' && reaction.accountId === accountId)
+              .map((reaction) => reaction.commentId)
+          : [],
+      );
+      const scopedComments = comments
+        .filter((comment) => comment.author.id === authorId && comment.status === 'published')
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+        .map((comment) => ({
+          ...comment,
+          isLikedByMe: accountId ? likedCommentIds.has(comment.id) : comment.isLikedByMe,
+        }));
+
+      return NextResponse.json(
+        {
+          items: scopedComments,
+          stats: {
+            commentCount: scopedComments.filter((comment) => comment.parentId === null).length,
+            replyCount: scopedComments.filter((comment) => comment.parentId !== null).length,
+            totalCount: scopedComments.length,
+          },
+        },
+        { status: 200 },
+      );
+    }
+
     return NextResponse.json(
       {
-        items: buildCommunityCommentThreads(comments, contentId, reactions, accountId),
-        stats: calculateCommunityCommentStats(comments, contentId),
+        items: buildCommunityCommentThreads(comments, contentId!, reactions, accountId),
+        stats: calculateCommunityCommentStats(comments, contentId!),
       },
       { status: 200 },
     );

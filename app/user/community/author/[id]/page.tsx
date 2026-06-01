@@ -1,10 +1,10 @@
 'use client';
 
-import { Box, Button, Flex, Grid, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
@@ -15,14 +15,13 @@ import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import {
   COMMUNITY_CURRENT_USER,
-  mockComments,
-  mockCommunityPosts,
   type CommunityPost,
   type HighlightedComment,
   mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
 import { toaster } from '@/app/user/components/ui/toaster';
-import type { CommunityContent } from '@/types/community-content';
+import type { CommunityContent, CommunityContentListResponse } from '@/types/community-content';
+import type { CommunityCommentEntity } from '@/types/community-comment';
 
 const formatRelativeDate = (dateString?: string) => {
   if (!dateString) return '방금 전';
@@ -55,14 +54,12 @@ type AuthorCommentEntry = {
   activityDate?: string;
 };
 
-type MockComment = (typeof mockComments)[number];
+type AuthorCommentListResponse = {
+  items: CommunityCommentEntity[];
+};
 
-function flattenComments(comments: readonly MockComment[]): MockComment[] {
-  return comments.flatMap((comment) => [
-    comment,
-    ...(comment.replies ? flattenComments(comment.replies) : []),
-  ]);
-}
+const DEFAULT_REAL_AVATAR =
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
 function EmptyState({
   title,
@@ -127,15 +124,81 @@ export default function CommunityAuthorPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isTagFilterOpen, setIsTagFilterOpen] = useState(false);
+  const [sourcePosts, setSourcePosts] = useState<CommunityPost[]>([]);
+  const [sourceComments, setSourceComments] = useState<CommunityCommentEntity[]>([]);
   const [updatedPosts, setUpdatedPosts] = useState<CommunityPost[]>([]);
+  const [isPostsLoading, setIsPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const contentSearchParams = new URLSearchParams({
+      status: 'published',
+      page: '1',
+      pageSize: '200',
+      accountId: COMMUNITY_CURRENT_USER.accountId,
+      sortKey: 'date',
+      sortDirection: 'desc',
+    });
+    const commentSearchParams = new URLSearchParams({
+      authorId,
+      accountId: COMMUNITY_CURRENT_USER.accountId,
+    });
+
+    const fetchAuthorSourcePosts = async () => {
+      setIsPostsLoading(true);
+      setPostsError('');
+
+      try {
+        const [contentResponse, commentResponse] = await Promise.all([
+          fetch(`/api/mock/community-contents?${contentSearchParams.toString()}`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          }),
+          fetch(`/api/mock/community-comments?${commentSearchParams.toString()}`, {
+            cache: 'no-store',
+            signal: controller.signal,
+          }),
+        ]);
+        const contentData = (await contentResponse.json().catch(() => null)) as CommunityContentListResponse | null;
+        const commentData = (await commentResponse.json().catch(() => null)) as AuthorCommentListResponse | null;
+
+        if (!contentResponse.ok || !contentData?.items) {
+          throw new Error('작성자 게시글을 불러오지 못했습니다.');
+        }
+
+        if (!commentResponse.ok || !commentData?.items) {
+          throw new Error('작성자 댓글을 불러오지 못했습니다.');
+        }
+
+        setSourcePosts(contentData.items.map(mapCommunityContentToPost));
+        setSourceComments(commentData.items);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+
+        setPostsError(error instanceof Error ? error.message : '작성자 게시글을 불러오지 못했습니다.');
+      } finally {
+        setIsPostsLoading(false);
+      }
+    };
+
+    fetchAuthorSourcePosts();
+
+    return () => {
+      controller.abort();
+    };
+  }, [authorId]);
 
   const resolvedCommunityPosts = useMemo(
-    () => mockCommunityPosts.map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post),
-    [updatedPosts],
+    () => sourcePosts.map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post),
+    [sourcePosts, updatedPosts],
   );
 
   const authorPosts = useMemo(
-    () => resolvedCommunityPosts.filter((post) => getProfileActorId(post.author) === authorId),
+    () =>
+      resolvedCommunityPosts.filter(
+        (post) => getProfileActorId(post.author) === authorId && post.author.mode === 'real',
+      ),
     [authorId, resolvedCommunityPosts],
   );
 
@@ -143,28 +206,28 @@ export default function CommunityAuthorPage() {
     const entries = new Map<string | number, AuthorCommentEntry>();
     const postMap = new Map(resolvedCommunityPosts.map((post) => [post.id, post]));
 
-    flattenComments(mockComments).forEach((comment) => {
-      if (getProfileActorId(comment.author) !== authorId) return;
+    sourceComments.forEach((comment) => {
+      if (comment.author.visibility !== 'public') return;
 
-      const post = postMap.get(comment.postId);
+      const post = postMap.get(comment.contentId);
       if (!post) return;
 
       const latestComment: AuthorCommentPreview = {
         id: comment.id,
         author: {
           id: comment.author.id,
-          accountId: comment.author.accountId,
-          profileId: comment.author.profileId,
-          mode: comment.author.mode,
-          name: comment.author.name,
-          nickname: comment.author.nickname,
-          avatar: comment.author.avatar,
-          isFollowing: comment.author.isFollowing ?? false,
+          accountId: comment.author.id,
+          profileId: comment.author.id,
+          mode: 'real',
+          name: comment.author.displayName,
+          nickname: comment.author.identifierValue || comment.author.displayName,
+          avatar: comment.author.avatar || DEFAULT_REAL_AVATAR,
+          isFollowing: false,
         },
         content: comment.content,
         createdAt: comment.createdAt,
-        likes: comment.likes,
-        replyCount: comment.replies?.length ?? 0,
+        likes: comment.likeCount,
+        replyCount: 0,
       };
 
       const entry: AuthorCommentEntry = {
@@ -191,7 +254,7 @@ export default function CommunityAuthorPage() {
     });
 
     return Array.from(entries.values());
-  }, [authorId, resolvedCommunityPosts]);
+  }, [resolvedCommunityPosts, sourceComments]);
 
   const handleToggleLikePost = async (post: CommunityPost) => {
     try {
@@ -359,11 +422,20 @@ export default function CommunityAuthorPage() {
     setIsTagFilterOpen(false);
   };
 
+  if (isPostsLoading) {
+    return (
+      <Flex minH="100vh" bg="#F9FAFB" align="center" justify="center" color="#6B7280" gap="10px">
+        <Spinner size="sm" />
+        <Text fontSize="14px">작성자 정보를 불러오는 중입니다.</Text>
+      </Flex>
+    );
+  }
+
   if (!author) {
     return (
       <EmptyState
         title="작성자 정보를 찾을 수 없습니다."
-        description="존재하지 않거나 게시글이 없는 작성자입니다."
+        description={postsError || '존재하지 않거나 게시글이 없는 작성자입니다.'}
       />
     );
   }
@@ -381,7 +453,12 @@ export default function CommunityAuthorPage() {
     <Box minH="100vh" bg="#F9FAFB">
       <Box maxW="1400px" mx="auto" px={{ base: '16px', md: '24px' }} py={{ base: '20px', md: '24px' }}>
         <Box display={{ base: 'block', lg: 'none' }}>
-          <AuthorProfileCard author={author} displayMode="real" variant="mobile" />
+          <AuthorProfileCard
+            author={author}
+            displayMode="real"
+            variant="mobile"
+            currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
+          />
         </Box>
 
         <Grid templateColumns={{ base: '1fr', xl: '280px minmax(0, 1fr) 320px' }} gap="24px" mt={{ base: '20px', lg: '24px' }}>
@@ -565,7 +642,12 @@ export default function CommunityAuthorPage() {
 
           <Box display={{ base: 'none', lg: 'block' }}>
             <Box position="sticky" top="16px">
-              <AuthorProfileCard author={author} displayMode="real" variant="sidebar" />
+              <AuthorProfileCard
+                author={author}
+                displayMode="real"
+                variant="sidebar"
+                currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
+              />
             </Box>
           </Box>
         </Grid>

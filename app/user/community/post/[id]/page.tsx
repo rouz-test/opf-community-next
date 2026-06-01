@@ -1612,6 +1612,7 @@ export default function CommunityPostDetailPage() {
                   avatar: COMMUNITY_CURRENT_USER.avatar,
                 }}
                 displayMode="real"
+                currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
               />
             ) : null}
 

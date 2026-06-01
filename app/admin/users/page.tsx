@@ -9,9 +9,10 @@ import {
   Table,
   Text,
 } from '@chakra-ui/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LuDownload } from 'react-icons/lu';
+import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminTable, {
@@ -33,6 +34,9 @@ type UsersListResponse = {
   items: UserProfileBundle[];
   meta: {
     totalCount: number;
+    totalPages: number;
+    page: number;
+    pageSize: number;
   };
 };
 
@@ -45,44 +49,90 @@ type UserRow = {
   position: string;
 };
 
-const paginationItems: AdminTablePaginationItem[] = [
-  { type: 'first' },
-  { type: 'prev' },
-  { type: 'page', value: 1, isActive: true },
-  { type: 'page', value: 2 },
-  { type: 'page', value: 3 },
-  { type: 'page', value: 4 },
-  { type: 'page', value: 5 },
-  { type: 'page', value: 6 },
-  { type: 'page', value: 7 },
-  { type: 'page', value: 8 },
-  { type: 'ellipsis' },
-  { type: 'page', value: 16 },
-  { type: 'next' },
-  { type: 'last' },
-];
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 13, 30, 50] as const;
+const PAGE_WINDOW = 5;
 
-function ChevronDownIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M5 7.5 10 12.5 15 7.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+function getPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): AdminTablePaginationItem[] {
+  if (totalPages <= 1) {
+    return [
+      { type: 'first' },
+      { type: 'prev' },
+      { type: 'page', value: 1, isActive: true },
+      { type: 'next' },
+      { type: 'last' },
+    ];
+  }
+
+  const items: AdminTablePaginationItem[] = [
+    { type: 'first' },
+    { type: 'prev' },
+  ];
+
+  const halfWindow = Math.floor(PAGE_WINDOW / 2);
+  let startPage = Math.max(1, currentPage - halfWindow);
+  const endPage = Math.min(totalPages, startPage + PAGE_WINDOW - 1);
+
+  if (endPage - startPage + 1 < PAGE_WINDOW) {
+    startPage = Math.max(1, endPage - PAGE_WINDOW + 1);
+  }
+
+  if (startPage > 1) {
+    items.push({ type: 'page', value: 1, isActive: currentPage === 1 });
+  }
+
+  if (startPage > 2) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push({
+      type: 'page',
+      value: page,
+      isActive: currentPage === page,
+    });
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push({ type: 'ellipsis' });
+  }
+
+  if (endPage < totalPages) {
+    items.push({
+      type: 'page',
+      value: totalPages,
+      isActive: currentPage === totalPages,
+    });
+  }
+
+  items.push({ type: 'next' }, { type: 'last' });
+
+  return items;
 }
 
 export default function UsersPage() {
   const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [submittedKeyword, setSubmittedKeyword] = useState('');
+  const [appliedSearchKeyword, setAppliedSearchKeyword] = useState('');
   const [userRows, setUserRows] = useState<UserRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const [isPageSizeMenuOpen, setIsPageSizeMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSearch = (value: string) => {
-    setSubmittedKeyword(value.trim());
+    setAppliedSearchKeyword(value.trim());
+    setCurrentPage(1);
+    setIsPageSizeMenuOpen(false);
   };
 
-  useEffect(() => {
+  const loadUsers = useCallback(() => {
     let isCancelled = false;
 
     const fetchUsers = async () => {
@@ -90,9 +140,18 @@ export default function UsersPage() {
         setIsLoading(true);
         setErrorMessage('');
 
-        const response = await fetch('/api/mock/users?viewerRole=admin&includeAdminNotes=true', {
-          cache: 'no-store',
+        const searchParams = new URLSearchParams({
+          viewerRole: 'admin',
+          includeAdminNotes: 'true',
+          page: String(currentPage),
+          pageSize: String(pageSize),
         });
+
+        if (appliedSearchKeyword.trim()) {
+          searchParams.set('search', appliedSearchKeyword.trim());
+        }
+
+        const response = await fetch(`/api/mock/users?${searchParams.toString()}`, { cache: 'no-store' });
         const data = (await response.json().catch(() => null)) as UsersListResponse | { message?: string } | null;
 
         if (!response.ok || !data || !('items' in data)) {
@@ -101,6 +160,14 @@ export default function UsersPage() {
 
         if (isCancelled) return;
 
+        setTotalCount(data.meta.totalCount);
+        setTotalPages(data.meta.totalPages);
+        if (data.meta.page !== currentPage) {
+          setCurrentPage(data.meta.page);
+        }
+        if (data.meta.pageSize !== pageSize) {
+          setPageSize(data.meta.pageSize);
+        }
         setUserRows(
           data.items.map((item) => ({
             accountId: item.account.accountId,
@@ -126,20 +193,38 @@ export default function UsersPage() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [appliedSearchKeyword, currentPage, pageSize]);
 
-  const filteredUserRows = useMemo(() => {
-    if (!submittedKeyword) return userRows;
+  useEffect(() => loadUsers(), [loadUsers]);
 
-    const normalizedKeyword = submittedKeyword.toLowerCase();
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const paginationItems = getPaginationItems(currentPageSafe, totalPages);
 
-    return userRows.filter((row) =>
-      [row.name, row.phone, row.email, row.organization, row.position]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedKeyword),
-    );
-  }, [submittedKeyword, userRows]);
+  const handlePaginationItemClick = (item: AdminTablePaginationItem) => {
+    if (item.type === 'first') {
+      setCurrentPage(1);
+      return;
+    }
+
+    if (item.type === 'prev') {
+      setCurrentPage((prev) => Math.max(1, prev - 1));
+      return;
+    }
+
+    if (item.type === 'next') {
+      setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+      return;
+    }
+
+    if (item.type === 'last') {
+      setCurrentPage(totalPages);
+      return;
+    }
+
+    if (item.type === 'page' && typeof item.value === 'number') {
+      setCurrentPage(item.value);
+    }
+  };
 
   return (
     <PageContainer>
@@ -159,24 +244,17 @@ export default function UsersPage() {
         </Box>
 
         <Flex align="center" gap="10px">
-          <Button
-            type="button"
-            variant="outline"
-            h="40px"
-            px="14px"
-            borderRadius="10px"
-            borderColor="#F59E42"
-            bg="#FFFFFF"
-            color="#F59E42"
-            fontSize="13px"
-            fontWeight="600"
-            _hover={{ bg: '#FFF7ED' }}
-          >
-            <Flex align="center" gap="6px">
-              <Text as="span">{filteredUserRows.length}</Text>
-              <ChevronDownIcon />
-            </Flex>
-          </Button>
+          <AdminPageSizeSelect
+            value={pageSize}
+            options={PAGE_SIZE_OPTIONS}
+            isOpen={isPageSizeMenuOpen}
+            onToggle={() => setIsPageSizeMenuOpen((prev) => !prev)}
+            onSelect={(value) => {
+              setPageSize(value);
+              setCurrentPage(1);
+              setIsPageSizeMenuOpen(false);
+            }}
+          />
 
           <Button
             type="button"
@@ -235,7 +313,7 @@ export default function UsersPage() {
               </AdminTableRow>
             ) : null}
 
-            {!isLoading && !errorMessage && filteredUserRows.map((row) => (
+            {!isLoading && !errorMessage && userRows.map((row) => (
               <AdminTableRow
                 key={row.accountId}
                 cursor="pointer"
@@ -259,7 +337,7 @@ export default function UsersPage() {
               </AdminTableRow>
             ))}
 
-            {!isLoading && !errorMessage && filteredUserRows.length === 0 ? (
+            {!isLoading && !errorMessage && userRows.length === 0 ? (
               <AdminTableRow>
                 <AdminTableCell colSpan={5}>
                   <Flex align="center" justify="center" py="36px">
@@ -274,12 +352,15 @@ export default function UsersPage() {
         </AdminTableRoot>
       </AdminTable>
 
-      <Flex justify="space-between" align="center" mt="10px">
-        <Text fontSize="13px" fontWeight="500" color="#4B5563">
-          항목 수: {filteredUserRows.length}
+      <Flex justify="space-between" align="center" mt="4px">
+        <Text fontSize="12px" fontWeight="600" color="#374151">
+          항목 수 : {totalCount}
         </Text>
 
-        <AdminTablePagination items={paginationItems} />
+        <AdminTablePagination
+          items={paginationItems}
+          onItemClick={handlePaginationItemClick}
+        />
       </Flex>
     </PageContainer>
   );

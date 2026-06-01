@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { readCommunityFollows, type CommunityFollowRelation } from '@/lib/community-follows';
 import { readJsonFile } from '@/lib/mock-file';
 import type {
   UserAccount,
@@ -41,10 +42,55 @@ function canIncludeAdminNotes(request: NextRequest) {
   );
 }
 
+function parsePositiveInteger(value: string | null, fallback: number) {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return fallback;
+  }
+
+  return parsedValue;
+}
+
+function getSearchKeyword(request: NextRequest) {
+  return request.nextUrl.searchParams.get('search')?.trim().toLowerCase() ?? '';
+}
+
+function matchesUserSearch(account: UserAccount, searchKeyword: string) {
+  if (!searchKeyword) return true;
+
+  return [
+    account.verification.realName,
+    account.verification.phoneNumber,
+    account.auth.socialEmail,
+    account.profile.company,
+    account.profile.position,
+  ]
+    .join(' ')
+    .toLowerCase()
+    .includes(searchKeyword);
+}
+
 function sortProductsByRecent(products: UserProduct[]) {
   return [...products].sort(
     (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
   );
+}
+
+function resolveCommunityProfileStats(
+  profile: UserCommunityProfile | null,
+  follows: CommunityFollowRelation[],
+) {
+  if (!profile) return null;
+
+  return {
+    ...profile,
+    stats: {
+      ...profile.stats,
+      followerCount: follows.filter((relation) => relation.followingAccountId === profile.accountId).length,
+      followingCount: follows.filter((relation) => relation.followerAccountId === profile.accountId).length,
+    },
+  };
 }
 
 function createUserProfileBundle({
@@ -53,6 +99,7 @@ function createUserProfileBundle({
   communityProfiles,
   campusProfiles,
   adminNotes,
+  follows,
   includeAdminNotes,
 }: {
   account: UserAccount;
@@ -60,18 +107,20 @@ function createUserProfileBundle({
   communityProfiles: UserCommunityProfile[];
   campusProfiles: UserCampusProfile[];
   adminNotes: UserAdminNote[];
+  follows: CommunityFollowRelation[];
   includeAdminNotes: boolean;
 }): UserProfileBundle {
   const scopedProducts = sortProductsByRecent(
     products.filter((product) => product.ownerAccountId === account.accountId),
   );
+  const communityProfile =
+    communityProfiles.find((profile) => profile.accountId === account.accountId) ?? null;
 
   return {
     account,
     products: scopedProducts,
     primaryProduct: scopedProducts.find((product) => product.status === 'published') ?? scopedProducts[0] ?? null,
-    communityProfile:
-      communityProfiles.find((profile) => profile.accountId === account.accountId) ?? null,
+    communityProfile: resolveCommunityProfileStats(communityProfile, follows),
     campusProfile:
       campusProfiles.find((profile) => profile.accountId === account.accountId) ?? null,
     ...(includeAdminNotes
@@ -86,13 +135,17 @@ export async function GET(request: NextRequest) {
   try {
     const accountId = getAccountId(request);
     const includeAdminNotes = canIncludeAdminNotes(request);
+    const searchKeyword = getSearchKeyword(request);
+    const requestedPage = parsePositiveInteger(request.nextUrl.searchParams.get('page'), 1);
+    const requestedPageSize = parsePositiveInteger(request.nextUrl.searchParams.get('pageSize'), 10);
 
-    const [accounts, products, communityProfiles, campusProfiles, adminNotes] = await Promise.all([
+    const [accounts, products, communityProfiles, campusProfiles, adminNotes, follows] = await Promise.all([
       readMockList<UserAccount>(USERS_PATH),
       readMockList<UserProduct>(USER_PRODUCTS_PATH),
       readMockList<UserCommunityProfile>(USER_COMMUNITY_PROFILES_PATH),
       readMockList<UserCampusProfile>(USER_CAMPUS_PROFILES_PATH),
       includeAdminNotes ? readMockList<UserAdminNote>(USER_ADMIN_NOTES_PATH) : Promise.resolve([]),
+      readCommunityFollows(),
     ]);
 
     const activeAccounts = accounts.filter((account) => account.status !== 'withdrawn');
@@ -111,19 +164,30 @@ export async function GET(request: NextRequest) {
           communityProfiles,
           campusProfiles,
           adminNotes,
+          follows,
           includeAdminNotes,
         }),
         { status: 200 },
       );
     }
 
-    const items = activeAccounts.map((account) =>
+    const filteredAccounts = activeAccounts.filter((account) =>
+      matchesUserSearch(account, searchKeyword),
+    );
+    const totalCount = filteredAccounts.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / requestedPageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const startIndex = (page - 1) * requestedPageSize;
+    const pagedAccounts = filteredAccounts.slice(startIndex, startIndex + requestedPageSize);
+
+    const items = pagedAccounts.map((account) =>
       createUserProfileBundle({
         account,
         products,
         communityProfiles,
         campusProfiles,
         adminNotes,
+        follows,
         includeAdminNotes,
       }),
     );
@@ -132,7 +196,10 @@ export async function GET(request: NextRequest) {
       {
         items,
         meta: {
-          totalCount: items.length,
+          totalCount,
+          totalPages,
+          page,
+          pageSize: requestedPageSize,
         },
       },
       { status: 200 },

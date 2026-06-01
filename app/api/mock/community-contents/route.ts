@@ -6,6 +6,7 @@ import {
   isCommunityContentListSortKey,
   parseCommunityContentListQuery,
 } from '@/lib/community-content-list';
+import { readCommunityFollows } from '@/lib/community-follows';
 import { COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE, isAccountCommunitySuspended } from '@/lib/community-suspension';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
@@ -21,15 +22,9 @@ import type { Tag } from '@/types/tag';
 
 const COMMUNITY_CONTENTS_PATH = 'data/mock/community-contents.json';
 const COMMUNITY_CONTENT_REACTIONS_PATH = 'data/mock/community-content-reactions.json';
-const COMMUNITY_FOLLOWS_PATH = 'data/mock/community-follows.json';
 const TAGS_PATH = 'data/mock/tags.json';
 
 type CreateCommunityContentRequestBody = Partial<CommunityContentPayload>;
-
-type CommunityFollowRelation = {
-  followerAccountId: string;
-  followingAccountId: string;
-};
 
 const DEFAULT_STATS: CommunityContentStats = {
   viewCount: 0,
@@ -130,7 +125,7 @@ export async function GET(request: NextRequest) {
   try {
     const contents = await readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH);
     const reactions = await readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH);
-    const follows = await readJsonFile<CommunityFollowRelation[]>(COMMUNITY_FOLLOWS_PATH).catch(() => []);
+    const follows = await readCommunityFollows();
     const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const query = parseCommunityContentListQuery(request.nextUrl.searchParams);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
