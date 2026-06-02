@@ -14,14 +14,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  BadgeCheck,
   Bookmark,
   Eye,
   Heart,
   Megaphone,
   MessageSquare,
   MoreHorizontal,
-  Pencil,
   Share2,
   Trash2,
   EyeOff,
@@ -40,6 +38,8 @@ import {
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import CommentItem from '@/app/user/components/comment/comment-item';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import PenIcon from '@/app/user/components/icons/PenIcon';
 import ActivitySuspendedModal from '@/app/user/components/modal/activity-suspended-modal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
@@ -1304,7 +1304,7 @@ export default function CommunityPostDetailPage() {
                           color="gray.700"
                           _hover={{ bg: 'gray.50' }}
                         >
-                          <Pencil size={16} />
+                          <PenIcon size={16} />
                           <Text>수정</Text>
                         </Button>
                         <Button
@@ -1406,7 +1406,7 @@ export default function CommunityPostDetailPage() {
                     <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
                       {authorDisplay}
                     </Text>
-                    {!isAnonymousContent ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+                    {!isAnonymousContent ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
                   </Flex>
                   <Text mt="2px" fontSize="12px" color="#6B7280">
                     {isAnonymousContent ? publishedAtDisplay : `실명 프로필 · ${publishedAtDisplay}`}

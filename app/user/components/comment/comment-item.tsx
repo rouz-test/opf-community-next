@@ -1,10 +1,11 @@
 'use client';
 
 import { Box, Button, Flex, Text } from '@chakra-ui/react';
-import { Archive, CornerDownRight, Heart, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
+import { Archive, CornerDownRight, Heart, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import CommentEditor from '@/app/user/components/comment/comment-editor';
+import PenIcon from '@/app/user/components/icons/PenIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
 type CommentItemProps = {
@@ -345,7 +346,7 @@ export default function CommentItem({
                               }}
                             >
                               <Flex align="center" gap="8px">
-                                <PencilLine size={14} />
+                                <PenIcon size={14} />
                                 <Text as="span">수정</Text>
                               </Flex>
                             </Button>

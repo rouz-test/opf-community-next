@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { Box, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { BadgeCheck, Bookmark, Heart, MessageSquare, Share2 } from 'lucide-react';
+import { Bookmark, Heart, MessageSquare, Share2 } from 'lucide-react';
 
+import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import { extractTextFromContentBody } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
@@ -174,7 +175,7 @@ export function AdminCommunityFeedPostCard({ item, formatDate }: AdminCommunityP
                   <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                     {authorName}
                   </Text>
-                  {!isAnonymousPost ? <Icon as={BadgeCheck} boxSize="5" color="cyan.400" /> : null}
+                  {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="cyan.400" /> : null}
                 </Flex>
                 <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
                   {getAuthorMeta(content, formatDate)}
@@ -270,7 +271,7 @@ export function AdminCommunityBoardPostRow({ item, formatDate }: AdminCommunityP
                 <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                   {authorName}
                 </Text>
-                {!isAnonymousPost ? <Icon as={BadgeCheck} boxSize="5" color="cyan.400" /> : null}
+                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="cyan.400" /> : null}
                 <Text fontSize="12px" color="gray.500" lineHeight="14px" whiteSpace="nowrap">
                   {formatDate(content.createdAt)}
                 </Text>

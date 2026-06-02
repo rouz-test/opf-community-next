@@ -12,16 +12,16 @@ import {
   Text,
 } from '@chakra-ui/react';
 import {
-  BadgeCheck,
   Heart,
   MessageSquare,
   Bookmark,
   Share2,
   MoreHorizontal,
-  Pencil,
   Trash2,
   EyeOff,
 } from 'lucide-react';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import PenIcon from '@/app/user/components/icons/PenIcon';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import tagsData from '@/data/mock/tags.json';
@@ -109,7 +109,7 @@ export function BoardPostRow({
     return resolveTags(tagIds, tags);
   }, [post.tags]);
   const ownPostMenuItems = [
-    { key: 'edit' as const, icon: Pencil, label: '수정' },
+    { key: 'edit' as const, icon: PenIcon, label: '수정' },
     { key: 'delete' as const, icon: Trash2, label: '삭제' },
     { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
   ].filter((item) => ownPostMenuActions.includes(item.key));
@@ -284,7 +284,7 @@ export function BoardPostRow({
                   {authorName}
                 </Text>
                 {!isAnonymousPost && post.isRealName ? (
-                  <Icon as={BadgeCheck} boxSize="5" color="cyan.400" />
+                  <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" />
                 ) : null}
                 <Text fontSize="12px" color="gray.500" lineHeight="14px" whiteSpace="nowrap">
                   {formatDate(post.createdAt)}

@@ -7,7 +7,9 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { Button } from '@/app/user/components/ui/button';
-import { BadgeCheck, PencilLine, RefreshCw } from 'lucide-react';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import PenIcon from '@/app/user/components/icons/PenIcon';
+import RotateIcon from '@/app/user/components/icons/RotateIcon';
 
 export type CommunityProfileCardProps = {
   profileMode: 'real' | 'anonymous' | 'nickname';
@@ -103,7 +105,7 @@ export function CommunityProfileCard({
             ring="1px"
             ringColor="gray.200"
           >
-            <Icon as={BadgeCheck} boxSize="3" color="blue.500" />
+            <Icon as={CheckBadgeIcon} boxSize="3" color="blue.500" />
           </Flex>
         ) : (
           <Flex
@@ -186,7 +188,7 @@ export function CommunityProfileCard({
             <Text fontSize="18px" fontWeight="700" color="gray.900" lineHeight="1.2">
               {displayedName}
             </Text>
-            {!anonymousMode ? <Icon as={BadgeCheck} boxSize="6" color="cyan.400" /> : null}
+            {!anonymousMode ? <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" /> : null}
           </Flex>
 
           <Text mt="2" fontSize="14px" color="gray.500" lineHeight="1.5">
@@ -210,7 +212,7 @@ export function CommunityProfileCard({
         fontWeight="700"
         color="#4B5563"
       >
-        <Icon as={RefreshCw} boxSize="5" />
+        <Icon as={RotateIcon} boxSize="14px" />
         <Text>계정 전환</Text>
       </Button>
 
@@ -226,7 +228,7 @@ export function CommunityProfileCard({
           fontSize="14px"
           fontWeight="700"
         >
-          <Icon as={PencilLine} boxSize="5" />
+          <Icon as={PenIcon} boxSize="14px" />
           <Text>글쓰기</Text>
         </Button>
       ) : null}

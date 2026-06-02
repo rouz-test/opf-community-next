@@ -3,11 +3,12 @@
 import { Box, Button, Flex, Image, Link as ChakraLink, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, Bookmark, Eye, Heart, Megaphone, MessageSquare, Share2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, Eye, Heart, Megaphone, MessageSquare, Share2 } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
 import CommentItem from '@/app/admin/components/comment/comment-item';
+import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
 import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
@@ -1136,7 +1137,7 @@ export default function CommunityContentDetailPage() {
                 <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
                   {authorDisplay}
                 </Text>
-                {content.author.visibility !== 'anonymous' ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+                {content.author.visibility !== 'anonymous' ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
               </Flex>
               <Text mt="2px" fontSize="12px" color="#6B7280">
                 {content.author.visibility === 'anonymous' ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}

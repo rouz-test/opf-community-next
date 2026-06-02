@@ -4,13 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BadgeCheck,
   Heart,
   MessageSquare,
   Share2,
   Bookmark,
   MoreHorizontal,
-  Pencil,
   Trash2,
   EyeOff,
 } from 'lucide-react';
@@ -24,6 +22,8 @@ import {
   Text,
   useBreakpointValue,
 } from '@chakra-ui/react';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import PenIcon from '@/app/user/components/icons/PenIcon';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import tagsData from '@/data/mock/tags.json';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
@@ -123,7 +123,7 @@ export function FeedPostCard({
     return resolveTags(tagIds, tags);
   }, [post.tags]);
   const ownPostMenuItems = [
-    { key: 'edit' as const, icon: Pencil, label: '수정' },
+    { key: 'edit' as const, icon: PenIcon, label: '수정' },
     { key: 'delete' as const, icon: Trash2, label: '삭제' },
     { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
   ].filter((item) => ownPostMenuActions.includes(item.key));
@@ -275,7 +275,7 @@ export function FeedPostCard({
                     {authorName}
                   </Text>
                   {!isAnonymousPost && post.isRealName ? (
-                    <Icon as={BadgeCheck} boxSize="5" color="cyan.400" />
+                    <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" />
                   ) : null}
                 </Flex>
                 <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
@@ -432,7 +432,7 @@ export function FeedPostCard({
                   <Text truncate fontSize="14px" fontWeight="700" color="gray.900">
                     {highlightedCommentAuthorName}
                   </Text>
-                  {isHighlightedCommentRealName ? <Icon as={BadgeCheck} boxSize="4" color="cyan.400" /> : null}
+                  {isHighlightedCommentRealName ? <Icon as={CheckBadgeIcon} boxSize="4" color="cyan.400" /> : null}
                 </HStack>
                 <Text lineClamp={{ base: 2, sm: 3 }} fontSize="14px" lineHeight="1.65" color="gray.600">
                   {post.highlightedComment.content}

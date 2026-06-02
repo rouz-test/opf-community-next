@@ -1,7 +1,8 @@
 'use client';
 
 import { Button, IconButton } from '@chakra-ui/react';
-import { SquarePen } from 'lucide-react';
+
+import PenIcon from '@/app/user/components/icons/PenIcon';
 
 export type CommunityWriteActionProps = {
   onClick: () => void;
@@ -29,7 +30,7 @@ export function CommunityWriteAction({
         color="white"
         _hover={{ bg: '#EA580C' }}
       >
-        <SquarePen size={16} />
+        <PenIcon size={16} />
         글쓰기
       </Button>
     );
@@ -70,7 +71,7 @@ export function CommunityWriteAction({
         boxShadow: '0 0 0 3px rgba(255, 105, 0, 0.24), 0 12px 30px rgba(255, 105, 0, 0.32)',
       }}
     >
-      <SquarePen size={20} />
+      <PenIcon size={20} />
     </IconButton>
   );
 }

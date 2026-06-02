@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { Box, Button, Collapsible, Flex, Text } from '@chakra-ui/react';
-import { Check, RefreshCw } from 'lucide-react';
+import { Check } from 'lucide-react';
 
+import RotateIcon from '@/app/user/components/icons/RotateIcon';
 import tagsData from '@/data/mock/tags.json';
 import type { Tag } from '@/types/tag';
 
@@ -126,7 +127,7 @@ export function CommunityTagFilter({
                   _hover={{ color: '#6B7280', bg: 'transparent' }}
                   aria-label="태그 필터 초기화"
                 >
-                  <RefreshCw size={18} />
+                  <RotateIcon size={18} color="#888888" />
                 </Button>
               </Flex>
               {renderTagRows()}
@@ -152,7 +153,7 @@ export function CommunityTagFilter({
             _hover={{ color: '#6B7280', bg: 'transparent' }}
             aria-label="태그 필터 초기화"
           >
-            <RefreshCw size={18} />
+            <RotateIcon size={18} color="#888888" />
           </Button>
         </Flex>
         {renderTagRows()}

@@ -7,7 +7,7 @@ import {
   InputGroup,
   Text,
 } from '@chakra-ui/react';
-import { LuSearch } from 'react-icons/lu';
+import SearchIcon from '@/app/admin/components/icons/SearchIcon';
 import BaseModal from '@/app/admin/components/modal/base-modal';
 import AdminButton from '@/app/admin/components/ui/button';
 
@@ -64,7 +64,7 @@ export default function BlockedWordCreateModal({
         <Text fontSize="12px" fontWeight="600" color="#4B5563">
           금지어 입력
         </Text>
-        <InputGroup startElement={<Icon as={LuSearch} color="#9CA3AF" boxSize="14px" />}>
+        <InputGroup startElement={<Icon as={SearchIcon} color="#9CA3AF" boxSize="14px" />}>
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}

@@ -1,7 +1,8 @@
 'use client';
 
 import { Box, Flex, Icon, Input, InputGroup, type InputProps } from '@chakra-ui/react';
-import { LuSearch } from 'react-icons/lu';
+
+import SearchIcon from '@/app/admin/components/icons/SearchIcon';
 
 type AdminSearchFieldProps = Omit<InputProps, 'size'> & {
   onEnter?: (value: string) => void;
@@ -24,7 +25,7 @@ export default function AdminSearchField({
         w="100%"
         startElement={
           <Box color="#9CA3AF">
-            <Icon as={LuSearch} boxSize="14px" />
+            <Icon as={SearchIcon} boxSize="14px" />
           </Box>
         }
       >

@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { BadgeCheck, Bookmark, EyeOff, Heart, MessageSquare, MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react';
+import { Bookmark, EyeOff, Heart, MessageSquare, MoreHorizontal, Share2, Trash2 } from 'lucide-react';
 import tagsData from '@/data/mock/tags.json';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import PenIcon from '@/app/user/components/icons/PenIcon';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import { resolveTags } from '@/lib/tags';
@@ -131,7 +133,7 @@ function HighlightPostCard({
                 <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                   {authorName}
                 </Text>
-                {!isAnonymousPost ? <Icon as={BadgeCheck} boxSize="16px" color="cyan.400" /> : null}
+                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" /> : null}
               </Flex>
               <Text mt="4px" fontSize="12px" color="gray.500" lineHeight="12px">
                 코마소프트 · 디자이너 · 3월 18일
@@ -163,7 +165,7 @@ function HighlightPostCard({
               {isOwnPostMenuOpen ? (
                 <Box position="absolute" top="10" right="0" zIndex="10" w="176px" overflow="hidden" rounded="xl" borderWidth="1px" borderColor="gray.200" bg="white" py="1.5" boxShadow="lg">
                   {[
-                    { icon: Pencil, label: '수정' },
+                    { icon: PenIcon, label: '수정' },
                     { icon: Trash2, label: '삭제' },
                     { icon: EyeOff, label: '숨김' },
                   ].map((item) => (

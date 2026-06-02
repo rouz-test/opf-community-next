@@ -6,11 +6,64 @@ import {
   writeCommunityFollows,
   type CommunityFollowRelation,
 } from '@/lib/community-follows';
+import { readJsonFile } from '@/lib/mock-file';
+import type { UserAccount } from '@/types/user';
 
 type FollowRequestBody = Partial<CommunityFollowRelation>;
 
+const USERS_PATH = 'data/mock/users.json';
+const DEFAULT_PROFILE_AVATAR =
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+
+type CommunityFollowListItem = {
+  accountId: string;
+  name: string;
+  avatar: string;
+  company: string;
+  position: string;
+  isFollowing: boolean;
+};
+
 function normalizeAccountId(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+async function readUsers() {
+  return readJsonFile<UserAccount[]>(USERS_PATH);
+}
+
+function mapFollowListItems({
+  users,
+  relations,
+  accountIds,
+  viewerAccountId,
+}: {
+  users: UserAccount[];
+  relations: CommunityFollowRelation[];
+  accountIds: string[];
+  viewerAccountId: string;
+}): CommunityFollowListItem[] {
+  const userMap = new Map(users.map((user) => [user.accountId, user]));
+
+  return accountIds.flatMap((accountId) => {
+    const user = userMap.get(accountId);
+    if (!user) return [];
+
+    return [
+      {
+        accountId: user.accountId,
+        name: user.verification.realName,
+        avatar: user.profile.avatar || DEFAULT_PROFILE_AVATAR,
+        company: user.profile.company,
+        position: user.profile.position,
+        isFollowing: relations.some(
+          (relation) =>
+            relation.followerAccountId === viewerAccountId &&
+            relation.followingAccountId === user.accountId,
+        ),
+      },
+    ];
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -20,15 +73,43 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get('followerAccountId')?.trim() ??
       '';
     const targetAccountId = request.nextUrl.searchParams.get('targetAccountId')?.trim() ?? '';
+    const accountId = request.nextUrl.searchParams.get('accountId')?.trim() ?? targetAccountId;
+    const listType = request.nextUrl.searchParams.get('listType')?.trim() ?? '';
 
-    if (!targetAccountId) {
+    if (!targetAccountId && !accountId) {
       return NextResponse.json({ message: '대상 회원 정보가 필요합니다.' }, { status: 400 });
     }
 
     const relations = await readCommunityFollows();
 
+    if (listType === 'followers' || listType === 'following') {
+      const users = await readUsers();
+      const followerIds = relations
+        .filter((relation) => relation.followingAccountId === accountId)
+        .map((relation) => relation.followerAccountId);
+      const followingIds = relations
+        .filter((relation) => relation.followerAccountId === accountId)
+        .map((relation) => relation.followingAccountId);
+      const targetIds = listType === 'followers' ? followerIds : followingIds;
+
+      return NextResponse.json(
+        {
+          accountId,
+          followerCount: followerIds.length,
+          followingCount: followingIds.length,
+          items: mapFollowListItems({
+            users,
+            relations,
+            accountIds: targetIds,
+            viewerAccountId: viewerAccountId || accountId,
+          }),
+        },
+        { status: 200 },
+      );
+    }
+
     return NextResponse.json(
-      getCommunityFollowState({ relations, viewerAccountId, targetAccountId }),
+      getCommunityFollowState({ relations, viewerAccountId, targetAccountId: targetAccountId || accountId }),
       { status: 200 },
     );
   } catch (error) {

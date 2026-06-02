@@ -1,22 +1,22 @@
 'use client';
 
-import { Box, Button, Flex, Grid, Image, Input, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, Image, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import {
-  BadgeCheck,
   Check,
   ChevronDown,
   LayoutGrid,
   List,
-  Search,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
+import { UserSearchField } from '@/app/user/components/ui/search-field';
 import { toaster } from '@/app/user/components/ui/toaster';
 import {
   COMMUNITY_CURRENT_USER,
@@ -27,11 +27,38 @@ import {
 } from '@/app/user/lib/community-content-data';
 import type { CommunityContent, CommunityContentListResponse } from '@/types/community-content';
 
+type FollowListItem = {
+  accountId: string;
+  name: string;
+  avatar: string;
+  company: string;
+  position: string;
+  isFollowing: boolean;
+};
+
+type FollowListResponse = {
+  followerCount: number;
+  followingCount: number;
+  items: FollowListItem[];
+};
+
+type FollowToggleResponse = {
+  followerCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  message?: string;
+};
+
+const DEFAULT_PROFILE_AVATAR =
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+
 function ProfileSummaryCard({
   title,
   subtitle,
   badge,
   avatar,
+  followerCount,
+  followingCount,
   onFollowerClick,
   onFollowingClick,
   onEditClick,
@@ -40,6 +67,8 @@ function ProfileSummaryCard({
   subtitle: string;
   badge?: string;
   avatar?: string;
+  followerCount: number;
+  followingCount: number;
   onFollowerClick?: () => void;
   onFollowingClick?: () => void;
   onEditClick?: () => void;
@@ -90,7 +119,7 @@ function ProfileSummaryCard({
             <Text fontSize="18px" fontWeight="700" color="#111827" lineClamp="1">
               {title}
             </Text>
-            {badge ? <BadgeCheck size={16} color="#3B82F6" /> : null}
+            {badge ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
           </Flex>
           <Text fontSize="14px" fontWeight="500" color="#6B7280" lineClamp="1">
             코마소프트
@@ -111,7 +140,7 @@ function ProfileSummaryCard({
         >
           <Box w="100%" textAlign="center">
             <Text fontSize="18px" fontWeight="700">
-              892
+              {followerCount.toLocaleString('ko-KR')}
             </Text>
             <Flex mt="4px" align="center" justify="center" gap="4px">
               <Text fontSize="14px" color="currentColor" opacity="0.62">
@@ -132,7 +161,7 @@ function ProfileSummaryCard({
         >
           <Box w="100%" textAlign="center">
             <Text fontSize="18px" fontWeight="700">
-              124
+              {followingCount.toLocaleString('ko-KR')}
             </Text>
             <Flex mt="4px" align="center" justify="center" gap="4px">
               <Text fontSize="14px" color="currentColor" opacity="0.62">
@@ -171,6 +200,11 @@ export default function MyPageCommunityPage() {
   const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [followListModalType, setFollowListModalType] = useState<'followers' | 'following' | null>(null);
+  const [followListItems, setFollowListItems] = useState<FollowListItem[]>([]);
+  const [followCounts, setFollowCounts] = useState({ followerCount: 0, followingCount: 0 });
+  const [followSearchQuery, setFollowSearchQuery] = useState('');
+  const [isFollowListLoading, setIsFollowListLoading] = useState(false);
+  const [followToggleTargetId, setFollowToggleTargetId] = useState<string | null>(null);
   const [allPublishedPosts, setAllPublishedPosts] = useState<CommunityPost[]>([]);
   const [mypagePosts, setMypagePosts] = useState<CommunityPost[]>([]);
   const [hiddenPosts, setHiddenPosts] = useState<CommunityPost[]>([]);
@@ -217,6 +251,50 @@ export default function MyPageCommunityPage() {
       window.removeEventListener('keydown', handleEscape);
     };
   }, [followListModalType]);
+
+  const refreshFollowList = useCallback(async (listType: 'followers' | 'following') => {
+    setIsFollowListLoading(true);
+
+    try {
+      const params = new URLSearchParams({
+        accountId: COMMUNITY_CURRENT_USER.accountId,
+        viewerAccountId: COMMUNITY_CURRENT_USER.accountId,
+        listType,
+      });
+      const response = await fetch(`/api/mock/community-follows?${params.toString()}`, {
+        cache: 'no-store',
+      });
+      const data = (await response.json().catch(() => null)) as FollowListResponse | null;
+
+      if (!response.ok || !data) {
+        throw new Error('팔로우 목록을 불러오지 못했습니다.');
+      }
+
+      setFollowCounts({
+        followerCount: data.followerCount,
+        followingCount: data.followingCount,
+      });
+      setFollowListItems(data.items);
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '팔로우 목록을 불러오지 못했습니다.',
+        type: 'error',
+      });
+    } finally {
+      setIsFollowListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshFollowList('following');
+  }, [refreshFollowList]);
+
+  useEffect(() => {
+    if (!followListModalType) return;
+
+    setFollowSearchQuery('');
+    void refreshFollowList(followListModalType);
+  }, [followListModalType, refreshFollowList]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -338,22 +416,76 @@ export default function MyPageCommunityPage() {
 
   const realProfile = COMMUNITY_CURRENT_USER;
 
-  const followingProfiles = useMemo(() => {
-    const seen = new Set<string>();
-    const sourcePosts = Array.isArray(allPublishedPosts) ? allPublishedPosts : [];
+  const filteredFollowListItems = useMemo(() => {
+    const keyword = followSearchQuery.trim().toLowerCase();
+    if (!keyword) return followListItems;
 
-    return sourcePosts
-      .map((post) => post.author)
-      .filter((author) => {
-        if (author.accountId === COMMUNITY_CURRENT_USER.accountId) return false;
-        if (author.mode !== 'real') return false;
-        if (seen.has(author.accountId || author.id)) return false;
+    return followListItems.filter((item) =>
+      [item.name, item.company, item.position].join(' ').toLowerCase().includes(keyword),
+    );
+  }, [followListItems, followSearchQuery]);
 
-        seen.add(author.accountId || author.id);
-        return true;
-      })
-      .slice(0, 5);
-  }, [allPublishedPosts]);
+  const handleToggleFollowInModal = async (profile: FollowListItem) => {
+    setFollowToggleTargetId(profile.accountId);
+
+    try {
+      const method = profile.isFollowing ? 'DELETE' : 'POST';
+      const response = await fetch(
+        method === 'DELETE'
+          ? `/api/mock/community-follows?${new URLSearchParams({
+              followerAccountId: COMMUNITY_CURRENT_USER.accountId,
+              followingAccountId: profile.accountId,
+            }).toString()}`
+          : '/api/mock/community-follows',
+        {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          ...(method === 'POST'
+            ? {
+                body: JSON.stringify({
+                  followerAccountId: COMMUNITY_CURRENT_USER.accountId,
+                  followingAccountId: profile.accountId,
+                }),
+              }
+            : {}),
+        },
+      );
+      const data = (await response.json().catch(() => null)) as FollowToggleResponse | null;
+
+      if (!response.ok) {
+        throw new Error(data?.message || '팔로우 상태를 변경하지 못했습니다.');
+      }
+
+      const nextIsFollowing = Boolean(data?.isFollowing);
+
+      setFollowCounts((prev) => ({
+        followerCount: prev.followerCount,
+        followingCount: Math.max(
+          0,
+          prev.followingCount + (nextIsFollowing === profile.isFollowing ? 0 : nextIsFollowing ? 1 : -1),
+        ),
+      }));
+      setFollowListItems((prev) =>
+        prev.map((item) =>
+          item.accountId === profile.accountId
+            ? {
+                ...item,
+                isFollowing: nextIsFollowing,
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      toaster.create({
+        title: error instanceof Error ? error.message : '팔로우 상태를 변경하지 못했습니다.',
+        type: 'error',
+      });
+    } finally {
+      setFollowToggleTargetId(null);
+    }
+  };
 
   const handleToggleLikePost = async (post: CommunityPost) => {
     try {
@@ -612,6 +744,8 @@ export default function MyPageCommunityPage() {
               subtitle={realProfile.position ?? '직무'}
               badge="✓"
               avatar={realProfile.avatar}
+              followerCount={followCounts.followerCount}
+              followingCount={followCounts.followingCount}
               onFollowerClick={() => setFollowListModalType('followers')}
               onFollowingClick={() => setFollowListModalType('following')}
               onEditClick={() => router.push('/user/mypage/settings/profile')}
@@ -857,6 +991,8 @@ export default function MyPageCommunityPage() {
               subtitle={realProfile.position ?? '직무'}
               badge="✓"
               avatar={realProfile.avatar}
+              followerCount={followCounts.followerCount}
+              followingCount={followCounts.followingCount}
               onFollowerClick={() => setFollowListModalType('followers')}
               onFollowingClick={() => setFollowListModalType('following')}
               onEditClick={() => router.push('/user/mypage/settings/profile')}
@@ -961,24 +1097,26 @@ export default function MyPageCommunityPage() {
               </Button>
             </Flex>
 
-            <Box position="relative" mt="18px">
-              <Box position="absolute" left="16px" top="50%" transform="translateY(-50%)" color="#9CA3AF">
-                <Search size={16} />
-              </Box>
-              <Input
+            <Box mt="18px">
+              <UserSearchField
                 h="42px"
-                pl="44px"
-                pr="16px"
-                borderWidth="0"
-                borderRadius="10px"
-                bg="#FFFFFF"
                 boxShadow="0 12px 30px rgba(223, 223, 223, 0.45)"
                 fontSize="13px"
                 placeholder="계정을 검색해보세요."
+                value={followSearchQuery}
+                iconColor="#9CA3AF"
                 _placeholder={{ color: '#9CA3AF' }}
                 _focus={{
-                  boxShadow: '0 0 0 2px rgba(251, 146, 60, 0.14), 0 12px 30px rgba(223, 223, 223, 0.45)',
+                  outline: 'none',
+                  borderColor: 'orange.500',
+                  boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35), 0 12px 28px rgba(255, 105, 0, 0.24)',
                 }}
+                _focusVisible={{
+                  outline: 'none',
+                  borderColor: 'orange.500',
+                  boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35), 0 12px 28px rgba(255, 105, 0, 0.24)',
+                }}
+                onValueChange={setFollowSearchQuery}
               />
             </Box>
 
@@ -989,8 +1127,8 @@ export default function MyPageCommunityPage() {
               borderColor="#E5E7EB"
             >
               {[
-                { type: 'followers' as const, label: '팔로워', count: 124 },
-                { type: 'following' as const, label: '팔로잉', count: 82 },
+                { type: 'followers' as const, label: '팔로워', count: followCounts.followerCount },
+                { type: 'following' as const, label: '팔로잉', count: followCounts.followingCount },
               ].map((tab) => {
                 const isActive = followListModalType === tab.type;
 
@@ -998,16 +1136,20 @@ export default function MyPageCommunityPage() {
                   <Button
                     key={tab.type}
                     type="button"
+                    variant="ghost"
                     h="44px"
                     borderRadius="0"
-                    borderBottom={isActive ? '2px solid' : '2px solid transparent'}
-                    borderColor={isActive ? '#FF5A00' : 'transparent'}
+                    borderWidth="0"
+                    borderBottomWidth="2px"
+                    borderBottomStyle="solid"
+                    borderBottomColor={isActive ? '#FF5A00' : 'transparent'}
                     bg="transparent"
                     color={isActive ? '#3F3F46' : '#6B7280'}
                     fontSize="14px"
                     fontWeight="800"
                     _hover={{ bg: 'transparent', color: '#FF5A00' }}
                     _focus={{ outline: 'none', boxShadow: 'none' }}
+                    _focusVisible={{ outline: 'none', boxShadow: 'none' }}
                     onClick={() => setFollowListModalType(tab.type)}
                   >
                     {tab.label}
@@ -1020,17 +1162,20 @@ export default function MyPageCommunityPage() {
             </Grid>
 
             <Flex mt="16px" maxH="380px" overflowY="auto" direction="column" gap="10px" pr="2px">
-              {followingProfiles.map((profile, index) => {
-                const displayName =
-                  profile.mode === 'real'
-                    ? ('name' in profile && profile.name ? profile.name : profile.nickname)
-                    : profile.name;
-                const profilePosition = 'position' in profile ? profile.position : undefined;
-                const isFollowing = followListModalType === 'following' || index !== 2;
-
-                return (
+              {isFollowListLoading ? (
+                <Flex minH="120px" align="center" justify="center" color="#9CA3AF">
+                  <Text fontSize="13px">목록을 불러오는 중입니다.</Text>
+                </Flex>
+              ) : filteredFollowListItems.length === 0 ? (
+                <Flex minH="120px" align="center" justify="center" color="#9CA3AF">
+                  <Text fontSize="13px">
+                    {followSearchQuery.trim() ? '검색 결과가 없습니다.' : '목록이 없습니다.'}
+                  </Text>
+                </Flex>
+              ) : (
+                filteredFollowListItems.map((profile) => (
                   <Flex
-                    key={profile.profileId}
+                    key={profile.accountId}
                     align="center"
                     justify="space-between"
                     gap="12px"
@@ -1044,17 +1189,23 @@ export default function MyPageCommunityPage() {
                   >
                     <Flex minW="0" align="center" gap="12px">
                       <Box position="relative" boxSize="26px" overflow="hidden" rounded="full" flexShrink="0">
-                        <Image src={profile.avatar} alt={displayName} w="100%" h="100%" objectFit="cover" />
+                        <Image
+                          src={profile.avatar || DEFAULT_PROFILE_AVATAR}
+                          alt={profile.name}
+                          w="100%"
+                          h="100%"
+                          objectFit="cover"
+                        />
                       </Box>
                       <Box minW="0">
                         <Flex align="center" gap="4px">
                           <Text fontSize="13px" fontWeight="800" color="#111827" lineClamp="1">
-                            {displayName}
+                            {profile.name}
                           </Text>
-                          {profile.mode === 'real' ? <BadgeCheck size={14} color="#3B82F6" /> : null}
+                          <CheckBadgeIcon size={14} color="#3B82F6" />
                         </Flex>
                         <Text mt="2px" fontSize="11px" color="#9CA3AF" lineClamp="1">
-                          코마소프트 · {profilePosition ?? '디자이너'}
+                          {profile.company} · {profile.position}
                         </Text>
                       </Box>
                     </Flex>
@@ -1065,19 +1216,21 @@ export default function MyPageCommunityPage() {
                       minW="68px"
                       px="14px"
                       borderRadius="12px"
-                      bg={isFollowing ? '#F8F8F8' : '#333333'}
-                      color={isFollowing ? '#4B5563' : '#FFFFFF'}
+                      bg={profile.isFollowing ? '#F8F8F8' : '#333333'}
+                      color={profile.isFollowing ? '#4B5563' : '#FFFFFF'}
                       fontSize="13px"
                       fontWeight="800"
+                      loading={followToggleTargetId === profile.accountId}
                       _hover={{
-                        bg: isFollowing ? '#EFEFEF' : '#222222',
+                        bg: profile.isFollowing ? '#EFEFEF' : '#222222',
                       }}
+                      onClick={() => handleToggleFollowInModal(profile)}
                     >
-                      {isFollowing ? '팔로잉' : '팔로우'}
+                      {profile.isFollowing ? '팔로잉' : '팔로우'}
                     </Button>
                   </Flex>
-                );
-              })}
+                ))
+              )}
             </Flex>
           </Box>
         </Flex>

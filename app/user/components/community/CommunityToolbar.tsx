@@ -8,14 +8,11 @@ import {
   Grid,
   HStack,
   Icon,
-  Input,
-  InputGroup,
   Portal,
   Stack,
   Text,
 } from '@chakra-ui/react';
 import {
-  Search,
   Filter,
   LayoutGrid,
   List,
@@ -23,10 +20,11 @@ import {
   UserCheck,
   TrendingUp,
   Sparkles,
-  RotateCcw,
   X,
   Check,
 } from 'lucide-react';
+import RotateIcon from '@/app/user/components/icons/RotateIcon';
+import { UserSearchField } from '@/app/user/components/ui/search-field';
 import tagsData from '@/data/mock/tags.json';
 import type { Tag as CommunityTag } from '@/types/tag';
 
@@ -145,33 +143,13 @@ export function CommunityToolbar({
     <Box position="relative">
       <Stack gap={{ base: '3', lg: '0' }}>
         <HStack display={{ base: 'none', lg: 'flex' }} gap="3">
-          <InputGroup startElement={<Icon as={Search} boxSize="4" color="gray.400" />}>
-            <Input
-              type="text"
-              minW="240px"
-              flex="1"
-              value={searchQuery}
-              placeholder={searchPlaceholder}
-              onChange={(event) => onSearchQueryChange(event.target.value)}
-              borderRadius="10px"
-              borderWidth="0"
-              bg="white"
-              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
-              py="2.5"
-              pr="4"
-              fontSize="sm"
-              _focus={{
-                outline: 'none',
-                borderColor: 'orange.500',
-                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
-              }}
-              _focusVisible={{
-                outline: 'none',
-                borderColor: 'orange.500',
-                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
-              }}
-            />
-          </InputGroup>
+          <UserSearchField
+            minW="240px"
+            flex="1"
+            value={searchQuery}
+            placeholder={searchPlaceholder}
+            onValueChange={onSearchQueryChange}
+          />
 
           <Button
             ref={filterTriggerRef}
@@ -195,31 +173,11 @@ export function CommunityToolbar({
         </HStack>
 
         <Stack display={{ base: 'flex', lg: 'none' }} gap="3">
-          <InputGroup startElement={<Icon as={Search} boxSize="4" color="gray.400" />}>
-            <Input
-              type="text"
-              value={searchQuery}
-              placeholder={searchPlaceholder}
-              onChange={(event) => onSearchQueryChange(event.target.value)}
-              borderRadius="10px"
-              borderWidth="0"
-              bg="white"
-              boxShadow="0 10px 24px rgba(223, 223, 223, 0.9)"
-              py="2.5"
-              pr="4"
-              fontSize="sm"
-              _focus={{
-                outline: 'none',
-                borderColor: 'orange.500',
-                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
-              }}
-              _focusVisible={{
-                outline: 'none',
-                borderColor: 'orange.500',
-                boxShadow: '0 0 0 2px rgba(249, 115, 22, 0.35)',
-              }}
-            />
-          </InputGroup>
+          <UserSearchField
+            value={searchQuery}
+            placeholder={searchPlaceholder}
+            onValueChange={onSearchQueryChange}
+          />
 
           <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="3">
             <Button
@@ -291,11 +249,11 @@ export function CommunityToolbar({
                 h="auto"
                 bg="transparent"
                 p="0"
-                color="#FF6900"
-                _hover={{ bg: 'transparent', color: '#E55F00' }}
+                color="#888888"
+                _hover={{ bg: 'transparent', color: '#888888' }}
                 aria-label="필터 전체 초기화"
               >
-                <Icon as={RotateCcw} boxSize="5" />
+                <Icon as={RotateIcon} boxSize="18px" />
               </Button>
               <Button
                 type="button"
@@ -408,11 +366,11 @@ export function CommunityToolbar({
                     h="auto"
                     bg="transparent"
                     p="0"
-                    color="#FF6900"
-                    _hover={{ bg: 'transparent', color: '#E55F00' }}
+                    color="#888888"
+                    _hover={{ bg: 'transparent', color: '#888888' }}
                     aria-label="태그 필터 초기화"
                   >
-                    <Icon as={RotateCcw} boxSize="5" />
+                    <Icon as={RotateIcon} boxSize="18px" />
                   </Button>
                   <Button
                     type="button"
@@ -506,11 +464,11 @@ export function CommunityToolbar({
                     h="auto"
                     bg="transparent"
                     p="0"
-                    color="#FF6900"
-                    _hover={{ bg: 'transparent', color: '#E55F00' }}
+                    color="#888888"
+                    _hover={{ bg: 'transparent', color: '#888888' }}
                     aria-label="필터 전체 초기화"
                   >
-                    <Icon as={RotateCcw} boxSize="5" />
+                    <Icon as={RotateIcon} boxSize="18px" />
                   </Button>
                   <Button
                     type="button"

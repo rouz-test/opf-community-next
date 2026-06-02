@@ -1,5 +1,6 @@
 'use client';
-import { LuTrash2, LuArchive, LuCalendar, LuChevronDown, LuSearch } from 'react-icons/lu';
+import { LuTrash2, LuArchive, LuCalendar, LuChevronDown } from 'react-icons/lu';
+import SearchIcon from '@/app/admin/components/icons/SearchIcon';
 import AdminPageSizeSelect from '@/app/admin/components/ui/table/page-size-select';
 import {
   Box,
@@ -800,7 +801,7 @@ export default function CommunityContentPage() {
                     _hover={{ bg: '#F9FAFB' }}
                     onClick={handleApplyDateFilter}
                   >
-                    <Icon as={LuSearch} boxSize="16px" />
+                    <Icon as={SearchIcon} boxSize="16px" />
                   </IconButton>
                 </Flex>
 
