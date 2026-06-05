@@ -92,7 +92,7 @@ export default function MyPageSettingsProfilePage() {
                 borderColor="#E5E7EB"
               >
                 <Image
-                  src={realProfile.avatar}
+                  src={realProfile.avatar || '/images/profiles/real-large.png'}
                   alt={realProfile.name}
                   h="100%"
                   w="100%"

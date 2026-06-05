@@ -22,6 +22,7 @@ export type CommunityProfileCardProps = {
     name: string;
     nickname: string;
     avatar: string;
+    company?: string;
     position: string;
     postsCount: number;
     commentsCount: number;
@@ -30,6 +31,7 @@ export type CommunityProfileCardProps = {
 
 const isAnonymousMode = (mode: CommunityProfileCardProps['profileMode']) => mode !== 'real';
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-xlarge.png';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-xlarge.png';
 
 export function CommunityProfileCard({
   profileMode,
@@ -42,7 +44,7 @@ export function CommunityProfileCard({
 }: CommunityProfileCardProps) {
   const anonymousMode = isAnonymousMode(profileMode);
   const displayedName = anonymousMode ? '익명' : currentUser.name;
-  const displayedAvatar = anonymousMode ? ANONYMOUS_PROFILE_IMAGE : currentUser.avatar;
+  const displayedAvatar = anonymousMode ? ANONYMOUS_PROFILE_IMAGE : currentUser.avatar || DEFAULT_REAL_PROFILE_IMAGE;
 
   if (variant === 'header') {
     return (
@@ -136,12 +138,29 @@ export function CommunityProfileCard({
             {!anonymousMode ? <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" /> : null}
           </Flex>
 
-          <Text mt="2" fontSize="14px" color="gray.500" lineHeight="1.5">
-            {anonymousMode ? '익명 기본값' : '코마소프트'}
-          </Text>
-          <Text fontSize="14px" color="gray.500" lineHeight="1.5">
-            {anonymousMode ? '커뮤니티 활동' : currentUser.position}
-          </Text>
+          {anonymousMode ? (
+            <>
+              <Text mt="2" fontSize="14px" color="gray.500" lineHeight="1.5">
+                익명 기본값
+              </Text>
+              <Text fontSize="14px" color="gray.500" lineHeight="1.5">
+                커뮤니티 활동
+              </Text>
+            </>
+          ) : (
+            <>
+              {currentUser.company ? (
+                <Text mt="2" fontSize="14px" color="gray.500" lineHeight="1.5">
+                  {currentUser.company}
+                </Text>
+              ) : null}
+              {currentUser.position ? (
+                <Text fontSize="14px" color="gray.500" lineHeight="1.5">
+                  {currentUser.position}
+                </Text>
+              ) : null}
+            </>
+          )}
         </Box>
       </Flex>
 

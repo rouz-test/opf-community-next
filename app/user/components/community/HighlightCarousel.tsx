@@ -19,6 +19,7 @@ import type { Tag } from '@/types/tag';
 const tags = tagsData as Tag[];
 const CAROUSEL_SLIDE_GAP = '10px';
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-small.png';
 
 const compactMeta = (parts: Array<string | null | undefined>) =>
   parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
@@ -54,7 +55,7 @@ function HighlightPostCard({
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const authorMeta = isAnonymousPost
     ? formatCarouselDate(post.createdAt)
-    : compactMeta(['코마소프트', post.author.position, formatCarouselDate(post.createdAt)]);
+    : compactMeta([post.author.company, post.author.position, formatCarouselDate(post.createdAt)]);
   const isOwnPost = post.author.accountId === 'account-user-1';
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
@@ -130,23 +131,15 @@ function HighlightPostCard({
           >
             {isAnonymousPost ? (
               <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
-            ) : post.author.avatar ? (
-              <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
             ) : (
-              <Flex
+              <Image
+                src={post.author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
+                alt={authorName}
                 h="6"
                 w="6"
-                align="center"
-                justify="center"
                 rounded="full"
-                bg="#FF6900"
-                fontSize="10px"
-                fontWeight="700"
-                color="white"
-                flexShrink={0}
-              >
-                OP
-              </Flex>
+                objectFit="cover"
+              />
             )}
 
             <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">

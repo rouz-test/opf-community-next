@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
 import { toaster } from '@/app/user/components/ui/toaster';
 
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-large.png';
+
 export type AuthorProfileCardProps = {
   author: {
     id: string;
@@ -149,7 +151,7 @@ export function AuthorProfileCard({
           <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
             <Link href={`/user/community/author/${author.id}`}>
               <Image
-                src={author.avatar}
+                src={author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
                 alt={displayName}
                 boxSize="48px"
                 rounded="full"
@@ -227,7 +229,7 @@ export function AuthorProfileCard({
         <ChakraLink asChild _hover={{ textDecoration: 'none' }}>
           <Link href={`/user/community/author/${author.id}`}>
             <Image
-              src={author.avatar}
+              src={author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
               alt={displayName}
               boxSize="64px"
               rounded="full"

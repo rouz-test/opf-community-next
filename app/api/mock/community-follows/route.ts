@@ -12,8 +12,7 @@ import type { UserAccount } from '@/types/user';
 type FollowRequestBody = Partial<CommunityFollowRelation>;
 
 const USERS_PATH = 'data/mock/users.json';
-const DEFAULT_PROFILE_AVATAR =
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const DEFAULT_PROFILE_AVATAR = '/images/profiles/real-medium.png';
 
 type CommunityFollowListItem = {
   accountId: string;

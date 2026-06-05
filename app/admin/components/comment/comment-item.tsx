@@ -10,6 +10,7 @@ import HeartIcon from '@/app/admin/components/icons/HeartIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-medium.png';
 
 type CommentItemProps = {
   comment: CommunityComment;
@@ -34,10 +35,6 @@ function formatCommentDate(dateString: string) {
   });
 }
 
-function getInitial(name: string) {
-  return name.slice(0, 1).toUpperCase();
-}
-
 function getArchivedMessage(comment: CommunityComment) {
   if (comment.archivedBy === 'author') {
     return '작성자에 의해 보관된 댓글입니다.';
@@ -60,6 +57,13 @@ function getDeletedMessage(comment: CommunityComment) {
   }
 
   return '삭제된 댓글입니다.';
+}
+
+function getCommentAuthorAvatar(comment: CommunityComment) {
+  if (comment.author.visibility === 'anonymous') return ANONYMOUS_PROFILE_IMAGE;
+  if (comment.author.type === 'admin') return DEFAULT_REAL_PROFILE_IMAGE;
+
+  return comment.author.avatar || DEFAULT_REAL_PROFILE_IMAGE;
 }
 
 export default function CommentItem({
@@ -174,34 +178,16 @@ export default function CommentItem({
   return (
     <Box>
       <Flex align="flex-start" gap={depth === 0 ? '12px' : '10px'}>
-        {comment.author.visibility === 'anonymous' ? (
-          <Image
-            src={ANONYMOUS_PROFILE_IMAGE}
-            alt={comment.author.displayName}
-            w="34px"
-            h="34px"
-            mt="2px"
-            borderRadius="9999px"
-            objectFit="cover"
-            flexShrink={0}
-          />
-        ) : (
-          <Flex
-            align="center"
-            justify="center"
-            w="34px"
-            h="34px"
-            mt="2px"
-            borderRadius="9999px"
-            bg={isMine ? '#FB923C' : '#E0F2FE'}
-            color={isMine ? '#FFFFFF' : '#64748B'}
-            fontSize="12px"
-            fontWeight="700"
-            flexShrink={0}
-          >
-            {getInitial(comment.author.displayName)}
-          </Flex>
-        )}
+        <Image
+          src={getCommentAuthorAvatar(comment)}
+          alt={comment.author.displayName}
+          w="34px"
+          h="34px"
+          mt="2px"
+          borderRadius="9999px"
+          objectFit="cover"
+          flexShrink={0}
+        />
 
         <Box flex="1" minW="0">
           <Box

@@ -58,6 +58,7 @@ import {
   fetchCommunitySuspensionStatus,
 } from '@/app/user/lib/community-suspension';
 import tagsData from '@/data/mock/tags.json';
+import usersData from '@/data/mock/users.json';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type {
@@ -66,10 +67,16 @@ import type {
   CommunityContentCommentStats,
 } from '@/types/community-comment';
 import type { Tag } from '@/types/tag';
+import type { UserAccount } from '@/types/user';
 
 const tags = tagsData as Tag[];
+const users = usersData as UserAccount[];
 const DEFAULT_BODY_TEXT_COLOR = '#374151';
 const DEFAULT_BLOCKQUOTE_TEXT_COLOR = '#111827';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-large.png';
+const DEFAULT_REAL_COMMENT_PROFILE_IMAGE = '/images/profiles/real-medium.png';
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-large.png';
+const ANONYMOUS_COMMENT_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
 
 function normalizeFontFamily(fontFamily: string) {
   if (fontFamily === 'mono') return 'monospace';
@@ -490,13 +497,20 @@ function getAuthorDisplay(content: CommunityContent) {
   return content.author.displayName || content.author.identifierValue || content.author.id;
 }
 
-function getAuthorInitial(content: CommunityContent) {
-  const base =
-    content.author.visibility === 'anonymous'
-      ? '익명'
-      : content.author.displayName || content.author.identifierValue || content.author.id;
+function findAuthorAccount(accountId: string) {
+  return users.find((user) => user.accountId === accountId);
+}
 
-  return base.slice(0, 1).toUpperCase();
+function getAuthorAvatar(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return ANONYMOUS_PROFILE_IMAGE;
+  }
+
+  if (content.author.type === 'admin') {
+    return DEFAULT_REAL_PROFILE_IMAGE;
+  }
+
+  return findAuthorAccount(content.author.id)?.profile.avatar || DEFAULT_REAL_PROFILE_IMAGE;
 }
 
 function getPublishedAtDisplay(content: CommunityContent) {
@@ -524,7 +538,13 @@ function getAuthorMetaDisplay(content: CommunityContent) {
     return publishedAtDisplay;
   }
 
-  return compactAuthorMeta(['코마소프트', publishedAtDisplay]);
+  const authorAccount = findAuthorAccount(content.author.id);
+
+  return compactAuthorMeta([
+    authorAccount?.profile.company,
+    authorAccount?.profile.position,
+    publishedAtDisplay,
+  ]);
 }
 
 function getCommentTotalCount(commentCount: number, replyCount: number) {
@@ -553,7 +573,12 @@ function mapCommentsForUser(comments: CommunityComment[], postAuthorId: string):
     author: {
       ...comment.author,
       displayName: decorateCommentAuthorName(comment, postAuthorId),
-      avatar: comment.author.visibility === 'anonymous' ? '/images/profiles/anonymous-medium.png' : comment.author.avatar,
+      avatar:
+        comment.author.visibility === 'anonymous'
+          ? ANONYMOUS_COMMENT_PROFILE_IMAGE
+          : comment.author.type === 'admin'
+            ? DEFAULT_REAL_COMMENT_PROFILE_IMAGE
+            : comment.author.avatar || findAuthorAccount(comment.author.id)?.profile.avatar || DEFAULT_REAL_COMMENT_PROFILE_IMAGE,
     },
     replies: mapCommentsForUser(comment.replies, postAuthorId),
   }));
@@ -1186,7 +1211,7 @@ export default function CommunityPostDetailPage() {
   const isOwnContent = content?.author.id === COMMUNITY_CURRENT_USER.accountId;
   const resolvedTags = useMemo(() => (content ? resolveTags(content.tagIds, tags) : []), [content]);
   const authorDisplay = content ? getAuthorDisplay(content) : '';
-  const authorInitial = content ? getAuthorInitial(content) : '';
+  const authorAvatar = content ? getAuthorAvatar(content) : DEFAULT_REAL_PROFILE_IMAGE;
   const authorMetaDisplay = content ? getAuthorMetaDisplay(content) : '-';
 
   const authorOtherPosts = useMemo(() => {
@@ -1408,32 +1433,15 @@ export default function CommunityPostDetailPage() {
             ) : null}
 
               <Flex align="center" gap="12px" pb="18px">
-                {isAnonymousContent ? (
-                  <Image
-                    src="/images/profiles/anonymous-large.png"
-                    alt={authorDisplay}
-                    w="44px"
-                    h="44px"
-                    borderRadius="9999px"
-                    objectFit="cover"
-                    flexShrink={0}
-                  />
-                ) : (
-                  <Flex
-                    align="center"
-                    justify="center"
-                    w="44px"
-                    h="44px"
-                    borderRadius="9999px"
-                    bg="#F3F4F6"
-                    color="#6B7280"
-                    fontSize="16px"
-                    fontWeight="700"
-                    flexShrink={0}
-                  >
-                    {authorInitial}
-                  </Flex>
-                )}
+                <Image
+                  src={authorAvatar}
+                  alt={authorDisplay}
+                  w="44px"
+                  h="44px"
+                  borderRadius="9999px"
+                  objectFit="cover"
+                  flexShrink={0}
+                />
 
                 <Box minW="0">
                   <Flex align="center" gap="6px">

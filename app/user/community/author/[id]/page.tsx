@@ -58,8 +58,7 @@ type AuthorCommentListResponse = {
   items: CommunityCommentEntity[];
 };
 
-const DEFAULT_REAL_AVATAR =
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const DEFAULT_REAL_AVATAR = '/images/profiles/real-medium.png';
 
 function EmptyState({
   title,
@@ -340,7 +339,7 @@ export default function CommunityAuthorPage() {
           mode: authorCommentEntries[0].comment.author.mode,
           name: authorCommentEntries[0].comment.author.name,
           nickname: authorCommentEntries[0].comment.author.nickname,
-          avatar: authorCommentEntries[0].comment.author.avatar,
+          avatar: authorCommentEntries[0].comment.author.avatar || DEFAULT_REAL_AVATAR,
         }
       : undefined);
 

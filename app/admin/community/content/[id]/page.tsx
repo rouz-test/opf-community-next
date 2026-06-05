@@ -19,6 +19,7 @@ import AdminButton from '@/app/admin/components/ui/button';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import { toaster } from '@/app/admin/components/ui/toaster';
 import tagsData from '@/data/mock/tags.json';
+import usersData from '@/data/mock/users.json';
 import { getBlockedWords } from '@/lib/blocked-words';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
@@ -29,6 +30,7 @@ import type {
   CommunityContentCommentStats,
 } from '@/types/community-comment';
 import type { Tag } from '@/types/tag';
+import type { UserAccount } from '@/types/user';
 import ContentActionMenu from '@/app/admin/components/content-action-menu';
 
 // ==============================
@@ -36,8 +38,11 @@ import ContentActionMenu from '@/app/admin/components/content-action-menu';
 // ==============================
 
 const tags = tagsData as Tag[];
+const users = usersData as UserAccount[];
 const DEFAULT_BODY_TEXT_COLOR = '#374151';
 const DEFAULT_BLOCKQUOTE_TEXT_COLOR = '#111827';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-large.png';
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-large.png';
 
 
 // ==============================
@@ -211,15 +216,6 @@ function getAuthorRealName(content: CommunityContent) {
   return content.author.identifierValue || content.author.id;
 }
 
-function getAuthorInitial(content: CommunityContent) {
-  const base =
-    content.author.visibility === 'anonymous'
-      ? content.author.identifierValue || content.author.id
-      : content.author.displayName || content.author.identifierValue || content.author.id;
-
-  return base.slice(0, 1).toUpperCase();
-}
-
 function getPublishedAtDisplay(content: CommunityContent) {
   if (!content.publishedAt) return '-';
 
@@ -238,6 +234,22 @@ function getPublishedAtDisplay(content: CommunityContent) {
 const compactAuthorMeta = (parts: Array<string | null | undefined>) =>
   parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
 
+function findAuthorAccount(accountId: string) {
+  return users.find((user) => user.accountId === accountId);
+}
+
+function getAuthorAvatar(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') {
+    return ANONYMOUS_PROFILE_IMAGE;
+  }
+
+  if (content.author.type === 'admin') {
+    return DEFAULT_REAL_PROFILE_IMAGE;
+  }
+
+  return findAuthorAccount(content.author.id)?.profile.avatar || DEFAULT_REAL_PROFILE_IMAGE;
+}
+
 function getAuthorMetaDisplay(content: CommunityContent) {
   const publishedAtDisplay = getPublishedAtDisplay(content);
 
@@ -245,7 +257,13 @@ function getAuthorMetaDisplay(content: CommunityContent) {
     return compactAuthorMeta(['관리자 식별명', getAuthorRealName(content), publishedAtDisplay]);
   }
 
-  return compactAuthorMeta(['코마소프트', publishedAtDisplay]);
+  const authorAccount = findAuthorAccount(content.author.id);
+
+  return compactAuthorMeta([
+    authorAccount?.profile.company,
+    authorAccount?.profile.position,
+    publishedAtDisplay,
+  ]);
 }
 
 function getStatusLabel(content: CommunityContent) {
@@ -1054,7 +1072,7 @@ export default function CommunityContentDetailPage() {
 
   const resolvedTags = resolveTags(content.tagIds, tags);
   const authorDisplay = getAuthorDisplay(content);
-  const authorInitial = getAuthorInitial(content);
+  const authorAvatar = getAuthorAvatar(content);
   const authorMetaDisplay = getAuthorMetaDisplay(content);
   const statusLabel = getStatusLabel(content);
 
@@ -1140,32 +1158,15 @@ export default function CommunityContentDetailPage() {
           ) : null}
 
           <Flex align="center" gap="12px" pb="18px">
-            {content.author.visibility === 'anonymous' ? (
-              <Image
-                src="/images/profiles/anonymous-large.png"
-                alt={authorDisplay}
-                w="44px"
-                h="44px"
-                borderRadius="9999px"
-                objectFit="cover"
-                flexShrink={0}
-              />
-            ) : (
-              <Flex
-                align="center"
-                justify="center"
-                w="44px"
-                h="44px"
-                borderRadius="9999px"
-                bg="#F3F4F6"
-                color="#6B7280"
-                fontSize="16px"
-                fontWeight="700"
-                flexShrink={0}
-              >
-                {authorInitial}
-              </Flex>
-            )}
+            <Image
+              src={authorAvatar}
+              alt={authorDisplay}
+              w="44px"
+              h="44px"
+              borderRadius="9999px"
+              objectFit="cover"
+              flexShrink={0}
+            />
 
             <Box minW="0">
               <Flex align="center" gap="6px">

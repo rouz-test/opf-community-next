@@ -61,10 +61,6 @@ function formatDate(dateString?: string) {
   return `${year}. ${month}. ${day}`;
 }
 
-function getInitial(name: string) {
-  return name.trim().slice(0, 1).toUpperCase() || '회';
-}
-
 function DetailSection({
   title,
   children,
@@ -225,28 +221,13 @@ function ProfileContent({ user }: { user: UserProfileBundle }) {
             py="30px"
           >
             <Flex align="flex-start" justify={{ base: 'flex-start', md: 'center' }}>
-              {account.profile.avatar ? (
-                <Image
-                  src={account.profile.avatar}
-                  alt={account.verification.realName}
-                  boxSize="118px"
-                  borderRadius="full"
-                  objectFit="cover"
-                />
-              ) : (
-                <Flex
-                  boxSize="118px"
-                  align="center"
-                  justify="center"
-                  borderRadius="full"
-                  bg="#FFF7ED"
-                  color="#F97316"
-                  fontSize="34px"
-                  fontWeight="700"
-                >
-                  {getInitial(account.verification.realName)}
-                </Flex>
-              )}
+              <Image
+                src={account.profile.avatar || '/images/profiles/real-xlarge.png'}
+                alt={account.verification.realName}
+                boxSize="118px"
+                borderRadius="full"
+                objectFit="cover"
+              />
             </Flex>
 
             <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} columnGap="54px" rowGap="24px" minW="0">

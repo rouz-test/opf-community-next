@@ -32,6 +32,8 @@ import { resolveTags } from '@/lib/tags';
 import type { Tag as CommunityTag } from '@/types/tag';
 
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-small.png';
+const DEFAULT_REAL_COMMENT_PROFILE_IMAGE = '/images/profiles/real-medium.png';
 
 type FeedPostCardProps = {
   post: CommunityPost;
@@ -104,7 +106,7 @@ export function FeedPostCard({
   const authorName = isAnonymousPost ? '익명' : post.author.name;
   const authorMeta = isAnonymousPost
     ? formatDate(post.createdAt)
-    : compactMeta(['코마소프트', post.author.position, formatDate(post.createdAt)]);
+    : compactMeta([post.author.company, post.author.position, formatDate(post.createdAt)]);
   const highlightedCommentAuthorName = post.highlightedComment
     ? post.highlightedComment.author.mode === 'real'
       ? post.highlightedComment.author.name
@@ -261,23 +263,15 @@ export function FeedPostCard({
             >
               {isAnonymousPost ? (
                 <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
-              ) : post.author.avatar ? (
-                <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
               ) : (
-                <Flex
+                <Image
+                  src={post.author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
+                  alt={authorName}
                   h="6"
                   w="6"
-                  align="center"
-                  justify="center"
                   rounded="full"
-                  bg="#FF6900"
-                  fontSize="10px"
-                  fontWeight="700"
-                  color="white"
-                  flexShrink={0}
-                >
-                  OP
-                </Flex>
+                  objectFit="cover"
+                />
               )}
 
               <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">
@@ -425,19 +419,15 @@ export function FeedPostCard({
         {post.highlightedComment ? (
           <Box mt="4" rounded="20px" borderWidth="1px" borderColor="orange.200" bg="orange.50" px={{ base: '4', sm: '5' }} py="4">
             <Flex align="flex-start" gap="3">
-              {post.highlightedComment.author.avatar ? (
-                <Image
-                  src={post.highlightedComment.author.avatar}
-                  alt={highlightedCommentAuthorName}
-                  h={{ base: '8', sm: '9' }}
-                  w={{ base: '8', sm: '9' }}
-                  flexShrink={0}
-                  rounded="full"
-                  objectFit="cover"
-                />
-              ) : (
-                <Box h={{ base: '8', sm: '9' }} w={{ base: '8', sm: '9' }} flexShrink={0} rounded="full" bg="gray.200" />
-              )}
+              <Image
+                src={post.highlightedComment.author.avatar || DEFAULT_REAL_COMMENT_PROFILE_IMAGE}
+                alt={highlightedCommentAuthorName}
+                h={{ base: '8', sm: '9' }}
+                w={{ base: '8', sm: '9' }}
+                flexShrink={0}
+                rounded="full"
+                objectFit="cover"
+              />
               <Box minW="0" flex="1">
                 <HStack mb="1.5" gap="2">
                   <Text truncate fontSize="14px" fontWeight="700" color="gray.900">

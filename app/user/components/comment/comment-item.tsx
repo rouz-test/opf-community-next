@@ -11,6 +11,7 @@ import PenIcon from '@/app/user/components/icons/PenIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
+const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-medium.png';
 
 type CommentItemProps = {
   comment: CommunityComment;
@@ -34,10 +35,6 @@ function formatCommentDate(dateString: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function getInitial(name: string) {
-  return name.slice(0, 1).toUpperCase();
 }
 
 function getArchivedMessage(comment: CommunityComment) {
@@ -187,34 +184,16 @@ export default function CommentItem({
   return (
     <Box>
       <Flex align="flex-start" gap={depth === 0 ? '12px' : '10px'}>
-        {comment.author.visibility === 'anonymous' ? (
-          <Image
-            src={ANONYMOUS_PROFILE_IMAGE}
-            alt={comment.author.displayName}
-            w="34px"
-            h="34px"
-            mt="2px"
-            borderRadius="9999px"
-            objectFit="cover"
-            flexShrink={0}
-          />
-        ) : (
-          <Flex
-            align="center"
-            justify="center"
-            w="34px"
-            h="34px"
-            mt="2px"
-            borderRadius="9999px"
-            bg={isMine ? '#FB923C' : '#E0F2FE'}
-            color={isMine ? '#FFFFFF' : '#64748B'}
-            fontSize="12px"
-            fontWeight="700"
-            flexShrink={0}
-          >
-            {getInitial(comment.author.displayName)}
-          </Flex>
-        )}
+        <Image
+          src={comment.author.visibility === 'anonymous' ? ANONYMOUS_PROFILE_IMAGE : comment.author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
+          alt={comment.author.displayName}
+          w="34px"
+          h="34px"
+          mt="2px"
+          borderRadius="9999px"
+          objectFit="cover"
+          flexShrink={0}
+        />
 
         <Box flex="1" minW="0">
           <Box

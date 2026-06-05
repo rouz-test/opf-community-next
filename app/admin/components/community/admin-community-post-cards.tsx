@@ -8,15 +8,17 @@ import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
 import HeartFilledIcon from '@/app/admin/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/admin/components/icons/HeartIcon';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import usersData from '@/data/mock/users.json';
 import { extractTextFromContentBody } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
 import tagsData from '@/data/mock/tags.json';
 import type { CommunityContent } from '@/types/community-content';
 import type { Tag } from '@/types/tag';
+import type { UserAccount } from '@/types/user';
 
 const tags = tagsData as Tag[];
-const DEFAULT_REAL_AVATAR =
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const users = usersData as UserAccount[];
+const DEFAULT_REAL_AVATAR = '/images/profiles/real-small.png';
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
 
 export type AdminCommunityPostCardData = {
@@ -42,6 +44,13 @@ function getAuthorMeta(content: CommunityContent, formatDate: (dateString?: stri
 
   const role = content.author.type === 'admin' ? '커뮤니티 관리자' : '회원';
   return `코마소프트 · ${role} · ${formatDate(content.createdAt)}`;
+}
+
+function getAuthorAvatar(content: CommunityContent) {
+  if (content.author.visibility === 'anonymous') return ANONYMOUS_PROFILE_IMAGE;
+  if (content.author.type === 'admin') return DEFAULT_REAL_AVATAR;
+
+  return users.find((user) => user.accountId === content.author.id)?.profile.avatar || DEFAULT_REAL_AVATAR;
 }
 
 function getContentText(content: CommunityContent) {
@@ -134,6 +143,7 @@ export function AdminCommunityFeedPostCard({ item, formatDate }: AdminCommunityP
   const content = item.content;
   const isAnonymousPost = content.author.visibility === 'anonymous';
   const authorName = getAuthorName(content);
+  const authorAvatar = getAuthorAvatar(content);
   const resolvedTags = getResolvedTags(content);
   const images = getContentImages(content);
 
@@ -154,11 +164,7 @@ export function AdminCommunityFeedPostCard({ item, formatDate }: AdminCommunityP
         <Box display="block" px="5" pb="4" pt="5">
           <Flex mb="5" h="40px" align="center" justify="space-between" gap="3">
             <Flex align="center" gap="2" minW="0">
-              {!isAnonymousPost ? (
-                <Image src={DEFAULT_REAL_AVATAR} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
-              ) : (
-                <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
-              )}
+              <Image src={authorAvatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
 
               <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">
                 <Flex align="center" gap="1">

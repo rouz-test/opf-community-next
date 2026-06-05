@@ -1,12 +1,14 @@
 import communityCommentsData from '@/data/mock/community-comments.json';
 import communityContentReactionsData from '@/data/mock/community-content-reactions.json';
 import communityContentsData from '@/data/mock/community-contents.json';
+import usersData from '@/data/mock/users.json';
 import tagsData from '@/data/mock/tags.json';
 import { resolveTags } from '@/lib/tags';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type { CommunityComment, CommunityCommentEntity } from '@/types/community-comment';
 import type { CommunityContentReaction } from '@/types/community-content-reaction';
 import type { Tag } from '@/types/tag';
+import type { UserAccount } from '@/types/user';
 
 export type CommunityProfileMode = 'real' | 'anonymous';
 
@@ -21,6 +23,7 @@ export interface CommunityProfile extends CommunityIdentity {
   name: string;
   nickname: string;
   avatar: string;
+  company?: string;
   position?: string;
 }
 
@@ -79,20 +82,31 @@ export interface Comment {
 const contents = communityContentsData as CommunityContent[];
 const commentEntities = communityCommentsData as CommunityCommentEntity[];
 const contentReactions = communityContentReactionsData as CommunityContentReaction[];
+const users = usersData as UserAccount[];
 const tags = tagsData as Tag[];
 
-const DEFAULT_REAL_AVATAR =
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const DEFAULT_REAL_AVATAR = '/images/profiles/real-medium.png';
 
 const ANONYMOUS_AVATAR = '/images/profiles/anonymous-medium.png';
 
+const CURRENT_USER_ACCOUNT_ID = 'account-user-1';
+const currentUserAccount = users.find((user) => user.accountId === CURRENT_USER_ACCOUNT_ID);
+const findUserAccount = (accountId: string) => users.find((user) => user.accountId === accountId);
+const getRealAuthorAvatar = (author: CommunityContent['author'] | CommunityCommentEntity['author']) => {
+  if (author.type === 'admin') return DEFAULT_REAL_AVATAR;
+
+  const storedAvatar = 'avatar' in author ? author.avatar : undefined;
+
+  return storedAvatar || findUserAccount(author.id)?.profile.avatar || DEFAULT_REAL_AVATAR;
+};
+
 export const COMMUNITY_CURRENT_USER = {
-  accountId: 'account-user-1',
-  name: '박민수',
+  accountId: currentUserAccount?.accountId ?? CURRENT_USER_ACCOUNT_ID,
+  name: currentUserAccount?.verification.realName ?? '박민수',
   nickname: 'StartupHero',
-  avatar:
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-  position: '스타트업 개발자',
+  avatar: currentUserAccount?.profile.avatar || DEFAULT_REAL_AVATAR,
+  company: currentUserAccount?.profile.company ?? '',
+  position: currentUserAccount?.profile.position ?? '',
   postsCount: 12,
   commentsCount: 45,
 };
@@ -211,6 +225,7 @@ function extractImageSources(node?: CommunityContentBody | null): string[] {
 
 function mapContentAuthor(author: CommunityContent['author']): CommunityProfile {
   const mode = getAuthorMode(author.visibility);
+  const account = findUserAccount(author.id);
 
   return {
     id: author.id,
@@ -219,13 +234,15 @@ function mapContentAuthor(author: CommunityContent['author']): CommunityProfile 
     mode,
     name: getDisplayName(author),
     nickname: getNickname(author),
-    avatar: mode === 'real' ? DEFAULT_REAL_AVATAR : ANONYMOUS_AVATAR,
-    position: author.type === 'admin' ? '커뮤니티 관리자' : undefined,
+    avatar: mode === 'real' ? getRealAuthorAvatar(author) : ANONYMOUS_AVATAR,
+    company: mode === 'real' ? account?.profile.company : undefined,
+    position: mode === 'real' ? account?.profile.position : undefined,
   };
 }
 
 function mapCommentAuthor(author: CommunityCommentEntity['author']): CommunityInteractionAuthor {
   const mode = getAuthorMode(author.visibility);
+  const account = findUserAccount(author.id);
 
   return {
     id: author.id,
@@ -234,7 +251,9 @@ function mapCommentAuthor(author: CommunityCommentEntity['author']): CommunityIn
     mode,
     name: author.visibility === 'anonymous' ? '익명' : author.displayName,
     nickname: author.visibility === 'anonymous' ? '익명' : author.identifierValue || author.displayName,
-    avatar: mode === 'real' ? author.avatar || DEFAULT_REAL_AVATAR : ANONYMOUS_AVATAR,
+    avatar: mode === 'real' ? getRealAuthorAvatar(author) : ANONYMOUS_AVATAR,
+    company: mode === 'real' ? account?.profile.company : undefined,
+    position: mode === 'real' ? account?.profile.position : undefined,
     isFollowing: false,
   };
 }

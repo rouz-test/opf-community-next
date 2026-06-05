@@ -49,8 +49,7 @@ type FollowToggleResponse = {
   message?: string;
 };
 
-const DEFAULT_PROFILE_AVATAR =
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const DEFAULT_PROFILE_AVATAR = '/images/profiles/real-medium.png';
 
 function ProfileSummaryCard({
   title,
@@ -107,11 +106,7 @@ function ProfileSummaryCard({
           overflow="hidden"
           rounded="full"
         >
-          {avatar ? (
-            <Image src={avatar} alt={title} w="100%" h="100%" objectFit="cover" />
-          ) : (
-            <Box w="100%" h="100%" bgGradient="linear(to-br, gray.200, gray.300)" />
-          )}
+          <Image src={avatar || DEFAULT_PROFILE_AVATAR} alt={title} w="100%" h="100%" objectFit="cover" />
         </Box>
 
         <Box minW="0" flex="1">

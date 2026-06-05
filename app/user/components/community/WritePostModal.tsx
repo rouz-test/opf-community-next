@@ -543,7 +543,7 @@ export function WritePostModal({
                       <HStack gap="2" minW="0">
                         {profileMode === 'real' ? (
                           <Image
-                            src={currentUser.avatar}
+                            src={currentUser.avatar || '/images/profiles/real-small.png'}
                             alt={`${currentUser.name} 프로필 이미지`}
                             h="20px"
                             w="20px"
