@@ -17,6 +17,7 @@ import type { Tag } from '@/types/tag';
 const tags = tagsData as Tag[];
 const DEFAULT_REAL_AVATAR =
   'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
 
 export type AdminCommunityPostCardData = {
   content: CommunityContent;
@@ -156,20 +157,7 @@ export function AdminCommunityFeedPostCard({ item, formatDate }: AdminCommunityP
               {!isAnonymousPost ? (
                 <Image src={DEFAULT_REAL_AVATAR} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
               ) : (
-                <Flex
-                  h="6"
-                  w="6"
-                  align="center"
-                  justify="center"
-                  rounded="full"
-                  bg={isAnonymousPost ? 'gray.900' : '#FF6900'}
-                  fontSize="10px"
-                  fontWeight="700"
-                  color="white"
-                  flexShrink={0}
-                >
-                  {isAnonymousPost ? '익명' : 'OP'}
-                </Flex>
+                <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
               )}
 
               <Box minW="0" display="flex" flexDirection="column" justifyContent="center" h="40px">

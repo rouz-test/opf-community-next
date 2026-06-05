@@ -31,6 +31,8 @@ import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import { resolveTags } from '@/lib/tags';
 import type { Tag as CommunityTag } from '@/types/tag';
 
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
+
 type FeedPostCardProps = {
   post: CommunityPost;
   formatDate: (dateString?: string) => string;
@@ -82,6 +84,9 @@ const truncateText = (text: string, maxLength: number) => {
   return `${text.slice(0, maxLength).trimEnd()}...`;
 };
 
+const compactMeta = (parts: Array<string | null | undefined>) =>
+  parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
+
 export function FeedPostCard({
   post,
   formatDate,
@@ -97,6 +102,9 @@ export function FeedPostCard({
 }: FeedPostCardProps) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
+  const authorMeta = isAnonymousPost
+    ? formatDate(post.createdAt)
+    : compactMeta(['코마소프트', post.author.position, formatDate(post.createdAt)]);
   const highlightedCommentAuthorName = post.highlightedComment
     ? post.highlightedComment.author.mode === 'real'
       ? post.highlightedComment.author.name
@@ -251,7 +259,9 @@ export function FeedPostCard({
               aria-label={isAnonymousPost ? `${authorName} 작성자 정보` : `${authorName} 작성자 페이지로 이동`}
               disabled={isAnonymousPost}
             >
-              {!isAnonymousPost && post.author.avatar ? (
+              {isAnonymousPost ? (
+                <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
+              ) : post.author.avatar ? (
                 <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
               ) : (
                 <Flex
@@ -260,13 +270,13 @@ export function FeedPostCard({
                   align="center"
                   justify="center"
                   rounded="full"
-                  bg={isAnonymousPost ? 'gray.900' : '#FF6900'}
+                  bg="#FF6900"
                   fontSize="10px"
                   fontWeight="700"
                   color="white"
                   flexShrink={0}
                 >
-                  {isAnonymousPost ? '익명' : 'OP'}
+                  OP
                 </Flex>
               )}
 
@@ -279,8 +289,8 @@ export function FeedPostCard({
                     <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" />
                   ) : null}
                 </Flex>
-                <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
-                  {!isAnonymousPost ? `코마소프트 · ${post.author.position} · ${formatDate(post.createdAt)}` : formatDate(post.createdAt)}
+                <Text mt="4px" fontSize="12px" color="gray.500" lineHeight="12px">
+                  {authorMeta}
                 </Text>
               </Box>
             </Button>

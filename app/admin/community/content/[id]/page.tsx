@@ -235,6 +235,19 @@ function getPublishedAtDisplay(content: CommunityContent) {
   });
 }
 
+const compactAuthorMeta = (parts: Array<string | null | undefined>) =>
+  parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
+
+function getAuthorMetaDisplay(content: CommunityContent) {
+  const publishedAtDisplay = getPublishedAtDisplay(content);
+
+  if (content.author.visibility === 'anonymous') {
+    return compactAuthorMeta(['관리자 식별명', getAuthorRealName(content), publishedAtDisplay]);
+  }
+
+  return compactAuthorMeta(['코마소프트', publishedAtDisplay]);
+}
+
 function getStatusLabel(content: CommunityContent) {
   if (content.status === 'draft') return '임시';
   if (content.status === 'archived') return '보관';
@@ -1041,9 +1054,8 @@ export default function CommunityContentDetailPage() {
 
   const resolvedTags = resolveTags(content.tagIds, tags);
   const authorDisplay = getAuthorDisplay(content);
-  const authorRealName = getAuthorRealName(content);
   const authorInitial = getAuthorInitial(content);
-  const publishedAtDisplay = getPublishedAtDisplay(content);
+  const authorMetaDisplay = getAuthorMetaDisplay(content);
   const statusLabel = getStatusLabel(content);
 
   return (
@@ -1128,20 +1140,32 @@ export default function CommunityContentDetailPage() {
           ) : null}
 
           <Flex align="center" gap="12px" pb="18px">
-            <Flex
-              align="center"
-              justify="center"
-              w="44px"
-              h="44px"
-              borderRadius="9999px"
-              bg="#F3F4F6"
-              color="#6B7280"
-              fontSize="16px"
-              fontWeight="700"
-              flexShrink={0}
-            >
-              {authorInitial}
-            </Flex>
+            {content.author.visibility === 'anonymous' ? (
+              <Image
+                src="/images/profiles/anonymous-large.png"
+                alt={authorDisplay}
+                w="44px"
+                h="44px"
+                borderRadius="9999px"
+                objectFit="cover"
+                flexShrink={0}
+              />
+            ) : (
+              <Flex
+                align="center"
+                justify="center"
+                w="44px"
+                h="44px"
+                borderRadius="9999px"
+                bg="#F3F4F6"
+                color="#6B7280"
+                fontSize="16px"
+                fontWeight="700"
+                flexShrink={0}
+              >
+                {authorInitial}
+              </Flex>
+            )}
 
             <Box minW="0">
               <Flex align="center" gap="6px">
@@ -1151,7 +1175,7 @@ export default function CommunityContentDetailPage() {
                 {content.author.visibility !== 'anonymous' ? <CheckBadgeIcon size={16} color="#11B3E9" /> : null}
               </Flex>
               <Text mt="2px" fontSize="12px" color="#6B7280">
-                {content.author.visibility === 'anonymous' ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}
+                {authorMetaDisplay}
               </Text>
             </Box>
           </Flex>

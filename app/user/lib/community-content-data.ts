@@ -84,7 +84,7 @@ const tags = tagsData as Tag[];
 const DEFAULT_REAL_AVATAR =
   'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
-const ANONYMOUS_AVATAR = '';
+const ANONYMOUS_AVATAR = '/images/profiles/anonymous-medium.png';
 
 export const COMMUNITY_CURRENT_USER = {
   accountId: 'account-user-1',

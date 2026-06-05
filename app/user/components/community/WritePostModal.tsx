@@ -552,20 +552,15 @@ export function WritePostModal({
                             flexShrink={0}
                           />
                         ) : (
-                          <Flex
+                          <Image
+                            src="/images/profiles/anonymous-small.png"
+                            alt="익명"
                             h="20px"
                             w="20px"
-                            align="center"
-                            justify="center"
                             rounded="full"
-                            bg="gray.900"
-                            fontSize="10px"
-                            fontWeight="700"
-                            color="white"
+                            objectFit="cover"
                             flexShrink={0}
-                          >
-                            익명
-                          </Flex>
+                          />
                         )}
                         <Text truncate>{selectedIdentityLabel}</Text>
                       </HStack>

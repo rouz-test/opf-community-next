@@ -155,7 +155,12 @@ export async function POST(request: NextRequest) {
               typeof body.author.identifierValue === 'string' && body.author.identifierValue.trim()
                 ? body.author.identifierValue.trim()
                 : DEFAULT_ADMIN_COMMENT_AUTHOR.identifierValue,
-            avatar: typeof body.author.avatar === 'string' ? body.author.avatar : '',
+            avatar:
+              body.author.visibility === 'anonymous'
+                ? '/images/profiles/anonymous-medium.png'
+                : typeof body.author.avatar === 'string'
+                  ? body.author.avatar
+                  : '',
           }
         : DEFAULT_ADMIN_COMMENT_AUTHOR;
 

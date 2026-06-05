@@ -3226,10 +3226,10 @@
     },
     "content": "댓글 등록 테스트",
     "status": "published",
-    "likeCount": 0,
-    "isLikedByMe": false,
+    "likeCount": 1,
+    "isLikedByMe": true,
     "createdAt": "2026-06-05T02:59:12.026Z",
-    "updatedAt": "2026-06-05T02:59:12.026Z",
+    "updatedAt": "2026-06-05T03:45:05.843Z",
     "archivedAt": null,
     "archivedBy": null,
     "deletedAt": null,
@@ -3305,5 +3305,29 @@
     "archivedBy": null,
     "deletedAt": "2026-06-05T03:10:58.027Z",
     "deletedBy": "author"
+  },
+  {
+    "id": "community-reply-1780630836035",
+    "contentId": "content-1780042433014",
+    "parentId": "community-comment-1780628352027",
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "ㄴㅁㅇㄹㅁㄴㅇㄹ",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-05T03:40:36.035Z",
+    "updatedAt": "2026-06-05T03:40:36.035Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
   }
 ]

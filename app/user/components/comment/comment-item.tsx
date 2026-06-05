@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Button, Flex, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Image, Text } from '@chakra-ui/react';
 import { Archive, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -9,6 +9,8 @@ import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import type { CommunityComment } from '@/types/community-comment';
+
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
 
 type CommentItemProps = {
   comment: CommunityComment;
@@ -185,33 +187,34 @@ export default function CommentItem({
   return (
     <Box>
       <Flex align="flex-start" gap={depth === 0 ? '12px' : '10px'}>
-        <Flex
-          align="center"
-          justify="center"
-          w="34px"
-          h="34px"
-          mt="2px"
-          borderRadius="9999px"
-          bg={
-            isMine
-              ? '#FB923C'
-              : comment.author.visibility === 'anonymous'
-              ? '#F3F4F6'
-              : '#E0F2FE'
-          }
-          color={
-            isMine
-              ? '#FFFFFF'
-              : comment.author.visibility === 'anonymous'
-              ? '#D1D5DB'
-              : '#64748B'
-          }
-          fontSize="12px"
-          fontWeight="700"
-          flexShrink={0}
-        >
-          {getInitial(comment.author.displayName)}
-        </Flex>
+        {comment.author.visibility === 'anonymous' ? (
+          <Image
+            src={ANONYMOUS_PROFILE_IMAGE}
+            alt={comment.author.displayName}
+            w="34px"
+            h="34px"
+            mt="2px"
+            borderRadius="9999px"
+            objectFit="cover"
+            flexShrink={0}
+          />
+        ) : (
+          <Flex
+            align="center"
+            justify="center"
+            w="34px"
+            h="34px"
+            mt="2px"
+            borderRadius="9999px"
+            bg={isMine ? '#FB923C' : '#E0F2FE'}
+            color={isMine ? '#FFFFFF' : '#64748B'}
+            fontSize="12px"
+            fontWeight="700"
+            flexShrink={0}
+          >
+            {getInitial(comment.author.displayName)}
+          </Flex>
+        )}
 
         <Box flex="1" minW="0">
           <Box
@@ -419,9 +422,9 @@ export default function CommentItem({
                 >
                   <Flex align="center" gap="4px">
                     {isLikedByMe ? (
-                      <HeartFilledIcon size={13} color="#F97316" />
+                      <HeartFilledIcon size={16} color="#F97316" />
                     ) : (
-                      <HeartIcon size={13} color="#9CA3AF" />
+                      <HeartIcon size={16} color="#9CA3AF" />
                     )}
                     <Text as="span">좋아요 {likeCount}</Text>
                   </Flex>

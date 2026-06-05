@@ -514,6 +514,19 @@ function getPublishedAtDisplay(content: CommunityContent) {
   });
 }
 
+const compactAuthorMeta = (parts: Array<string | null | undefined>) =>
+  parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
+
+function getAuthorMetaDisplay(content: CommunityContent) {
+  const publishedAtDisplay = getPublishedAtDisplay(content);
+
+  if (content.author.visibility === 'anonymous') {
+    return publishedAtDisplay;
+  }
+
+  return compactAuthorMeta(['코마소프트', publishedAtDisplay]);
+}
+
 function getCommentTotalCount(commentCount: number, replyCount: number) {
   return commentCount + replyCount;
 }
@@ -540,7 +553,7 @@ function mapCommentsForUser(comments: CommunityComment[], postAuthorId: string):
     author: {
       ...comment.author,
       displayName: decorateCommentAuthorName(comment, postAuthorId),
-      avatar: comment.author.visibility === 'anonymous' ? '' : comment.author.avatar,
+      avatar: comment.author.visibility === 'anonymous' ? '/images/profiles/anonymous-medium.png' : comment.author.avatar,
     },
     replies: mapCommentsForUser(comment.replies, postAuthorId),
   }));
@@ -704,7 +717,7 @@ export default function CommunityPostDetailPage() {
       displayName: identity === 'anonymous' ? '익명' : COMMUNITY_CURRENT_USER.name,
       identifierType: 'name' as const,
       identifierValue: COMMUNITY_CURRENT_USER.name,
-      avatar: identity === 'anonymous' ? '' : COMMUNITY_CURRENT_USER.avatar,
+      avatar: identity === 'anonymous' ? '/images/profiles/anonymous-medium.png' : COMMUNITY_CURRENT_USER.avatar,
     }),
     [],
   );
@@ -1174,7 +1187,7 @@ export default function CommunityPostDetailPage() {
   const resolvedTags = useMemo(() => (content ? resolveTags(content.tagIds, tags) : []), [content]);
   const authorDisplay = content ? getAuthorDisplay(content) : '';
   const authorInitial = content ? getAuthorInitial(content) : '';
-  const publishedAtDisplay = content ? getPublishedAtDisplay(content) : '-';
+  const authorMetaDisplay = content ? getAuthorMetaDisplay(content) : '-';
 
   const authorOtherPosts = useMemo(() => {
     if (!content || content.author.visibility === 'anonymous') return [];
@@ -1395,20 +1408,32 @@ export default function CommunityPostDetailPage() {
             ) : null}
 
               <Flex align="center" gap="12px" pb="18px">
-                <Flex
-                  align="center"
-                  justify="center"
-                  w="44px"
-                  h="44px"
-                  borderRadius="9999px"
-                  bg={isAnonymousContent ? '#111827' : '#F3F4F6'}
-                  color={isAnonymousContent ? '#FFFFFF' : '#6B7280'}
-                  fontSize="16px"
-                  fontWeight="700"
-                  flexShrink={0}
-                >
-                  {authorInitial}
-                </Flex>
+                {isAnonymousContent ? (
+                  <Image
+                    src="/images/profiles/anonymous-large.png"
+                    alt={authorDisplay}
+                    w="44px"
+                    h="44px"
+                    borderRadius="9999px"
+                    objectFit="cover"
+                    flexShrink={0}
+                  />
+                ) : (
+                  <Flex
+                    align="center"
+                    justify="center"
+                    w="44px"
+                    h="44px"
+                    borderRadius="9999px"
+                    bg="#F3F4F6"
+                    color="#6B7280"
+                    fontSize="16px"
+                    fontWeight="700"
+                    flexShrink={0}
+                  >
+                    {authorInitial}
+                  </Flex>
+                )}
 
                 <Box minW="0">
                   <Flex align="center" gap="6px">
@@ -1418,7 +1443,7 @@ export default function CommunityPostDetailPage() {
                     {!isAnonymousContent ? <CheckBadgeIcon size={16} color="#11B3E9" /> : null}
                   </Flex>
                   <Text mt="2px" fontSize="12px" color="#6B7280">
-                    {isAnonymousContent ? publishedAtDisplay : `실명 프로필 · ${publishedAtDisplay}`}
+                    {authorMetaDisplay}
                   </Text>
                 </Box>
               </Flex>

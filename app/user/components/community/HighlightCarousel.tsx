@@ -18,6 +18,19 @@ import type { Tag } from '@/types/tag';
 
 const tags = tagsData as Tag[];
 const CAROUSEL_SLIDE_GAP = '10px';
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-small.png';
+
+const compactMeta = (parts: Array<string | null | undefined>) =>
+  parts.map((part) => part?.trim()).filter((part): part is string => Boolean(part)).join(' · ');
+
+const formatCarouselDate = (dateString?: string) => {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+};
 
 type PostAction = (post: CommunityPost) => void | Promise<void>;
 
@@ -39,6 +52,9 @@ function HighlightPostCard({
   const router = useRouter();
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
+  const authorMeta = isAnonymousPost
+    ? formatCarouselDate(post.createdAt)
+    : compactMeta(['코마소프트', post.author.position, formatCarouselDate(post.createdAt)]);
   const isOwnPost = post.author.accountId === 'account-user-1';
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
@@ -112,7 +128,9 @@ function HighlightPostCard({
             aria-label={isAnonymousPost ? `${authorName} 작성자 정보` : `${authorName} 작성자 페이지로 이동`}
             disabled={isAnonymousPost}
           >
-            {!isAnonymousPost && post.author.avatar ? (
+            {isAnonymousPost ? (
+              <Image src={ANONYMOUS_PROFILE_IMAGE} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
+            ) : post.author.avatar ? (
               <Image src={post.author.avatar} alt={authorName} h="6" w="6" rounded="full" objectFit="cover" />
             ) : (
               <Flex
@@ -121,13 +139,13 @@ function HighlightPostCard({
                 align="center"
                 justify="center"
                 rounded="full"
-                bg={isAnonymousPost ? 'gray.900' : '#FF6900'}
+                bg="#FF6900"
                 fontSize="10px"
                 fontWeight="700"
                 color="white"
                 flexShrink={0}
               >
-                {isAnonymousPost ? '익명' : 'OP'}
+                OP
               </Flex>
             )}
 
@@ -138,8 +156,8 @@ function HighlightPostCard({
                 </Text>
                 {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" /> : null}
               </Flex>
-              <Text mt="4px" fontSize="12px" color="gray.500" lineHeight="12px">
-                코마소프트 · 디자이너 · 3월 18일
+              <Text mt="6px" fontSize="12px" color="gray.500" lineHeight="12px">
+                {authorMeta}
               </Text>
             </Box>
           </Button>

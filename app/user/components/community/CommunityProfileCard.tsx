@@ -29,6 +29,7 @@ export type CommunityProfileCardProps = {
 };
 
 const isAnonymousMode = (mode: CommunityProfileCardProps['profileMode']) => mode !== 'real';
+const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-xlarge.png';
 
 export function CommunityProfileCard({
   profileMode,
@@ -41,7 +42,7 @@ export function CommunityProfileCard({
 }: CommunityProfileCardProps) {
   const anonymousMode = isAnonymousMode(profileMode);
   const displayedName = anonymousMode ? '익명' : currentUser.name;
-  const displayedAvatar = anonymousMode ? '' : currentUser.avatar;
+  const displayedAvatar = anonymousMode ? ANONYMOUS_PROFILE_IMAGE : currentUser.avatar;
 
   if (variant === 'header') {
     return (
@@ -60,34 +61,16 @@ export function CommunityProfileCard({
           _hover={{ bg: 'transparent' }}
           _active={{ bg: 'transparent' }}
         >
-          {displayedAvatar ? (
-            <Image
-              src={displayedAvatar}
-              alt={displayedName}
-              h="9"
-              w="9"
-              rounded="full"
-              objectFit="cover"
-              ring="1px"
-              ringColor="gray.200"
-            />
-          ) : (
-            <Flex
-              h="9"
-              w="9"
-              align="center"
-              justify="center"
-              rounded="full"
-              bg="gray.900"
-              fontSize="xs"
-              fontWeight="700"
-              color="white"
-              ring="1px"
-              ringColor="gray.200"
-            >
-              익명
-            </Flex>
-          )}
+          <Image
+            src={displayedAvatar}
+            alt={displayedName}
+            h="9"
+            w="9"
+            rounded="full"
+            objectFit="cover"
+            ring="1px"
+            ringColor="gray.200"
+          />
         </IconButton>
 
         {!anonymousMode ? (
@@ -107,29 +90,7 @@ export function CommunityProfileCard({
           >
             <Icon as={CheckBadgeIcon} boxSize="3" color="#11B3E9" />
           </Flex>
-        ) : (
-          <Flex
-            position="absolute"
-            top="-1"
-            right="-1"
-            minW="4"
-            h="4"
-            align="center"
-            justify="center"
-            rounded="full"
-            bg="gray.900"
-            px="1"
-            fontSize="9px"
-            fontWeight="700"
-            lineHeight="none"
-            color="white"
-            boxShadow="sm"
-            ring="1px"
-            ringColor="white"
-          >
-            N
-          </Flex>
-        )}
+        ) : null}
       </Box>
     );
   }
@@ -157,30 +118,14 @@ export function CommunityProfileCard({
           _hover={{ bg: 'transparent' }}
           _active={{ bg: 'transparent' }}
         >
-          {displayedAvatar ? (
-            <Image
-              src={displayedAvatar}
-              alt={displayedName}
-              h="16"
-              w="16"
-              rounded="full"
-              objectFit="cover"
-            />
-          ) : (
-            <Flex
-              h="16"
-              w="16"
-              align="center"
-              justify="center"
-              rounded="full"
-              bgGradient="linear(to-br, orange.300, orange.500)"
-              fontSize="sm"
-              fontWeight="700"
-              color="white"
-            >
-              익명
-            </Flex>
-          )}
+          <Image
+            src={displayedAvatar}
+            alt={displayedName}
+            h="16"
+            w="16"
+            rounded="full"
+            objectFit="cover"
+          />
         </IconButton>
 
         <Box minW="0" textAlign="left">
