@@ -3,12 +3,14 @@
 import { Box, Button, Flex, Image, Link as ChakraLink, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Eye, Heart, Megaphone, MessageSquare, Share2 } from 'lucide-react';
-import { Fragment, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { ArrowLeft, Bookmark, Megaphone, MessageSquare, Share2 } from 'lucide-react';
+import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
 import CommentItem from '@/app/admin/components/comment/comment-item';
 import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
+import EyeIcon from '@/app/admin/components/icons/EyeIcon';
+import HeartIcon from '@/app/admin/components/icons/HeartIcon';
 import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
@@ -569,13 +571,13 @@ export default function CommunityContentDetailPage() {
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
-  const [replyValue, setReplyValue] = useState('');
   const [isReplySubmitting, setIsReplySubmitting] = useState(false);
   const [blockedWordModalTitle, setBlockedWordModalTitle] = useState('금지 키워드가 포함되어 진행할 수 없습니다.');
   const [blockedWordModalDescription, setBlockedWordModalDescription] = useState('금지 키워드를 수정한 뒤 다시 시도해주세요.');
   const [matchedBlockedKeywords, setMatchedBlockedKeywords] = useState<string[]>([]);
   const [blockedWordSourceText, setBlockedWordSourceText] = useState('');
   const [isBlockedWordModalOpen, setIsBlockedWordModalOpen] = useState(false);
+  const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const applyCommentStats = useCallback((stats: CommunityContentCommentStats) => {
     setContent((prevContent) => {
@@ -815,12 +817,15 @@ export default function CommunityContentDetailPage() {
     }
   };
 
-  const handleCreateReply = async (comment: CommunityComment) => {
-    if (!contentId || isReplySubmitting) return;
+  const handleCreateReply = async () => {
+    if (!contentId || !replyTargetId || isReplySubmitting) return;
+
+    const targetComment = comments.find((comment) => comment.id === replyTargetId);
+    if (!targetComment) return;
 
     try {
       const isAllowed = await validateBlockedWords(
-        replyValue,
+        commentValue,
         '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
         '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
       );
@@ -838,8 +843,8 @@ export default function CommunityContentDetailPage() {
         },
         body: JSON.stringify({
           contentId,
-          parentId: comment.id,
-          content: replyValue,
+          parentId: targetComment.id,
+          content: commentValue,
         }),
       });
 
@@ -853,7 +858,7 @@ export default function CommunityContentDetailPage() {
             '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
             '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
             errorData.matchedKeywords,
-            replyValue,
+            commentValue,
           );
           return;
         }
@@ -863,7 +868,7 @@ export default function CommunityContentDetailPage() {
 
       setReplyTargetId(null);
       setReplyTargetName(null);
-      setReplyValue('');
+      setCommentValue('');
       toaster.create({
         type: 'success',
         description: '답글이 등록되었습니다.',
@@ -877,6 +882,12 @@ export default function CommunityContentDetailPage() {
     } finally {
       setIsReplySubmitting(false);
     }
+  };
+
+  const handleCancelReply = () => {
+    setReplyTargetId(null);
+    setReplyTargetName(null);
+    setCommentValue('');
   };
 
   const handleUpdateComment = async (commentId: string, nextCommentValue: string) => {
@@ -1137,7 +1148,7 @@ export default function CommunityContentDetailPage() {
                 <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
                   {authorDisplay}
                 </Text>
-                {content.author.visibility !== 'anonymous' ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
+                {content.author.visibility !== 'anonymous' ? <CheckBadgeIcon size={16} color="#11B3E9" /> : null}
               </Flex>
               <Text mt="2px" fontSize="12px" color="#6B7280">
                 {content.author.visibility === 'anonymous' ? `관리자 식별명 · ${authorRealName}` : '실명 프로필'} · {publishedAtDisplay}
@@ -1158,11 +1169,11 @@ export default function CommunityContentDetailPage() {
           <Flex align="center" justify="space-between" mt="24px" color="#6B7280">
             <Flex align="center" gap="16px">
               <Flex align="center" gap="6px">
-                <Eye size={20} />
+                <EyeIcon size={20} />
                 <Text fontSize="14px">{content.stats.viewCount}</Text>
               </Flex>
               <Flex align="center" gap="6px">
-                <Heart size={20} />
+                <HeartIcon size={20} />
                 <Text fontSize="14px">{content.stats.likeCount}</Text>
               </Flex>
               <Flex align="center" gap="6px">
@@ -1213,30 +1224,46 @@ export default function CommunityContentDetailPage() {
               </Text>
             </Flex>
             {replyTargetId && replyTargetName ? (
-              <Box
-                mb="12px"
-                px="12px"
-                py="10px"
-                borderRadius="12px"
-                bg="#FFF7ED"
-                borderWidth="1px"
-                borderColor="#FED7AA"
-              >
-                <Text fontSize="12px" color="#9A3412">
-                  현재 <Text as="span" fontWeight="700">{replyTargetName}</Text> 님의 댓글에 답글을 작성 중입니다.
+              <Flex mb="12px" align="center" justify="space-between" gap="12px">
+                <Text fontSize="14px" color="#4B5563" lineHeight="1.4">
+                  <Text as="span" color="#FF6900">
+                    @{replyTargetName}
+                  </Text>
+                  님에게 답글 작성하기
                 </Text>
-              </Box>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  h="auto"
+                  minW="auto"
+                  flexShrink={0}
+                  px="0"
+                  py="0"
+                  color="#FF6900"
+                  fontSize="14px"
+                  _hover={{ bg: 'transparent', color: '#E85A00' }}
+                  onClick={handleCancelReply}
+                >
+                  작성 취소
+                </Button>
+              </Flex>
             ) : null}
 
             <CommentEditor
+              textareaRef={commentTextareaRef}
               value={commentValue}
               onChange={setCommentValue}
               onSubmit={() => {
+                if (replyTargetId) {
+                  void handleCreateReply();
+                  return;
+                }
+
                 void handleCreateComment();
               }}
-              submitLabel="댓글 등록"
-              isSubmitting={isCommentSubmitting}
-              placeholder="댓글을 입력하세요."
+              submitLabel={replyTargetId ? '답글 등록' : '댓글 등록'}
+              isSubmitting={replyTargetId ? isReplySubmitting : isCommentSubmitting}
+              placeholder={replyTargetId ? '답글을 입력하세요.' : '댓글을 입력하세요.'}
             />
           </Box>
 
@@ -1265,21 +1292,14 @@ export default function CommunityContentDetailPage() {
                   <CommentItem
                     key={comment.id}
                     comment={comment}
-                    replyTargetId={replyTargetId}
-                    replyDraft={replyValue}
-                    isReplySubmitting={isReplySubmitting}
-                    onReplyDraftChange={setReplyValue}
                     onReplyStart={(targetComment) => {
                       setReplyTargetId(targetComment.id);
                       setReplyTargetName(targetComment.author.displayName);
-                      setReplyValue('');
+                      setCommentValue('');
+                      window.requestAnimationFrame(() => {
+                        commentTextareaRef.current?.focus();
+                      });
                     }}
-                    onReplyCancel={() => {
-                      setReplyTargetId(null);
-                      setReplyTargetName(null);
-                      setReplyValue('');
-                    }}
-                    onReplySubmit={handleCreateReply}
                     onUpdateComment={handleUpdateComment}
                     onArchiveToggle={handleArchiveComment}
                     onDeleteComment={handleDeleteComment}

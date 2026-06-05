@@ -3210,5 +3210,100 @@
     "archivedBy": null,
     "deletedAt": null,
     "deletedBy": null
+  },
+  {
+    "id": "community-comment-1780628352027",
+    "contentId": "content-1780042433014",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "댓글 등록 테스트",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-05T02:59:12.026Z",
+    "updatedAt": "2026-06-05T02:59:12.026Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-comment-1780628643224",
+    "contentId": "content-1780042433014",
+    "parentId": null,
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "content": "대댓글 테스트",
+    "status": "deleted",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-05T03:04:03.224Z",
+    "updatedAt": "2026-06-05T03:04:13.634Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": "2026-06-05T03:04:13.634Z",
+    "deletedBy": "admin"
+  },
+  {
+    "id": "community-comment-1780628776893",
+    "contentId": "content-1780042433014",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "대댓",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-05T03:06:16.893Z",
+    "updatedAt": "2026-06-05T03:06:16.893Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-reply-1780629053354",
+    "contentId": "content-1780042433014",
+    "parentId": "community-comment-1780628352027",
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "대댓",
+    "status": "deleted",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-05T03:10:53.354Z",
+    "updatedAt": "2026-06-05T03:10:58.027Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": "2026-06-05T03:10:58.027Z",
+    "deletedBy": "author"
   }
 ]

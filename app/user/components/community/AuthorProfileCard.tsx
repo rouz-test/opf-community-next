@@ -4,6 +4,7 @@ import { Box, Button, Flex, Grid, Image, Link as ChakraLink, Text } from '@chakr
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
 import { toaster } from '@/app/user/components/ui/toaster';
 
 export type AuthorProfileCardProps = {
@@ -158,9 +159,12 @@ export function AuthorProfileCard({
             </Link>
           </ChakraLink>
           <Box minW="0" flex="1">
-            <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
-              {displayName}
-            </Text>
+            <Flex align="center" gap="6px">
+              <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
+                {displayName}
+              </Text>
+              <CheckBadgeIcon size={16} color="#11B3E9" />
+            </Flex>
             {author.position ? (
               <Text mt="2px" fontSize="12px" color="#6B7280" lineClamp="1">
                 {author.position}
@@ -239,9 +243,7 @@ export function AuthorProfileCard({
             <Text fontSize="18px" fontWeight="700" color="#111827" lineClamp="1">
               {displayName}
             </Text>
-            <Text fontSize="16px" lineHeight="1" color="#0EA5E9">
-              ✔
-            </Text>
+            <CheckBadgeIcon size={16} color="#11B3E9" />
           </Flex>
           <Text fontSize="14px" fontWeight="500" color="#6B7280" lineClamp="1">
             코마소프트

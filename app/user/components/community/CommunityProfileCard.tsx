@@ -105,7 +105,7 @@ export function CommunityProfileCard({
             ring="1px"
             ringColor="gray.200"
           >
-            <Icon as={CheckBadgeIcon} boxSize="3" color="blue.500" />
+            <Icon as={CheckBadgeIcon} boxSize="3" color="#11B3E9" />
           </Flex>
         ) : (
           <Flex
@@ -188,7 +188,7 @@ export function CommunityProfileCard({
             <Text fontSize="18px" fontWeight="700" color="gray.900" lineHeight="1.2">
               {displayedName}
             </Text>
-            {!anonymousMode ? <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" /> : null}
+            {!anonymousMode ? <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" /> : null}
           </Flex>
 
           <Text mt="2" fontSize="14px" color="gray.500" lineHeight="1.5">

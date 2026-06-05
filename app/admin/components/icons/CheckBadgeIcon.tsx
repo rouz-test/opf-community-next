@@ -8,7 +8,7 @@ type CheckBadgeIconProps = SVGProps<SVGSVGElement> & {
 };
 
 const CheckBadgeIcon = forwardRef<SVGSVGElement, CheckBadgeIconProps>(
-  ({ size = 16, boxSize, color = 'currentColor', ...props }, ref) => {
+  ({ size = 16, boxSize, color = '#11B3E9', ...props }, ref) => {
     const resolvedSize = boxSize ?? size;
 
     return (

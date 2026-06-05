@@ -15,14 +15,11 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Bookmark,
-  Eye,
-  Heart,
   Megaphone,
   MessageSquare,
   MoreHorizontal,
   Share2,
   Trash2,
-  EyeOff,
 } from 'lucide-react';
 import {
   Fragment,
@@ -39,6 +36,10 @@ import CommentEditor from '@/app/user/components/comment/comment-editor';
 import CommentItem from '@/app/user/components/comment/comment-item';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
+import EyeIcon from '@/app/user/components/icons/EyeIcon';
+import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import ActivitySuspendedModal from '@/app/user/components/modal/activity-suspended-modal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
@@ -565,8 +566,6 @@ export default function CommunityPostDetailPage() {
   const [commentIdentity, setCommentIdentity] = useState<'real' | 'anonymous'>(defaultCommunityIdentity);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
-  const [replyValue, setReplyValue] = useState('');
-  const [replyIdentity, setReplyIdentity] = useState<'real' | 'anonymous'>(defaultCommunityIdentity);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [isReplySubmitting, setIsReplySubmitting] = useState(false);
   const [isLikeSubmitting, setIsLikeSubmitting] = useState(false);
@@ -587,10 +586,10 @@ export default function CommunityPostDetailPage() {
   const [deleteTargetComment, setDeleteTargetComment] = useState<CommunityComment | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const ownPostMenuRef = useRef<HTMLDivElement | null>(null);
+  const commentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setCommentIdentity(defaultCommunityIdentity);
-    setReplyIdentity(defaultCommunityIdentity);
   }, [defaultCommunityIdentity]);
 
   useEffect(() => {
@@ -1010,8 +1009,11 @@ export default function CommunityPostDetailPage() {
     }
   };
 
-  const handleCreateReply = async (comment: CommunityComment) => {
-    if (!contentId || !content || isReplySubmitting) return;
+  const handleCreateReply = async () => {
+    if (!contentId || !content || !replyTargetId || isReplySubmitting) return;
+
+    const targetComment = comments.find((comment) => comment.id === replyTargetId);
+    if (!targetComment) return;
 
     try {
       setIsReplySubmitting(true);
@@ -1028,9 +1030,9 @@ export default function CommunityPostDetailPage() {
         },
         body: JSON.stringify({
           contentId,
-          parentId: comment.id,
-          content: replyValue,
-          author: buildCommentAuthorPayload(replyIdentity),
+          parentId: targetComment.id,
+          content: commentValue,
+          author: buildCommentAuthorPayload(commentIdentity),
         }),
       });
 
@@ -1044,7 +1046,7 @@ export default function CommunityPostDetailPage() {
             '금지 키워드가 포함되어 답글을 등록할 수 없습니다.',
             '답글 내용에서 금지 키워드를 수정한 뒤 다시 등록해주세요.',
             data.matchedKeywords,
-            replyValue,
+            commentValue,
           );
           return;
         }
@@ -1059,8 +1061,8 @@ export default function CommunityPostDetailPage() {
 
       setReplyTargetId(null);
       setReplyTargetName(null);
-      setReplyValue('');
-      setReplyIdentity(defaultCommunityIdentity);
+      setCommentValue('');
+      setCommentIdentity(defaultCommunityIdentity);
       if (data?.stats) {
         syncContentCommentStats(data.stats);
       }
@@ -1070,6 +1072,13 @@ export default function CommunityPostDetailPage() {
     } finally {
       setIsReplySubmitting(false);
     }
+  };
+
+  const handleCancelReply = () => {
+    setReplyTargetId(null);
+    setReplyTargetName(null);
+    setCommentValue('');
+    setCommentIdentity(defaultCommunityIdentity);
   };
 
   const handleUpdateComment = async (commentId: string, nextCommentValue: string) => {
@@ -1346,7 +1355,7 @@ export default function CommunityPostDetailPage() {
                           color="gray.700"
                           _hover={{ bg: 'gray.50' }}
                         >
-                          <EyeOff size={16} />
+                          <EyeClosedIcon size={16} />
                           <Text>숨김</Text>
                         </Button>
                       </Box>
@@ -1406,7 +1415,7 @@ export default function CommunityPostDetailPage() {
                     <Text fontSize="14px" fontWeight="700" color="#111827" lineClamp="1">
                       {authorDisplay}
                     </Text>
-                    {!isAnonymousContent ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
+                    {!isAnonymousContent ? <CheckBadgeIcon size={16} color="#11B3E9" /> : null}
                   </Flex>
                   <Text mt="2px" fontSize="12px" color="#6B7280">
                     {isAnonymousContent ? publishedAtDisplay : `실명 프로필 · ${publishedAtDisplay}`}
@@ -1427,7 +1436,7 @@ export default function CommunityPostDetailPage() {
               <Flex align="center" justify="space-between" mt="24px" color="#6B7280">
                 <Flex align="center" gap="16px" wrap="wrap">
                   <Flex align="center" gap="6px">
-                    <Eye size={20} />
+                    <EyeIcon size={20} />
                     <Text fontSize="14px">{content.stats.viewCount}</Text>
                   </Flex>
                   <Button
@@ -1444,10 +1453,7 @@ export default function CommunityPostDetailPage() {
                     disabled={isLikeSubmitting}
                   >
                     <Flex align="center" gap="6px">
-                      <Heart
-                        size={20}
-                        fill={content.viewerState?.isLikedByMe ? 'currentColor' : 'none'}
-                      />
+                      {content.viewerState?.isLikedByMe ? <HeartFilledIcon size={20} /> : <HeartIcon size={20} />}
                       <Text fontSize="14px">{content.stats.likeCount}</Text>
                     </Flex>
                   </Button>
@@ -1514,11 +1520,29 @@ export default function CommunityPostDetailPage() {
                 </Flex>
 
                 {replyTargetId && replyTargetName ? (
-                  <Box mb="12px" px="12px" py="10px" borderRadius="12px" bg="#FFF7ED" borderWidth="1px" borderColor="#FED7AA">
-                    <Text fontSize="12px" color="#9A3412">
-                      현재 <Text as="span" fontWeight="700">{replyTargetName}</Text> 님의 댓글에 답글을 작성 중입니다.
+                  <Flex mb="12px" align="center" justify="space-between" gap="12px">
+                    <Text fontSize="14px" color="#4B5563" lineHeight="1.4">
+                      <Text as="span" color="#FF6900">
+                        @{replyTargetName}
+                      </Text>
+                      님에게 답글 작성하기
                     </Text>
-                  </Box>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      h="auto"
+                      minW="auto"
+                      flexShrink={0}
+                      px="0"
+                      py="0"
+                      color="#FF6900"
+                      fontSize="14px"
+                      _hover={{ bg: 'transparent', color: '#E85A00' }}
+                      onClick={handleCancelReply}
+                    >
+                      작성 취소
+                    </Button>
+                  </Flex>
                 ) : null}
 
                 {!isLoggedIn ? (
@@ -1527,14 +1551,20 @@ export default function CommunityPostDetailPage() {
                   </Text>
                 ) : (
                   <CommentEditor
+                    textareaRef={commentTextareaRef}
                     value={commentValue}
                     onChange={setCommentValue}
                     onSubmit={() => {
+                      if (replyTargetId) {
+                        void handleCreateReply();
+                        return;
+                      }
+
                       void handleCreateComment();
                     }}
-                    submitLabel="댓글 등록"
-                    isSubmitting={isCommentSubmitting}
-                    placeholder="댓글을 입력하세요."
+                    submitLabel={replyTargetId ? '답글 등록' : '댓글 등록'}
+                    isSubmitting={replyTargetId ? isReplySubmitting : isCommentSubmitting}
+                    placeholder={replyTargetId ? '답글을 입력하세요.' : '댓글을 입력하세요.'}
                     identity={commentIdentity}
                     onChangeIdentity={setCommentIdentity}
                     displayName={COMMUNITY_CURRENT_USER.name}
@@ -1564,26 +1594,16 @@ export default function CommunityPostDetailPage() {
                         currentUserId={COMMUNITY_CURRENT_USER.accountId}
                         currentUserRole="user"
                         currentUserDisplayName={COMMUNITY_CURRENT_USER.name}
-                        currentUserProfileImageUrl={replyIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
-                        replyTargetId={replyTargetId}
-                        replyDraft={replyValue}
-                        replyIdentity={replyIdentity}
-                        isReplySubmitting={isReplySubmitting}
-                        onReplyDraftChange={setReplyValue}
-                        onReplyIdentityChange={setReplyIdentity}
+                        currentUserProfileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
                         onReplyStart={(targetComment) => {
                           setReplyTargetId(targetComment.id);
                           setReplyTargetName(targetComment.author.displayName);
-                          setReplyValue('');
-                          setReplyIdentity(defaultCommunityIdentity);
+                          setCommentValue('');
+                          setCommentIdentity(defaultCommunityIdentity);
+                          window.requestAnimationFrame(() => {
+                            commentTextareaRef.current?.focus();
+                          });
                         }}
-                        onReplyCancel={() => {
-                          setReplyTargetId(null);
-                          setReplyTargetName(null);
-                          setReplyValue('');
-                          setReplyIdentity(defaultCommunityIdentity);
-                        }}
-                        onReplySubmit={handleCreateReply}
                         onUpdateComment={handleUpdateComment}
                         onArchiveToggle={handleArchiveComment}
                         onDeleteComment={handleRequestDeleteComment}

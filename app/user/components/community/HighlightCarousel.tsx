@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Button, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { Bookmark, EyeOff, Heart, MessageSquare, MoreHorizontal, Share2, Trash2 } from 'lucide-react';
+import { Bookmark, MessageSquare, MoreHorizontal, Share2, Trash2 } from 'lucide-react';
 import tagsData from '@/data/mock/tags.json';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
+import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
@@ -133,7 +136,7 @@ function HighlightPostCard({
                 <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                   {authorName}
                 </Text>
-                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" /> : null}
+                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" /> : null}
               </Flex>
               <Text mt="4px" fontSize="12px" color="gray.500" lineHeight="12px">
                 코마소프트 · 디자이너 · 3월 18일
@@ -167,7 +170,7 @@ function HighlightPostCard({
                   {[
                     { icon: PenIcon, label: '수정' },
                     { icon: Trash2, label: '삭제' },
-                    { icon: EyeOff, label: '숨김' },
+                    { icon: EyeClosedIcon, label: '숨김' },
                   ].map((item) => (
                     <Button
                       key={item.label}
@@ -285,7 +288,7 @@ function HighlightPostCard({
               color={displayIsLiked ? 'orange.500' : 'gray.500'}
               _hover={{ bg: 'transparent', color: 'orange.500' }}
             >
-              <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+              <Icon as={displayIsLiked ? HeartFilledIcon : HeartIcon} boxSize="20px" />
               <Text fontSize="14px">{displayLikeCount}</Text>
             </Button>
             <HStack gap="1.5">

@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Flex, Text, Textarea } from '@chakra-ui/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type Ref } from 'react';
 
 import { Button as UserButton } from '@/app/user/components/ui/button';
 import UserSwitch from '@/app/user/components/ui/switch';
@@ -19,6 +19,7 @@ type CommentEditorProps = {
   onChangeIdentity?: (value: 'real' | 'anonymous') => void;
   displayName?: string;
   profileImageUrl?: string;
+  textareaRef?: Ref<HTMLTextAreaElement>;
 };
 
 const MAX_COMMENT_LENGTH = 1000;
@@ -34,6 +35,7 @@ export default function CommentEditor({
   autoFocus = false,
   identity = 'real',
   onChangeIdentity,
+  textareaRef,
 }: CommentEditorProps) {
   const trimmedLength = value.trim().length;
   const isTooLong = value.length > MAX_COMMENT_LENGTH;
@@ -62,6 +64,7 @@ export default function CommentEditor({
   return (
     <Box>
       <Textarea
+        ref={textareaRef}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         minH="88px"

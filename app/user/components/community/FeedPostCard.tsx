@@ -4,13 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Heart,
   MessageSquare,
   Share2,
   Bookmark,
   MoreHorizontal,
   Trash2,
-  EyeOff,
 } from 'lucide-react';
 import {
   Box,
@@ -23,6 +21,9 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
+import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import tagsData from '@/data/mock/tags.json';
@@ -125,7 +126,7 @@ export function FeedPostCard({
   const ownPostMenuItems = [
     { key: 'edit' as const, icon: PenIcon, label: '수정' },
     { key: 'delete' as const, icon: Trash2, label: '삭제' },
-    { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
+    { key: 'hide' as const, icon: EyeClosedIcon, label: hideActionLabel },
   ].filter((item) => ownPostMenuActions.includes(item.key));
   const truncatedContent = truncateText(post.content, maxContentLength);
   const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
@@ -275,7 +276,7 @@ export function FeedPostCard({
                     {authorName}
                   </Text>
                   {!isAnonymousPost && post.isRealName ? (
-                    <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" />
+                    <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" />
                   ) : null}
                 </Flex>
                 <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
@@ -353,7 +354,7 @@ export function FeedPostCard({
               aria-label="좋아요"
               title="좋아요 표시"
             >
-              <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+              <Icon as={displayIsLiked ? HeartFilledIcon : HeartIcon} boxSize="20px" />
               <Text fontSize="14px">{displayLikeCount}</Text>
             </Button>
             <Button
@@ -432,7 +433,7 @@ export function FeedPostCard({
                   <Text truncate fontSize="14px" fontWeight="700" color="gray.900">
                     {highlightedCommentAuthorName}
                   </Text>
-                  {isHighlightedCommentRealName ? <Icon as={CheckBadgeIcon} boxSize="4" color="cyan.400" /> : null}
+                  {isHighlightedCommentRealName ? <Icon as={CheckBadgeIcon} boxSize="4" color="#11B3E9" /> : null}
                 </HStack>
                 <Text lineClamp={{ base: 2, sm: 3 }} fontSize="14px" lineHeight="1.65" color="gray.600">
                   {post.highlightedComment.content}

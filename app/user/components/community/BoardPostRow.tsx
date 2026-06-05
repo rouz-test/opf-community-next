@@ -12,15 +12,16 @@ import {
   Text,
 } from '@chakra-ui/react';
 import {
-  Heart,
   MessageSquare,
   Bookmark,
   Share2,
   MoreHorizontal,
   Trash2,
-  EyeOff,
 } from 'lucide-react';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
+import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
@@ -111,7 +112,7 @@ export function BoardPostRow({
   const ownPostMenuItems = [
     { key: 'edit' as const, icon: PenIcon, label: '수정' },
     { key: 'delete' as const, icon: Trash2, label: '삭제' },
-    { key: 'hide' as const, icon: EyeOff, label: hideActionLabel },
+    { key: 'hide' as const, icon: EyeClosedIcon, label: hideActionLabel },
   ].filter((item) => ownPostMenuActions.includes(item.key));
   const displayIsLiked = onToggleLike ? post.isLikedByMe : fallbackIsLiked;
   const displayLikeCount = onToggleLike ? likeCount : fallbackLikeCount;
@@ -284,7 +285,7 @@ export function BoardPostRow({
                   {authorName}
                 </Text>
                 {!isAnonymousPost && post.isRealName ? (
-                  <Icon as={CheckBadgeIcon} boxSize="16px" color="cyan.400" />
+                  <Icon as={CheckBadgeIcon} boxSize="16px" color="#11B3E9" />
                 ) : null}
                 <Text fontSize="12px" color="gray.500" lineHeight="14px" whiteSpace="nowrap">
                   {formatDate(post.createdAt)}
@@ -317,7 +318,7 @@ export function BoardPostRow({
                 color={displayIsLiked ? 'orange.500' : 'gray.500'}
                 _hover={{ bg: 'transparent', color: 'orange.500' }}
               >
-                <Icon as={Heart} boxSize="20px" fill={displayIsLiked ? 'currentColor' : 'none'} />
+                <Icon as={displayIsLiked ? HeartFilledIcon : HeartIcon} boxSize="20px" />
                 <Text fontSize="14px">{displayLikeCount}</Text>
               </Button>
               <HStack gap="1.5">

@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { Box, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { Bookmark, Heart, MessageSquare, Share2 } from 'lucide-react';
+import { Bookmark, MessageSquare, Share2 } from 'lucide-react';
 
 import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
+import HeartFilledIcon from '@/app/admin/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/admin/components/icons/HeartIcon';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import { extractTextFromContentBody } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
@@ -73,7 +75,7 @@ function InteractionBar({ content }: { content: CommunityContent }) {
     <Flex py="1" align="center" justify="space-between" color="gray.500">
       <HStack gap="4">
         <HStack gap="1.5" color={isLiked ? 'orange.500' : 'gray.500'}>
-          <Icon as={Heart} boxSize="20px" fill={isLiked ? 'currentColor' : 'none'} />
+          <Icon as={isLiked ? HeartFilledIcon : HeartIcon} boxSize="20px" />
           <Text fontSize="14px">{content.stats.likeCount}</Text>
         </HStack>
         <HStack gap="1.5">
@@ -175,7 +177,7 @@ export function AdminCommunityFeedPostCard({ item, formatDate }: AdminCommunityP
                   <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                     {authorName}
                   </Text>
-                  {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="cyan.400" /> : null}
+                  {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="#11B3E9" /> : null}
                 </Flex>
                 <Text mt="2px" fontSize="12px" color="gray.500" lineHeight="12px">
                   {getAuthorMeta(content, formatDate)}
@@ -271,7 +273,7 @@ export function AdminCommunityBoardPostRow({ item, formatDate }: AdminCommunityP
                 <Text fontSize="14px" fontWeight="700" color="gray.900" lineHeight="14px">
                   {authorName}
                 </Text>
-                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="cyan.400" /> : null}
+                {!isAnonymousPost ? <Icon as={CheckBadgeIcon} boxSize="5" color="#11B3E9" /> : null}
                 <Text fontSize="12px" color="gray.500" lineHeight="14px" whiteSpace="nowrap">
                   {formatDate(content.createdAt)}
                 </Text>
@@ -280,7 +282,7 @@ export function AdminCommunityBoardPostRow({ item, formatDate }: AdminCommunityP
 
             <HStack gap="4" color="gray.500" flexShrink={0}>
               <HStack gap="1.5" color={isLiked ? 'orange.500' : 'gray.500'}>
-                <Icon as={Heart} boxSize="20px" fill={isLiked ? 'currentColor' : 'none'} />
+                <Icon as={isLiked ? HeartFilledIcon : HeartIcon} boxSize="20px" />
                 <Text fontSize="14px">{content.stats.likeCount}</Text>
               </HStack>
               <HStack gap="1.5">

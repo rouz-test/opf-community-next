@@ -119,7 +119,7 @@ function ProfileSummaryCard({
             <Text fontSize="18px" fontWeight="700" color="#111827" lineClamp="1">
               {title}
             </Text>
-            {badge ? <CheckBadgeIcon size={16} color="#3B82F6" /> : null}
+            {badge ? <CheckBadgeIcon size={16} color="#11B3E9" /> : null}
           </Flex>
           <Text fontSize="14px" fontWeight="500" color="#6B7280" lineClamp="1">
             코마소프트
@@ -1202,7 +1202,7 @@ export default function MyPageCommunityPage() {
                           <Text fontSize="13px" fontWeight="800" color="#111827" lineClamp="1">
                             {profile.name}
                           </Text>
-                          <CheckBadgeIcon size={14} color="#3B82F6" />
+                          <CheckBadgeIcon size={14} color="#11B3E9" />
                         </Flex>
                         <Text mt="2px" fontSize="11px" color="#9CA3AF" lineClamp="1">
                           {profile.company} · {profile.position}

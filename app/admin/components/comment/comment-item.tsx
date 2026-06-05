@@ -1,10 +1,12 @@
 'use client';
 
 import { Box, Button, Flex, Portal, Text } from '@chakra-ui/react';
-import { Archive, CornerDownRight, Heart, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
+import { Archive, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
+import HeartFilledIcon from '@/app/admin/components/icons/HeartFilledIcon';
+import HeartIcon from '@/app/admin/components/icons/HeartIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
 type CommentItemProps = {
@@ -14,15 +16,7 @@ type CommentItemProps = {
   currentUserRole?: 'admin' | 'user';
   currentUserDisplayName?: string;
   currentUserProfileImageUrl?: string;
-  replyTargetId: string | null;
-  replyDraft: string;
-  replyIdentity?: 'real' | 'anonymous';
-  isReplySubmitting: boolean;
-  onReplyDraftChange: (value: string) => void;
-  onReplyIdentityChange?: (value: 'real' | 'anonymous') => void;
   onReplyStart: (comment: CommunityComment) => void;
-  onReplyCancel: () => void;
-  onReplySubmit: (comment: CommunityComment) => Promise<void>;
   onUpdateComment: (commentId: string, content: string) => Promise<boolean>;
   onArchiveToggle: (commentId: string, nextStatus: 'published' | 'archived') => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
@@ -73,15 +67,7 @@ export default function CommentItem({
   currentUserRole = 'user',
   currentUserDisplayName = '사용자',
   currentUserProfileImageUrl,
-  replyTargetId,
-  replyDraft,
-  replyIdentity = 'real',
-  isReplySubmitting,
-  onReplyDraftChange,
-  onReplyIdentityChange,
   onReplyStart,
-  onReplyCancel,
-  onReplySubmit,
   onUpdateComment,
   onArchiveToggle,
   onDeleteComment,
@@ -99,7 +85,6 @@ export default function CommentItem({
 
   const isDeleted = comment.status === 'deleted';
   const isArchived = comment.status === 'archived';
-  const isReplyComposerOpen = replyTargetId === comment.id;
   const canArchive = currentUserRole === 'admin';
 
   const isMine = currentUserId ? comment.author.id === currentUserId : comment.author.type === 'admin';
@@ -413,11 +398,11 @@ export default function CommentItem({
                   onClick={handleToggleLike}
                 >
                   <Flex align="center" gap="4px">
-                    <Heart
-                      size={13}
-                      color={isLikedByMe ? '#F97316' : '#9CA3AF'}
-                      fill={isLikedByMe ? '#F97316' : 'none'}
-                    />
+                    {isLikedByMe ? (
+                      <HeartFilledIcon size={13} color="#F97316" />
+                    ) : (
+                      <HeartIcon size={13} color="#9CA3AF" />
+                    )}
                     <Text as="span">좋아요 {likeCount}</Text>
                   </Flex>
                 </Button>
@@ -442,32 +427,6 @@ export default function CommentItem({
             ) : null}
           </Box>
 
-          {!isDeleted && !isArchived && isReplyComposerOpen ? (
-            <Box mt="14px" pl={{ base: '0', md: '8px' }}>
-              <Flex align="center" gap="6px" mb="8px" color="#6B7280">
-                <CornerDownRight size={14} />
-                <Text fontSize="12px">이 댓글에 답글 작성 중</Text>
-              </Flex>
-
-              <CommentEditor
-                value={replyDraft}
-                onChange={onReplyDraftChange}
-                onSubmit={() => {
-                  void onReplySubmit(comment);
-                }}
-                submitLabel="답글 등록"
-                onCancel={onReplyCancel}
-                isSubmitting={isReplySubmitting}
-                placeholder="답글을 입력하세요."
-                autoFocus
-                identity={replyIdentity}
-                onChangeIdentity={onReplyIdentityChange}
-                displayName={currentUserDisplayName}
-                profileImageUrl={currentUserProfileImageUrl}
-              />
-            </Box>
-          ) : null}
-
           {comment.replies.length > 0 ? (
             <Flex direction="column" gap="10px" mt="14px" pl={{ base: '0', md: '20px' }}>
               {comment.replies.map((reply) => (
@@ -479,15 +438,7 @@ export default function CommentItem({
                   currentUserRole={currentUserRole}
                   currentUserDisplayName={currentUserDisplayName}
                   currentUserProfileImageUrl={currentUserProfileImageUrl}
-                  replyTargetId={replyTargetId}
-                  replyDraft={replyDraft}
-                  replyIdentity={replyIdentity}
-                  isReplySubmitting={isReplySubmitting}
-                  onReplyDraftChange={onReplyDraftChange}
-                  onReplyIdentityChange={onReplyIdentityChange}
                   onReplyStart={onReplyStart}
-                  onReplyCancel={onReplyCancel}
-                  onReplySubmit={onReplySubmit}
                   onUpdateComment={onUpdateComment}
                   onArchiveToggle={onArchiveToggle}
                   onDeleteComment={onDeleteComment}

@@ -13,7 +13,6 @@ import {
   Text,
 } from '@chakra-ui/react';
 import {
-  Filter,
   LayoutGrid,
   List,
   Tag,
@@ -23,6 +22,9 @@ import {
   X,
   Check,
 } from 'lucide-react';
+import type { ElementType } from 'react';
+
+import FilterIcon from '@/app/user/components/icons/FilterIcon';
 import RotateIcon from '@/app/user/components/icons/RotateIcon';
 import { UserSearchField } from '@/app/user/components/ui/search-field';
 import tagsData from '@/data/mock/tags.json';
@@ -52,7 +54,7 @@ export type CommunityToolbarProps = {
 
 type OptionCardProps = {
   active: boolean;
-  icon: typeof Filter;
+  icon: ElementType;
   label: string;
   onClick: () => void;
 };
@@ -167,7 +169,7 @@ export function CommunityToolbar({
             color={isFilterOpen ? 'orange.700' : 'gray.700'}
             _hover={{ bg: isFilterOpen ? 'orange.100' : 'gray.50' }}
           >
-            <Icon as={Filter} boxSize="4" />
+            <Icon as={FilterIcon} boxSize="16px" />
             <Text>필터</Text>
           </Button>
         </HStack>
@@ -214,7 +216,7 @@ export function CommunityToolbar({
               color={isFilterOpen ? 'orange.700' : 'gray.700'}
               _hover={{ bg: isFilterOpen ? 'orange.100' : 'gray.50' }}
             >
-              <Icon as={Filter} boxSize="4" />
+              <Icon as={FilterIcon} boxSize="16px" />
               <Text>필터</Text>
             </Button>
           </Grid>
