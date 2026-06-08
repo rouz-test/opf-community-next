@@ -1,12 +1,13 @@
 'use client';
 
 import { Box, Button, Flex, Image, Text } from '@chakra-ui/react';
-import { Archive, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Archive, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
+import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
@@ -246,7 +247,7 @@ export default function CommentItem({
                         setIsActionMenuOpen((prev) => !prev);
                       }}
                     >
-                      <MoreHorizontal size={16} />
+                      <MoreIcon size={16} />
                     </Button>
 
                     {isActionMenuOpen ? (

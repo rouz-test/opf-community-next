@@ -56,6 +56,7 @@ export interface CommunityPost {
   commentCount: number;
   isLikedByMe: boolean;
   isSavedByMe: boolean;
+  isCommentedByMe: boolean;
   tags?: string[];
   images?: string[];
   isNotice?: boolean;
@@ -316,6 +317,15 @@ function isSavedByCurrentUser(contentId: string) {
   );
 }
 
+function isCommentedByCurrentUser(contentId: string) {
+  return commentEntities.some(
+    (comment) =>
+      comment.contentId === contentId &&
+      comment.author.id === COMMUNITY_CURRENT_USER.accountId &&
+      comment.status === 'published',
+  );
+}
+
 export function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
   const resolvedTags = resolveTags(content.tagIds, tags).map((tag) => tag.name);
   const mappedType = content.flags.isNotice ? 'notice' : 'community';
@@ -335,6 +345,7 @@ export function mapCommunityContentToPost(content: CommunityContent): CommunityP
     commentCount: content.stats.commentCount + content.stats.replyCount,
     isLikedByMe: content.viewerState?.isLikedByMe ?? isLikedByCurrentUser(content.id),
     isSavedByMe: content.viewerState?.isSavedByMe ?? isSavedByCurrentUser(content.id),
+    isCommentedByMe: isCommentedByCurrentUser(content.id),
     tags: resolvedTags,
     images: extractImageSources(content.content),
     isNotice: content.flags.isNotice,

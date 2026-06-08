@@ -13,12 +13,7 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
-  Bookmark,
   Megaphone,
-  MessageSquare,
-  MoreHorizontal,
-  Share2,
   Trash2,
 } from 'lucide-react';
 import {
@@ -35,12 +30,19 @@ import {
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import CommentItem from '@/app/user/components/comment/comment-item';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import BackIcon from '@/app/user/components/icons/BackIcon';
+import BookmarkFilledIcon from '@/app/user/components/icons/BookmarkFilledIcon';
+import BookmarkIcon from '@/app/user/components/icons/BookmarkIcon';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import CommentFilledIcon from '@/app/user/components/icons/CommentFilledIcon';
+import CommentIcon from '@/app/user/components/icons/CommentIcon';
 import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
 import EyeIcon from '@/app/user/components/icons/EyeIcon';
 import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
+import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
+import ShareIcon from '@/app/user/components/icons/ShareIcon';
 import ActivitySuspendedModal from '@/app/user/components/modal/activity-suspended-modal';
 import BlockedWordAlertModal from '@/app/user/components/modal/blocked-word-alert-modal';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
@@ -53,6 +55,7 @@ import {
   COMMUNITY_CURRENT_USER,
   mockCommunityPosts,
 } from '@/app/user/lib/community-content-data';
+import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
 import {
   COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE,
   fetchCommunitySuspensionStatus,
@@ -1213,6 +1216,12 @@ export default function CommunityPostDetailPage() {
   const authorDisplay = content ? getAuthorDisplay(content) : '';
   const authorAvatar = content ? getAuthorAvatar(content) : DEFAULT_REAL_PROFILE_IMAGE;
   const authorMetaDisplay = content ? getAuthorMetaDisplay(content) : '-';
+  const hasCommentedByMe = useMemo(() => {
+    const hasOwnComment = (comment: CommunityComment): boolean =>
+      comment.author.id === COMMUNITY_CURRENT_USER.accountId || comment.replies.some(hasOwnComment);
+
+    return comments.some(hasOwnComment);
+  }, [comments]);
 
   const authorOtherPosts = useMemo(() => {
     if (!content || content.author.visibility === 'anonymous') return [];
@@ -1286,13 +1295,15 @@ export default function CommunityPostDetailPage() {
                   asChild
                   variant="ghost"
                   size="sm"
-                  px="8px"
-                  color="#6B7280"
-                  _hover={{ bg: '#F9FAFB', color: '#111827' }}
+                  minW="24px"
+                  h="24px"
+                  p="0"
+                  color="#888888"
+                  _hover={{ bg: '#F9FAFB', color: '#888888' }}
                 >
                   <Link href="/user/community" aria-label="커뮤니티 목록으로 이동">
                     <Flex align="center" justify="center">
-                      <ArrowLeft size={24} style={{ width: 24, height: 24 }} />
+                      <BackIcon size={24} />
                     </Flex>
                   </Link>
                 </Button>
@@ -1311,11 +1322,11 @@ export default function CommunityPostDetailPage() {
                       rounded="full"
                       bg="transparent"
                       p="0"
-                      color="gray.400"
-                      _hover={{ bg: 'transparent', color: 'gray.700' }}
+                      color="#888888"
+                      _hover={{ bg: 'transparent', color: '#888888' }}
                       aria-label="내 게시글 메뉴 열기"
                     >
-                      <MoreHorizontal size={16} />
+                      <MoreIcon size={24} />
                     </Button>
 
                     {isOwnPostMenuOpen ? (
@@ -1490,8 +1501,8 @@ export default function CommunityPostDetailPage() {
                       <Text fontSize="14px">{content.stats.likeCount}</Text>
                     </Flex>
                   </Button>
-                  <Flex align="center" gap="6px">
-                    <MessageSquare size={20} />
+                  <Flex align="center" gap="6px" color={hasCommentedByMe ? 'orange.500' : 'inherit'}>
+                    {hasCommentedByMe ? <CommentFilledIcon size={20} /> : <CommentIcon size={20} />}
                     <Text fontSize="14px">
                       {getCommentTotalCount(content.stats.commentCount, content.stats.replyCount)}
                     </Text>
@@ -1509,8 +1520,11 @@ export default function CommunityPostDetailPage() {
                     _hover={{ bg: 'transparent', color: '#3B82F6' }}
                     aria-label="공유"
                     title="공유하기"
+                    onClick={() => {
+                      void copyPostUrlToClipboard(content.id);
+                    }}
                   >
-                    <Share2 size={20} />
+                    <ShareIcon size={20} />
                   </Button>
                   <Button
                     type="button"
@@ -1526,10 +1540,11 @@ export default function CommunityPostDetailPage() {
                     disabled={isSaveSubmitting}
                   >
                     <Flex align="center" gap="6px">
-                      <Bookmark
-                        size={20}
-                        fill={content.viewerState?.isSavedByMe ? 'currentColor' : 'none'}
-                      />
+                      {content.viewerState?.isSavedByMe ? (
+                        <BookmarkFilledIcon size={20} />
+                      ) : (
+                        <BookmarkIcon size={20} />
+                      )}
                     </Flex>
                   </Button>
                 </Flex>

@@ -1,9 +1,10 @@
 'use client';
 
 import { Box, Button, Portal, Text } from '@chakra-ui/react';
-import { Archive, Edit3, Megaphone, MoreVertical, Pin, PinOff, Tag, Trash2 } from 'lucide-react';
+import { Archive, Edit3, Megaphone, Pin, PinOff, Tag, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import MoreIcon from '@/app/admin/components/icons/MoreIcon';
 import type { CommunityContent } from '@/types/community-content';
 
 export type ContentActionMenuItem = {
@@ -18,6 +19,8 @@ export type ContentActionMenuItem = {
 type ContentActionMenuProps = {
   content: CommunityContent;
   isSubmitting?: boolean;
+  triggerIconSize?: number;
+  triggerIconColor?: string;
   onArchiveToggle: () => void;
   onPinnedToggle: () => void;
   onNoticeToggle: () => void;
@@ -29,6 +32,8 @@ type ContentActionMenuProps = {
 export default function ContentActionMenu({
   content,
   isSubmitting = false,
+  triggerIconSize = 18,
+  triggerIconColor = '#6B7280',
   onArchiveToggle,
   onPinnedToggle,
   onNoticeToggle,
@@ -107,7 +112,7 @@ export default function ContentActionMenu({
         size="sm"
         minW="36px"
         px="8px"
-        color="#6B7280"
+        color={triggerIconColor}
         disabled={isSubmitting}
         onClick={(event) => {
           event.stopPropagation();
@@ -115,7 +120,7 @@ export default function ContentActionMenu({
           setIsOpen((p) => !p);
         }}
       >
-        <MoreVertical size={18} />
+        <MoreIcon size={triggerIconSize} />
       </Button>
 
       {isOpen && (

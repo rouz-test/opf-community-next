@@ -1,5 +1,5 @@
-import { Box, Flex, Grid, Icon, Image, Text } from '@chakra-ui/react';
-import { Sparkles } from 'lucide-react';
+import { Box, Flex, Grid, Image, Text } from '@chakra-ui/react';
+import NewsIcon from '@/app/user/components/icons/NewsIcon';
 
 type OrangePickArticle = {
   id: string | number;
@@ -22,16 +22,7 @@ export function OrangePickWidget({ articles }: OrangePickWidgetProps) {
       boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
     >
       <Flex align="center" gap="8px" mb="16px">
-        <Flex
-          h="20px"
-          w="20px"
-          align="center"
-          justify="center"
-          borderRadius="6px"
-          bgGradient="linear(to-br, orange.400, orange.600)"
-        >
-          <Icon as={Sparkles} boxSize="12px" color="#FFFFFF" />
-        </Flex>
+        <NewsIcon size={20} color="#FF6900" />
         <Text fontSize="14px" fontWeight="700" color="#111827">
           오렌지픽
         </Text>

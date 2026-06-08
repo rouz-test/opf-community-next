@@ -53,7 +53,7 @@ export function SegmentedControl<TValue extends string>({
             borderColor={isActive ? '#FFD1A3' : '#E5E7EB'}
             bg={isActive ? '#FFF4E8' : '#FFFFFF'}
             color={isActive ? '#FF6900' : '#4B5563'}
-            fontSize="16px"
+            fontSize="14px"
             fontWeight="600"
             _hover={{ bg: isActive ? '#FFF4E8' : '#F9FAFB' }}
             _focus={{ outline: 'none', boxShadow: 'none' }}

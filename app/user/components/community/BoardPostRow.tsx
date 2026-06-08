@@ -11,20 +11,21 @@ import {
   Icon,
   Text,
 } from '@chakra-ui/react';
-import {
-  MessageSquare,
-  Bookmark,
-  Share2,
-  MoreHorizontal,
-  Trash2,
-} from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import BookmarkFilledIcon from '@/app/user/components/icons/BookmarkFilledIcon';
+import BookmarkIcon from '@/app/user/components/icons/BookmarkIcon';
+import CommentFilledIcon from '@/app/user/components/icons/CommentFilledIcon';
+import CommentIcon from '@/app/user/components/icons/CommentIcon';
 import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
 import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
+import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
+import ShareIcon from '@/app/user/components/icons/ShareIcon';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
+import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
 import tagsData from '@/data/mock/tags.json';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import { resolveTags } from '@/lib/tags';
@@ -193,7 +194,7 @@ export function BoardPostRow({
                   _hover={{ bg: 'gray.50', color: 'gray.700' }}
                   aria-label="내 게시글 메뉴 열기"
                 >
-                  <Icon as={MoreHorizontal} boxSize={{ base: '4', md: '5' }} />
+                  <Icon as={MoreIcon} boxSize={{ base: '4', md: '5' }} />
                 </Button>
               ) : null}
 
@@ -321,8 +322,8 @@ export function BoardPostRow({
                 <Icon as={displayIsLiked ? HeartFilledIcon : HeartIcon} boxSize={{ base: '16px', md: '20px' }} />
                 <Text fontSize={{ base: '12px', md: '14px' }}>{displayLikeCount}</Text>
               </Button>
-              <HStack gap="1.5">
-                <Icon as={MessageSquare} boxSize={{ base: '16px', md: '20px' }} />
+              <HStack gap="1.5" color={post.isCommentedByMe ? 'orange.500' : 'gray.500'}>
+                <Icon as={post.isCommentedByMe ? CommentFilledIcon : CommentIcon} boxSize={{ base: '16px', md: '20px' }} />
                 <Text fontSize={{ base: '12px', md: '14px' }}>{commentCount}</Text>
               </HStack>
               <HStack display={{ base: 'none', md: 'flex' }} gap="4">
@@ -336,8 +337,13 @@ export function BoardPostRow({
                   _hover={{ bg: 'transparent', color: 'blue.500' }}
                   aria-label="공유"
                   title="공유하기"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void copyPostUrlToClipboard(post.id);
+                  }}
                 >
-                  <Icon as={Share2} boxSize="20px" />
+                  <Icon as={ShareIcon} boxSize="20px" />
                 </Button>
                 {isLoggedIn ? (
                   <Button
@@ -361,7 +367,7 @@ export function BoardPostRow({
                     aria-label="북마크"
                     title="로그인 사용자용 북마크"
                   >
-                    <Icon as={Bookmark} boxSize="20px" fill={displayIsSaved ? 'currentColor' : 'none'} />
+                    <Icon as={displayIsSaved ? BookmarkFilledIcon : BookmarkIcon} boxSize="20px" />
                   </Button>
                 ) : null}
               </HStack>

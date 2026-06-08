@@ -1,12 +1,13 @@
 'use client';
 
 import { Box, Button, Flex, Image, Portal, Text } from '@chakra-ui/react';
-import { Archive, MoreHorizontal, PencilLine, Trash2 } from 'lucide-react';
+import { Archive, PencilLine, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
 import HeartFilledIcon from '@/app/admin/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/admin/components/icons/HeartIcon';
+import MoreIcon from '@/app/admin/components/icons/MoreIcon';
 import type { CommunityComment } from '@/types/community-comment';
 
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
@@ -240,7 +241,7 @@ export default function CommentItem({
                         setIsActionMenuOpen((prev) => !prev);
                       }}
                     >
-                      <MoreHorizontal size={16} />
+                      <MoreIcon size={16} />
                     </Button>
 
                     {isActionMenuOpen ? (

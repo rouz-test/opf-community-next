@@ -3,10 +3,10 @@
 import { Box, Button, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AuthorProfileCard } from '@/app/user/components/community/AuthorProfileCard';
+import BackIcon from '@/app/user/components/icons/BackIcon';
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { CommunityProfileCard } from '@/app/user/components/community/CommunityProfileCard';
 import { CommunityTagFilter } from '@/app/user/components/community/CommunityTagFilter';
@@ -101,7 +101,7 @@ function EmptyState({
         >
           <Link href="/user/community">
             <Flex align="center" gap="8px">
-              <ArrowLeft size={16} />
+              <BackIcon size={16} />
               <Text as="span">커뮤니티로 돌아가기</Text>
             </Flex>
           </Link>

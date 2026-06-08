@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { Box, Flex, HStack, Icon, Image, Text } from '@chakra-ui/react';
-import { Bookmark, MessageSquare, Share2 } from 'lucide-react';
 
+import BookmarkFilledIcon from '@/app/admin/components/icons/BookmarkFilledIcon';
+import BookmarkIcon from '@/app/admin/components/icons/BookmarkIcon';
 import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
+import CommentIcon from '@/app/admin/components/icons/CommentIcon';
 import HeartFilledIcon from '@/app/admin/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/admin/components/icons/HeartIcon';
+import ShareIcon from '@/app/admin/components/icons/ShareIcon';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
 import usersData from '@/data/mock/users.json';
 import { extractTextFromContentBody } from '@/lib/blocked-word-validator';
@@ -89,14 +92,14 @@ function InteractionBar({ content }: { content: CommunityContent }) {
           <Text fontSize="14px">{content.stats.likeCount}</Text>
         </HStack>
         <HStack gap="1.5">
-          <Icon as={MessageSquare} boxSize="20px" />
+          <Icon as={CommentIcon} boxSize="20px" />
           <Text fontSize="14px">{commentCount}</Text>
         </HStack>
       </HStack>
 
       <HStack gap="4">
-        <Icon as={Share2} boxSize="20px" />
-        <Icon as={Bookmark} boxSize="20px" color={isSaved ? 'orange.500' : 'gray.500'} fill={isSaved ? 'currentColor' : 'none'} />
+        <Icon as={ShareIcon} boxSize="20px" />
+        <Icon as={isSaved ? BookmarkFilledIcon : BookmarkIcon} boxSize="20px" color={isSaved ? 'orange.500' : 'gray.500'} />
       </HStack>
     </Flex>
   );
@@ -280,11 +283,11 @@ export function AdminCommunityBoardPostRow({ item, formatDate }: AdminCommunityP
                 <Text fontSize="14px">{content.stats.likeCount}</Text>
               </HStack>
               <HStack gap="1.5">
-                <Icon as={MessageSquare} boxSize="20px" />
+                <Icon as={CommentIcon} boxSize="20px" />
                 <Text fontSize="14px">{commentCount}</Text>
               </HStack>
-              <Icon as={Share2} boxSize="20px" />
-              <Icon as={Bookmark} boxSize="20px" color={isSaved ? 'orange.500' : 'gray.500'} fill={isSaved ? 'currentColor' : 'none'} />
+              <Icon as={ShareIcon} boxSize="20px" />
+              <Icon as={isSaved ? BookmarkFilledIcon : BookmarkIcon} boxSize="20px" color={isSaved ? 'orange.500' : 'gray.500'} />
             </HStack>
           </Flex>
 

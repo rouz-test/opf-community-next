@@ -3329,5 +3329,29 @@
     "archivedBy": null,
     "deletedAt": null,
     "deletedBy": null
+  },
+  {
+    "id": "community-comment-1780892973786",
+    "contentId": "content-1779431759971",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "account-user-1",
+      "visibility": "public",
+      "displayName": "박민수",
+      "identifierType": "name",
+      "identifierValue": "박민수",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
+    },
+    "content": "댓글 테스트",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-08T04:29:33.786Z",
+    "updatedAt": "2026-06-08T04:29:33.786Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
   }
 ]

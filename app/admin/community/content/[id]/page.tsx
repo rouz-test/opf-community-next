@@ -3,14 +3,18 @@
 import { Box, Button, Flex, Image, Link as ChakraLink, Spinner, Text } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Bookmark, Megaphone, MessageSquare, Share2 } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 import CommentEditor from '@/app/admin/components/comment/comment-editor';
 import CommentItem from '@/app/admin/components/comment/comment-item';
+import BackIcon from '@/app/admin/components/icons/BackIcon';
+import BookmarkIcon from '@/app/admin/components/icons/BookmarkIcon';
 import CheckBadgeIcon from '@/app/admin/components/icons/CheckBadgeIcon';
+import CommentIcon from '@/app/admin/components/icons/CommentIcon';
 import EyeIcon from '@/app/admin/components/icons/EyeIcon';
 import HeartIcon from '@/app/admin/components/icons/HeartIcon';
+import ShareIcon from '@/app/admin/components/icons/ShareIcon';
 import BlockedWordAlertModal from '@/app/admin/components/modal/blocked-word-alert-modal';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
@@ -23,6 +27,7 @@ import usersData from '@/data/mock/users.json';
 import { getBlockedWords } from '@/lib/blocked-words';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { resolveTags } from '@/lib/tags';
+import { copyContentUrlToClipboard } from '@/app/admin/lib/share-content-url';
 import type { CommunityContent, CommunityContentBody } from '@/types/community-content';
 import type {
   CommunityComment,
@@ -1087,13 +1092,15 @@ export default function CommunityContentDetailPage() {
               asChild
               variant="ghost"
               size="sm"
-              px="8px"
-              color="#6B7280"
-              _hover={{ bg: '#F9FAFB', color: '#111827' }}
+              minW="24px"
+              h="24px"
+              p="0"
+              color="#888888"
+              _hover={{ bg: '#F9FAFB', color: '#888888' }}
             >
               <Link href="/admin/community/content" aria-label="콘텐츠 목록으로 이동">
                 <Flex align="center" justify="center">
-                  <ArrowLeft size={24} style={{ width: 24, height: 24 }} />
+                  <BackIcon size={24} />
                 </Flex>
               </Link>
             </Button>
@@ -1101,6 +1108,8 @@ export default function CommunityContentDetailPage() {
             <ContentActionMenu
               content={content}
               isSubmitting={isSubmittingAction}
+              triggerIconSize={24}
+              triggerIconColor="#888888"
               onArchiveToggle={() =>
                 handlePatchContent({
                   status: content.status === 'archived' ? 'published' : 'archived',
@@ -1202,7 +1211,7 @@ export default function CommunityContentDetailPage() {
                 <Text fontSize="14px">{content.stats.likeCount}</Text>
               </Flex>
               <Flex align="center" gap="6px">
-                <MessageSquare size={20} />
+                <CommentIcon size={20} />
                 <Text fontSize="14px">{content.stats.commentCount + content.stats.replyCount}</Text>
               </Flex>
             </Flex>
@@ -1218,8 +1227,11 @@ export default function CommunityContentDetailPage() {
                 _hover={{ bg: 'transparent', color: '#3B82F6' }}
                 aria-label="공유"
                 title="공유하기"
+                onClick={() => {
+                  void copyContentUrlToClipboard(content.id);
+                }}
               >
-                <Share2 size={20} />
+                <ShareIcon size={20} />
               </Button>
               <Button
                 type="button"
@@ -1232,7 +1244,7 @@ export default function CommunityContentDetailPage() {
                 aria-label="저장"
                 title="저장"
               >
-                <Bookmark size={20} />
+                <BookmarkIcon size={20} />
               </Button>
             </Flex>
           </Flex>

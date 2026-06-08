@@ -3,13 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  MessageSquare,
-  Share2,
-  Bookmark,
-  MoreHorizontal,
-  Trash2,
-} from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import {
   Box,
   Button,
@@ -20,12 +14,19 @@ import {
   Text,
   useBreakpointValue,
 } from '@chakra-ui/react';
+import BookmarkFilledIcon from '@/app/user/components/icons/BookmarkFilledIcon';
+import BookmarkIcon from '@/app/user/components/icons/BookmarkIcon';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import CommentFilledIcon from '@/app/user/components/icons/CommentFilledIcon';
+import CommentIcon from '@/app/user/components/icons/CommentIcon';
 import EyeClosedIcon from '@/app/user/components/icons/EyeClosedIcon';
 import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
+import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
+import ShareIcon from '@/app/user/components/icons/ShareIcon';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
+import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
 import tagsData from '@/data/mock/tags.json';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import { resolveTags } from '@/lib/tags';
@@ -198,7 +199,7 @@ export function FeedPostCard({
             _hover={{ bg: 'transparent', color: 'gray.700' }}
             aria-label="내 게시글 메뉴 열기"
           >
-            <Icon as={MoreHorizontal} boxSize="4" />
+            <Icon as={MoreIcon} boxSize="4" />
           </Button>
 
           {isOwnPostMenuOpen ? (
@@ -368,10 +369,10 @@ export function FeedPostCard({
               h="auto"
               bg="transparent"
               p="0"
-              color="gray.500"
-              _hover={{ bg: 'transparent', color: 'blue.500' }}
+              color={post.isCommentedByMe ? 'orange.500' : 'gray.500'}
+              _hover={{ bg: 'transparent', color: post.isCommentedByMe ? 'orange.500' : 'blue.500' }}
             >
-              <Icon as={MessageSquare} boxSize="20px" />
+              <Icon as={post.isCommentedByMe ? CommentFilledIcon : CommentIcon} boxSize="20px" />
               <Text fontSize="14px">{commentCount}</Text>
             </Button>
           </HStack>
@@ -387,8 +388,13 @@ export function FeedPostCard({
               _hover={{ bg: 'transparent', color: 'blue.500' }}
               aria-label="공유"
               title="공유하기"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void copyPostUrlToClipboard(post.id);
+              }}
             >
-              <Icon as={Share2} boxSize="20px" />
+              <Icon as={ShareIcon} boxSize="20px" />
             </Button>
             <Button
               type="button"
@@ -411,7 +417,7 @@ export function FeedPostCard({
               aria-label="북마크"
               title="북마크 표시"
             >
-              <Icon as={Bookmark} boxSize="20px" fill={displayIsSaved ? 'currentColor' : 'none'} />
+              <Icon as={displayIsSaved ? BookmarkFilledIcon : BookmarkIcon} boxSize="20px" />
             </Button>
           </HStack>
         </Flex>
