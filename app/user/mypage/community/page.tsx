@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Check,
   ChevronDown,
-  LayoutGrid,
-  List,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,6 +14,7 @@ import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
+import { SegmentedControl } from '@/app/user/components/ui/segmented-control';
 import { UserSearchField } from '@/app/user/components/ui/search-field';
 import { toaster } from '@/app/user/components/ui/toaster';
 import {
@@ -877,44 +876,15 @@ export default function MyPageCommunityPage() {
           ) : null}
         </Box>
 
-        <Flex overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="14px" bg="#FFFFFF">
-          <Button
-            type="button"
-            onClick={() => setCommunityViewMode('feed')}
-            h="40px"
-            px="16px"
-            borderRadius="0"
-            borderRight="1px solid"
-            borderColor="#E5E7EB"
-            bg={communityViewMode === 'feed' ? '#FFF7ED' : '#FFFFFF'}
-            color={communityViewMode === 'feed' ? '#C2410C' : '#4B5563'}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: communityViewMode === 'feed' ? '#FFF7ED' : '#F9FAFB' }}
-          >
-            <Flex align="center" gap="8px">
-              <LayoutGrid size={16} />
-              <Text as="span">피드뷰</Text>
-            </Flex>
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setCommunityViewMode('board')}
-            h="40px"
-            px="16px"
-            borderRadius="0"
-            bg={communityViewMode === 'board' ? '#FFF7ED' : '#FFFFFF'}
-            color={communityViewMode === 'board' ? '#C2410C' : '#4B5563'}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: communityViewMode === 'board' ? '#FFF7ED' : '#F9FAFB' }}
-          >
-            <Flex align="center" gap="8px">
-              <List size={16} />
-              <Text as="span">게시판뷰</Text>
-            </Flex>
-          </Button>
-        </Flex>
+        <SegmentedControl
+          aria-label="커뮤니티 보기 방식 선택"
+          value={communityViewMode}
+          options={[
+            { label: '피드뷰', value: 'feed' },
+            { label: '게시판뷰', value: 'board' },
+          ]}
+          onValueChange={setCommunityViewMode}
+        />
           </Flex>
 
           <Flex mt="16px" direction="column" gap="16px">

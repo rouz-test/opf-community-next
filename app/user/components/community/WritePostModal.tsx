@@ -16,6 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/app/user/components/ui/button';
+import { SegmentedControl } from '@/app/user/components/ui/segmented-control';
 import { toaster } from '@/app/user/components/ui/toaster';
 import ContentEditor from '@/app/user/components/editor/content-editor';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
@@ -620,7 +621,7 @@ export function WritePostModal({
               </Box>
 
               <Box order={{ base: 5, md: 3 }} minW="0">
-                <Box overflow="hidden" rounded="12px" maxW="full">
+                <Box maxW="full">
                   <ContentEditor
                     format="json"
                     value={content}
@@ -727,38 +728,17 @@ export function WritePostModal({
                     <Text mb="3" fontSize="16px" fontWeight="700" color="gray.700">
                       게시글 유형
                     </Text>
-                    <Flex rounded="12px" borderWidth="1px" borderColor="#D1D5DB" overflow="hidden">
-                      <ChakraButton
-                        type="button"
-                        onClick={() => setIsPromotion(false)}
-                        flex="1"
-                        h="40px"
-                        rounded="none"
-                        bg={!isPromotion ? '#FFF4E8' : 'white'}
-                        borderRightWidth="1px"
-                        borderColor="#D1D5DB"
-                        fontSize="14px"
-                        fontWeight="600"
-                        color={!isPromotion ? '#FF6900' : 'gray.700'}
-                        _hover={{ bg: !isPromotion ? '#FFF0DE' : 'gray.50' }}
-                      >
-                        일반글
-                      </ChakraButton>
-                      <ChakraButton
-                        type="button"
-                        onClick={() => setIsPromotion(true)}
-                        flex="1"
-                        h="40px"
-                        rounded="none"
-                        bg={isPromotion ? '#FFF4E8' : 'white'}
-                        fontSize="14px"
-                        fontWeight="600"
-                        color={isPromotion ? '#FF6900' : 'gray.700'}
-                        _hover={{ bg: isPromotion ? '#FFF0DE' : 'gray.50' }}
-                      >
-                        홍보글
-                      </ChakraButton>
-                    </Flex>
+                    <SegmentedControl
+                      aria-label="게시글 유형 선택"
+                      value={isPromotion ? 'promoted' : 'normal'}
+                      options={[
+                        { label: '일반글', value: 'normal' },
+                        { label: '홍보글', value: 'promoted' },
+                      ]}
+                      onValueChange={(nextValue) => {
+                        setIsPromotion(nextValue === 'promoted');
+                      }}
+                    />
                   </Box>
                 </Flex>
 
