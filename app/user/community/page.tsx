@@ -649,7 +649,14 @@ export default function CommunityPage() {
                 />
               </Flex>
 
-              <Flex as="section" direction="column" gap="4">
+              <Flex
+                as="section"
+                direction="column"
+                gap={viewMode === 'board' ? { base: '0', md: '4' } : '4'}
+                bg={viewMode === 'board' ? { base: 'white', md: 'transparent' } : 'transparent'}
+                mx={viewMode === 'board' ? { base: '-4', md: '0' } : '0'}
+                w={viewMode === 'board' ? { base: 'calc(100% + var(--chakra-spacing-8))', md: 'auto' } : 'auto'}
+              >
                 {isPostsLoading ? (
                   <Flex align="center" justify="center" py="10">
                     <Spinner size="sm" color="#FF6900" />
