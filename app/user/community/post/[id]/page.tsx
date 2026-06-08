@@ -1270,9 +1270,9 @@ export default function CommunityPostDetailPage() {
   }
 
   return (
-    <Box minH="100vh" bg="#F9FAFB">
-      <Box maxW="1400px" mx="auto" px={{ base: '16px', md: '24px' }} py={{ base: '20px', md: '28px' }}>
-        <Grid templateColumns={{ base: '1fr', lg: '280px minmax(0, 1fr) 320px' }} gap="24px" alignItems="start">
+    <Box minH="100vh" bg={{ base: '#FFFFFF', md: '#F9FAFB' }}>
+      <Box maxW="1400px" mx="auto" px={{ base: '0', md: '24px' }} py={{ base: '0', md: '28px' }}>
+        <Grid templateColumns={{ base: '1fr', lg: '280px minmax(0, 1fr) 320px' }} gap={{ base: '0', md: '24px' }} alignItems="start">
           <Box display={{ base: 'none', lg: 'block' }}>
             <CommunityProfileCard
               profileMode={defaultCommunityIdentity}
@@ -1281,14 +1281,14 @@ export default function CommunityPostDetailPage() {
             />
           </Box>
 
-          <Flex direction="column" gap="16px" minW="0">
+          <Flex direction="column" gap={{ base: '28px', md: '16px' }} minW="0">
             <Box
-              overflow="hidden"
-              borderRadius="20px"
+              overflow={{ base: 'visible', md: 'hidden' }}
+              borderRadius={{ base: '0', md: '20px' }}
               bg="#FFFFFF"
-              boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
-              px={{ base: '18px', md: '24px' }}
-              py={{ base: '18px', md: '20px' }}
+              boxShadow={{ base: 'none', md: '0 12px 30px rgba(223, 223, 223, 0.9)' }}
+              px={{ base: '20px', md: '24px' }}
+              py={{ base: '20px', md: '20px' }}
             >
               <Flex align="center" justify="space-between" mb="10px">
                 <Button
@@ -1552,12 +1552,12 @@ export default function CommunityPostDetailPage() {
             </Box>
 
             <Box
-              overflow="hidden"
-              borderRadius="20px"
+              overflow={{ base: 'visible', md: 'hidden' }}
+              borderRadius={{ base: '0', md: '20px' }}
               bg="#FFFFFF"
-              boxShadow="0 12px 30px rgba(223, 223, 223, 0.9)"
+              boxShadow={{ base: 'none', md: '0 12px 30px rgba(223, 223, 223, 0.9)' }}
             >
-              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
+              <Box px={{ base: '20px', md: '24px' }} py={{ base: '0', md: '20px' }}>
                 <Flex align="center" gap="6px" mb="16px">
                   <Text fontSize="16px" fontWeight="700" color="#111827">
                     댓글
@@ -1621,7 +1621,7 @@ export default function CommunityPostDetailPage() {
                 )}
               </Box>
 
-              <Box px={{ base: '18px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
+              <Box px={{ base: '20px', md: '24px' }} py={{ base: '18px', md: '20px' }}>
                 {isCommentsLoading ? (
                   <Flex minH="120px" align="center" justify="center" gap="10px" color="#6B7280">
                     <Spinner size="sm" />
