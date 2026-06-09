@@ -2,17 +2,15 @@
 
 import { Box, Button, Flex, Grid, Image, Text } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import {
-  Check,
-  ChevronDown,
-  X,
-} from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import CheckIcon from '@/app/user/components/icons/CheckIcon';
+import CloseIcon from '@/app/user/components/icons/CloseIcon';
 import ActionConfirmModal from '@/app/user/components/modal/action-confirm-modal';
 import { SegmentedControl } from '@/app/user/components/ui/segmented-control';
 import { UserSearchField } from '@/app/user/components/ui/search-field';
@@ -868,7 +866,7 @@ export default function MyPageCommunityPage() {
                 >
                   <Text as="span">{option.label}</Text>
                   {profileFilter === option.value ? (
-                    <Check size={16} color="#F97316" />
+                    <CheckIcon size={16} color="#F97316" />
                   ) : null}
                 </Button>
               ))}
@@ -1058,7 +1056,7 @@ export default function MyPageCommunityPage() {
                 _focus={{ outline: 'none', boxShadow: 'none' }}
                 onClick={() => setFollowListModalType(null)}
               >
-                <X size={20} />
+                <CloseIcon size={20} />
               </Button>
             </Flex>
 

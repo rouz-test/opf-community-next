@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Box, Button, Collapsible, Flex, Text } from '@chakra-ui/react';
-import { Check } from 'lucide-react';
 
+import CheckIcon from '@/app/user/components/icons/CheckIcon';
 import RotateIcon from '@/app/user/components/icons/RotateIcon';
 import tagsData from '@/data/mock/tags.json';
 import type { Tag } from '@/types/tag';
@@ -58,7 +58,7 @@ export function CommunityTagFilter({
                 {tag.name}
               </Text>
             </Flex>
-            {isSelected ? <Check size={14} color="#FF6900" strokeWidth={2.2} /> : <Box boxSize="14px" />}
+            {isSelected ? <CheckIcon size={14} color="#FF6900" /> : <Box boxSize="14px" />}
           </Button>
         );
       })}

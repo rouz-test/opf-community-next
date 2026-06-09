@@ -13,13 +13,14 @@ import {
   Spinner,
   Text,
 } from '@chakra-ui/react';
-import { Check, ChevronDown, Copy, ExternalLink, LayoutGrid, List, Pencil } from 'lucide-react';
+import { ChevronDown, Copy, ExternalLink, LayoutGrid, List, Pencil } from 'lucide-react';
 
 import {
   AdminCommunityBoardPostRow,
   AdminCommunityFeedPostCard,
   type AdminCommunityPostCardData,
 } from '@/app/admin/components/community/admin-community-post-cards';
+import CheckIcon from '@/app/admin/components/icons/CheckIcon';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminCard from '@/app/admin/components/ui/card';
@@ -724,7 +725,7 @@ function CommunityContent({ user }: { user: UserProfileBundle }) {
                 >
                   <Text as="span">{option.label}</Text>
                   {profileFilter === option.value ? (
-                    <Check size={16} color="#F97316" />
+                    <CheckIcon size={16} color="#F97316" />
                   ) : null}
                 </Button>
               ))}

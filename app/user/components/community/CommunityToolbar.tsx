@@ -12,20 +12,18 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import {
-  LayoutGrid,
-  List,
-  Tag,
-  UserCheck,
-  TrendingUp,
-  Sparkles,
-  X,
-  Check,
-} from 'lucide-react';
+import { Tag } from 'lucide-react';
 import type { ElementType } from 'react';
 
+import CheckIcon from '@/app/user/components/icons/CheckIcon';
+import CloseIcon from '@/app/user/components/icons/CloseIcon';
 import FilterIcon from '@/app/user/components/icons/FilterIcon';
+import FollowingIcon from '@/app/user/components/icons/FollowingIcon';
+import GridIcon from '@/app/user/components/icons/GridIcon';
+import LatestIcon from '@/app/user/components/icons/LatestIcon';
+import ListIcon from '@/app/user/components/icons/ListIcon';
 import RotateIcon from '@/app/user/components/icons/RotateIcon';
+import TrendingIcon from '@/app/user/components/icons/TrendingIcon';
 import { UserSearchField } from '@/app/user/components/ui/search-field';
 import tagsData from '@/data/mock/tags.json';
 import type { Tag as CommunityTag } from '@/types/tag';
@@ -268,7 +266,7 @@ export function CommunityToolbar({
                 _hover={{ color: 'gray.700', bg: 'transparent' }}
                 aria-label="필터 닫기"
               >
-                <Icon as={X} boxSize="5" />
+                <CloseIcon size={20} />
               </Button>
             </HStack>
           </Flex>
@@ -281,7 +279,7 @@ export function CommunityToolbar({
                 </Text>
                 <OptionCard
                   active={showFollowingOnly}
-                  icon={UserCheck}
+                  icon={FollowingIcon}
                   label="팔로잉 글만 보기"
                   onClick={onToggleFollowingOnly}
                 />
@@ -295,13 +293,13 @@ export function CommunityToolbar({
               <Stack gap="2">
                 <OptionCard
                   active={sortBy === 'recommended'}
-                  icon={TrendingUp}
+                  icon={TrendingIcon}
                   label="추천순"
                   onClick={() => onSortByChange('recommended')}
                 />
                 <OptionCard
                   active={sortBy === 'latest'}
-                  icon={Sparkles}
+                  icon={LatestIcon}
                   label="최신순"
                   onClick={() => onSortByChange('latest')}
                 />
@@ -315,13 +313,13 @@ export function CommunityToolbar({
               <Stack gap="2">
                 <OptionCard
                   active={viewMode === 'feed'}
-                  icon={LayoutGrid}
+                  icon={GridIcon}
                   label="피드뷰"
                   onClick={() => onViewModeChange('feed')}
                 />
                 <OptionCard
                   active={viewMode === 'board'}
-                  icon={List}
+                  icon={ListIcon}
                   label="게시판뷰"
                   onClick={() => onViewModeChange('board')}
                 />
@@ -385,7 +383,7 @@ export function CommunityToolbar({
                     _hover={{ color: 'gray.700', bg: 'transparent' }}
                     aria-label="태그 필터 닫기"
                   >
-                    <Icon as={X} boxSize="5" />
+                    <CloseIcon size={20} />
                   </Button>
                 </HStack>
               </Flex>
@@ -417,7 +415,7 @@ export function CommunityToolbar({
                             {tag.name}
                           </Text>
                         </Flex>
-                        {selected ? <Check size={14} color="#FF6900" strokeWidth={2.2} /> : <Box boxSize="14px" />}
+                        {selected ? <CheckIcon size={14} color="#FF6900" /> : <Box boxSize="14px" />}
                       </Button>
                     );
                   })}
@@ -483,7 +481,7 @@ export function CommunityToolbar({
                     _hover={{ color: 'gray.700', bg: 'transparent' }}
                     aria-label="필터 닫기"
                   >
-                    <Icon as={X} boxSize="5" />
+                    <CloseIcon size={20} />
                   </Button>
                 </HStack>
               </Flex>
@@ -496,7 +494,7 @@ export function CommunityToolbar({
                     </Text>
                     <OptionCard
                       active={showFollowingOnly}
-                      icon={UserCheck}
+                      icon={FollowingIcon}
                       label="팔로잉 글만 보기"
                       onClick={onToggleFollowingOnly}
                     />
@@ -510,13 +508,13 @@ export function CommunityToolbar({
                   <Stack gap="2">
                     <OptionCard
                       active={sortBy === 'recommended'}
-                      icon={TrendingUp}
+                      icon={TrendingIcon}
                       label="추천순"
                       onClick={() => onSortByChange('recommended')}
                     />
                     <OptionCard
                       active={sortBy === 'latest'}
-                      icon={Sparkles}
+                      icon={LatestIcon}
                       label="최신순"
                       onClick={() => onSortByChange('latest')}
                     />
@@ -530,13 +528,13 @@ export function CommunityToolbar({
                   <Stack gap="2">
                     <OptionCard
                       active={viewMode === 'feed'}
-                      icon={LayoutGrid}
+                      icon={GridIcon}
                       label="피드뷰"
                       onClick={() => onViewModeChange('feed')}
                     />
                     <OptionCard
                       active={viewMode === 'board'}
-                      icon={List}
+                      icon={ListIcon}
                       label="게시판뷰"
                       onClick={() => onViewModeChange('board')}
                     />

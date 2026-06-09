@@ -14,8 +14,10 @@ import {
   Text,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/app/user/components/ui/button';
+import CheckIcon from '@/app/user/components/icons/CheckIcon';
+import CloseIcon from '@/app/user/components/icons/CloseIcon';
 import { SegmentedControl } from '@/app/user/components/ui/segmented-control';
 import { toaster } from '@/app/user/components/ui/toaster';
 import ContentEditor from '@/app/user/components/editor/content-editor';
@@ -479,7 +481,7 @@ export function WritePostModal({
               _hover={{ color: 'gray.700', bg: 'transparent' }}
               aria-label="글쓰기 모달 닫기"
             >
-              <Icon as={X} boxSize="6" />
+              <CloseIcon size={24} />
             </ChakraButton>
           </Flex>
 
@@ -611,7 +613,7 @@ export function WritePostModal({
                             _hover={{ bg: selected ? '#FFF0DE' : 'gray.50' }}
                           >
                             <Text>{option.label}</Text>
-                            {selected ? <Icon as={Check} boxSize="4" /> : null}
+                            {selected ? <CheckIcon size={16} /> : null}
                           </ChakraButton>
                         );
                       })}
@@ -706,7 +708,7 @@ export function WritePostModal({
                                   _hover={{ bg: selected ? '#FFF0DE' : 'gray.50' }}
                                 >
                                   <Text>#{tag.name}</Text>
-                                  {selected ? <Icon as={Check} boxSize="4" /> : null}
+                                  {selected ? <CheckIcon size={16} /> : null}
                                 </ChakraButton>
                               );
                             })}

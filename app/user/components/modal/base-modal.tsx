@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Box, Button, Flex, Portal, Text } from '@chakra-ui/react';
+import CloseIcon from '@/app/user/components/icons/CloseIcon';
 
 type BaseModalProps = {
   isOpen: boolean;
@@ -11,14 +12,6 @@ type BaseModalProps = {
   footer?: ReactNode;
   maxW?: string;
 };
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 6l8 8M14 6l-8 8" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function BaseModal({
   isOpen,
@@ -55,9 +48,9 @@ export default function BaseModal({
               alignItems="center"
               justifyContent="center"
               color="#9CA3AF"
-              aria-label="모달 닫기"
-            >
-              <CloseIcon />
+            aria-label="모달 닫기"
+          >
+              <CloseIcon size={20} />
             </Button>
           </Flex>
 

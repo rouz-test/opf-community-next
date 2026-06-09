@@ -3,10 +3,14 @@
 import { Box, Button, Flex, Link as ChakraLink, Text, VStack } from '@chakra-ui/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, ChevronDown, GraduationCap, LogOut, Settings } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
 import type { ElementType } from 'react';
 
+import CampusIcon from '@/app/user/components/icons/CampusIcon';
+import CommunityIcon from '@/app/user/components/icons/CommunityIcon';
+import LogoutIcon from '@/app/user/components/icons/LogoutIcon';
+import SettingIcon from '@/app/user/components/icons/SettingIcon';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 
 type SidebarChildLink = {
@@ -33,11 +37,11 @@ type SidebarSectionItem = {
 };
 
 const sidebarItems: Array<SidebarLinkItem | SidebarSectionItem> = [
-  { label: '커뮤니티', href: '/user/mypage/community', icon: BookOpen },
+  { label: '커뮤니티', href: '/user/mypage/community', icon: CommunityIcon },
   {
     label: '캠퍼스',
     href: '/user/mypage/campus',
-    icon: GraduationCap,
+    icon: CampusIcon,
     children: [
       { label: '신청 내역', disabled: true },
       { label: '팀 빌딩', disabled: true },
@@ -48,7 +52,7 @@ const sidebarItems: Array<SidebarLinkItem | SidebarSectionItem> = [
   {
     label: '설정',
     href: '/user/mypage/settings',
-    icon: Settings,
+    icon: SettingIcon,
     children: [
       { label: '프로필', href: '/user/mypage/settings/profile' },
       { label: '프로덕트', href: '/user/mypage/settings/product' },
@@ -371,7 +375,7 @@ export default function MyPageSidebar() {
               onClick={handleLogout}
             >
               <Box display="flex" alignItems="center" justifyContent="center" w="16px" h="16px" color="#6B7280">
-                <LogOut size={16} strokeWidth={1.9} />
+                <LogoutIcon size={16} />
               </Box>
               <Text fontSize="16px" fontWeight="600" lineHeight="1">
                 로그아웃

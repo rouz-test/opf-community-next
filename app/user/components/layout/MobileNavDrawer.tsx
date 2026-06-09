@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { X } from 'lucide-react';
-import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Text } from '@chakra-ui/react';
+import CloseIcon from '@/app/user/components/icons/CloseIcon';
 import { useMobileNav } from '@/app/user/components/providers/MobileNavProvider';
 
 export default function MobileNavDrawer() {
@@ -60,7 +60,7 @@ export default function MobileNavDrawer() {
             _hover={{ bg: 'gray.50', color: 'gray.700' }}
             aria-label="닫기"
           >
-            <Icon as={X} boxSize="4" />
+            <CloseIcon size={16} />
           </Button>
         </Flex>
 

@@ -14,15 +14,8 @@ import AdminButton from '@/app/admin/components/ui/button';
 import AdminCard from '@/app/admin/components/ui/card';
 import AdminTextField from '@/app/admin/components/ui/text-field';
 import AdminTagBadge from '@/app/admin/components/ui/tag/tag-badge';
+import CloseIcon from '@/app/admin/components/icons/CloseIcon';
 import type { ResolvedTag } from '@/lib/tags';
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 6l8 8M14 6l-8 8" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export type TagFormValues = {
   name: string;
@@ -184,7 +177,7 @@ export default function CreateTagModal({
             color="#9CA3AF"
             aria-label="모달 닫기"
           >
-            <CloseIcon />
+            <CloseIcon size={20} />
           </Button>
         </Flex>
 

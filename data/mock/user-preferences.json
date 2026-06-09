@@ -5,8 +5,11 @@
       "viewMode": "feed",
       "sortBy": "latest",
       "showFollowingOnly": false,
-      "selectedTags": []
+      "selectedTags": [
+        "투자 유치",
+        "수익 모델"
+      ]
     },
-    "updatedAt": "2026-06-08T07:40:39.342Z"
+    "updatedAt": "2026-06-09T08:13:37.358Z"
   }
 ]
