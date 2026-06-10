@@ -469,6 +469,10 @@ export default function MyPageCommunityPage() {
             : item,
         ),
       );
+      toaster.create({
+        title: nextIsFollowing ? '팔로우했습니다.' : '팔로우를 취소했습니다.',
+        type: 'success',
+      });
     } catch (error) {
       toaster.create({
         title: error instanceof Error ? error.message : '팔로우 상태를 변경하지 못했습니다.',

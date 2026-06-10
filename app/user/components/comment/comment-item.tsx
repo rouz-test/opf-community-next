@@ -1,15 +1,18 @@
 'use client';
 
-import { Box, Button, Flex, Image, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Image, Link as ChakraLink, Text } from '@chakra-ui/react';
 import { Archive, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import CommentEditor from '@/app/user/components/comment/comment-editor';
 import HeartFilledIcon from '@/app/user/components/icons/HeartFilledIcon';
 import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
+import usersData from '@/data/mock/users.json';
 import type { CommunityComment } from '@/types/community-comment';
+import type { UserAccount } from '@/types/user';
 
 const ANONYMOUS_PROFILE_IMAGE = '/images/profiles/anonymous-medium.png';
 const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-medium.png';
@@ -27,7 +30,13 @@ type CommentItemProps = {
   onDeleteComment: (comment: CommunityComment) => void;
   onToggleLike?: (comment: CommunityComment) => Promise<CommunityComment | void>;
   onAuthorClick?: (authorId: string) => void;
+  mentionViewerAccountId?: string;
 };
+
+const mentionUsers = usersData as UserAccount[];
+const mentionUserByName = new Map(
+  mentionUsers.map((user) => [user.verification.realName, user]),
+);
 
 function formatCommentDate(dateString: string) {
   return new Date(dateString).toLocaleString('ko-KR', {
@@ -63,6 +72,51 @@ function getDeletedMessage(comment: CommunityComment) {
   return '삭제된 댓글입니다.';
 }
 
+function renderMentionedCommentContent(content: string) {
+  const nodes: ReactNode[] = [];
+  const mentionPattern = /@([가-힣A-Za-z0-9_]+)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = mentionPattern.exec(content)) !== null) {
+    const [mentionText, mentionName] = match;
+    const mentionStart = match.index;
+    const mentionEnd = mentionStart + mentionText.length;
+    const user = mentionName ? mentionUserByName.get(mentionName) : undefined;
+
+    if (mentionStart > lastIndex) {
+      nodes.push(content.slice(lastIndex, mentionStart));
+    }
+
+    if (user) {
+      nodes.push(
+        <ChakraLink
+          key={`${mentionText}-${mentionStart}`}
+          asChild
+          px="2px"
+          borderRadius="4px"
+          bg="#E0F2FE"
+          color="#0284C7"
+          textDecoration="none"
+          _hover={{ color: '#0369A1', textDecoration: 'none' }}
+        >
+          <Link href={`/user/community/author/${user.accountId}`}>{mentionText}</Link>
+        </ChakraLink>,
+      );
+    } else {
+      nodes.push(mentionText);
+    }
+
+    lastIndex = mentionEnd;
+  }
+
+  if (lastIndex < content.length) {
+    nodes.push(content.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
 export default function CommentItem({
   comment,
   depth = 0,
@@ -76,6 +130,7 @@ export default function CommentItem({
   onDeleteComment,
   onToggleLike,
   onAuthorClick,
+  mentionViewerAccountId = currentUserId ?? 'account-user-1',
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(comment.content);
@@ -389,6 +444,7 @@ export default function CommentItem({
                   }}
                   isSubmitting={isUpdating}
                   autoFocus
+                  mentionViewerAccountId={mentionViewerAccountId}
                 />
               ) : (
                 <Text
@@ -401,7 +457,7 @@ export default function CommentItem({
                     ? getDeletedMessage(comment)
                     : isArchived
                       ? getArchivedMessage(comment)
-                      : comment.content}
+                      : renderMentionedCommentContent(comment.content)}
                 </Text>
               )}
             </Box>
@@ -470,6 +526,7 @@ export default function CommentItem({
                   onDeleteComment={onDeleteComment}
                   onToggleLike={onToggleLike}
                   onAuthorClick={onAuthorClick}
+                  mentionViewerAccountId={mentionViewerAccountId}
                 />
               ))}
             </Flex>

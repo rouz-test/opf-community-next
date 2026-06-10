@@ -54,5 +54,9 @@
   {
     "followerAccountId": "user-101",
     "followingAccountId": "account-user-1"
+  },
+  {
+    "followerAccountId": "account-user-1",
+    "followingAccountId": "user-101"
   }
 ]

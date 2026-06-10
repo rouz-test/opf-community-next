@@ -1,15 +1,16 @@
 'use client';
 
-import { Box } from '@chakra-ui/react';
-import { useEditor, useEditorState } from '@tiptap/react';
+import { Box, useBreakpointValue } from '@chakra-ui/react';
+import { type Editor, useEditor, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
+import TiptapLink from '@tiptap/extension-link';
 import { LineHeight, TextStyleKit } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TextAlign from '@tiptap/extension-text-align';
 import Youtube from '@tiptap/extension-youtube';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -32,6 +33,9 @@ import {
   StyledImage,
 } from '@/app/user/components/editor/content-editor-custom';
 
+import MentionSuggestionLayer, {
+  type MentionSuggestionItem,
+} from '@/app/user/components/mention/MentionSuggestionLayer';
 import { Control, RichTextEditor } from '@/app/user/components/editor/rich-text-editor';
 
 export type ContentEditorJsonValue = {
@@ -58,6 +62,7 @@ type ContentEditorSharedProps = {
   maxHeight?: string;
   placeholder?: string;
   onImageUpload?: EditorImageUploadHandler;
+  mentionViewerAccountId?: string;
 };
 
 type ContentEditorJsonProps = {
@@ -68,6 +73,7 @@ type ContentEditorJsonProps = {
   maxHeight?: string;
   placeholder?: string;
   onImageUpload?: EditorImageUploadHandler;
+  mentionViewerAccountId?: string;
 };
 
 type ContentEditorProps = ContentEditorSharedProps | ContentEditorJsonProps;
@@ -94,6 +100,7 @@ export default function ContentEditor({
   maxHeight = minHeight,
   placeholder = '내용을 작성해 주세요.',
   onImageUpload,
+  mentionViewerAccountId = 'account-user-1',
 }: ContentEditorProps) {
   const defaultImageUpload = useCallback(async (file: File): Promise<EditorImageUploadResult> => {
     const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -122,20 +129,55 @@ export default function ContentEditor({
   }, []);
 
   const resolvedImageUpload = onImageUpload ?? defaultImageUpload;
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
+  const [isMentionOpen, setIsMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionRange, setMentionRange] = useState<{ from: number; to: number } | null>(null);
+  const [mentionFloatingRect, setMentionFloatingRect] = useState<DOMRect | null>(null);
+  const editorRootRef = useRef<HTMLDivElement | null>(null);
+
+  const updateMentionFloatingRect = useCallback(() => {
+    setMentionFloatingRect(editorRootRef.current?.getBoundingClientRect() ?? null);
+  }, []);
+
+  const updateEditorMentionState = useCallback((activeEditor: Editor) => {
+    const { from } = activeEditor.state.selection;
+    const blockStart = activeEditor.state.selection.$from.start();
+    const beforeCursor = activeEditor.state.doc.textBetween(blockStart, from, '\n', '\n');
+    const match = /(^|\s)@([^\s@]*)$/.exec(beforeCursor);
+
+    if (!match) {
+      setIsMentionOpen(false);
+      setMentionQuery('');
+      setMentionRange(null);
+      setMentionFloatingRect(null);
+      return;
+    }
+
+    const query = match[2] ?? '';
+    const triggerFrom = from - query.length - 1;
+
+    setMentionQuery(query);
+    setMentionRange({ from: triggerFrom, to: from });
+    if (isMobile) {
+      updateMentionFloatingRect();
+    }
+    setIsMentionOpen(query.length === 0 || query.length >= 1);
+  }, [isMobile, updateMentionFloatingRect]);
 
   const editorExtensions = useMemo(
     () => [
       StarterKit.configure({
         blockquote: false,
-        link: {
-          openOnClick: false,
-          HTMLAttributes: {
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          },
-        },
       }),
       Underline,
+      TiptapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+      }),
       StyledBlockquote,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -160,6 +202,8 @@ export default function ContentEditor({
     shouldRerenderOnTransaction: false,
     immediatelyRender: false,
     onUpdate({ editor }) {
+      updateEditorMentionState(editor);
+
       if (format === 'json') {
         (onChange as ContentEditorJsonProps['onChange'])(editor.getJSON());
       } else {
@@ -170,8 +214,88 @@ export default function ContentEditor({
       attributes: {
         'data-placeholder': placeholder,
       },
+      handleTextInput(_view, _from, _to, text) {
+        if (text === '@') {
+          if (isMobile) {
+            updateMentionFloatingRect();
+          }
+          setIsMentionOpen(true);
+          setMentionQuery('');
+        }
+        return false;
+      },
+      handleKeyDown(_view, event) {
+        if (event.key === 'Escape' || event.key === ' ' || event.key === 'Enter') {
+          setIsMentionOpen(false);
+          setMentionFloatingRect(null);
+        }
+
+        return false;
+      },
+      handleDOMEvents: {
+        blur() {
+          window.setTimeout(() => {
+            setIsMentionOpen(false);
+            setMentionFloatingRect(null);
+          }, 120);
+          return false;
+        },
+      },
     },
   });
+
+  const insertMention = (item: MentionSuggestionItem) => {
+    if (!editor || !mentionRange) return;
+
+    editor
+      .chain()
+      .focus()
+      .deleteRange(mentionRange)
+      .insertContent([
+        {
+          type: 'text',
+          text: `@${item.name}`,
+          marks: [
+            {
+              type: 'link',
+              attrs: {
+                href: `/user/community/author/${item.accountId}`,
+                target: null,
+                rel: null,
+              },
+            },
+            {
+              type: 'highlight',
+              attrs: {
+                color: '#E0F2FE',
+              },
+            },
+          ],
+        },
+        {
+          type: 'text',
+          text: ' ',
+        },
+      ])
+      .run();
+
+    setIsMentionOpen(false);
+    setMentionQuery('');
+    setMentionRange(null);
+    setMentionFloatingRect(null);
+  };
+
+  useEffect(() => {
+    if (!isMentionOpen || !isMobile) return;
+
+    window.addEventListener('resize', updateMentionFloatingRect);
+    window.addEventListener('scroll', updateMentionFloatingRect, true);
+
+    return () => {
+      window.removeEventListener('resize', updateMentionFloatingRect);
+      window.removeEventListener('scroll', updateMentionFloatingRect, true);
+    };
+  }, [isMentionOpen, isMobile, updateMentionFloatingRect]);
 
   useEffect(() => {
     if (!editor) return;
@@ -196,7 +320,7 @@ export default function ContentEditor({
   if (!editor) return null;
 
   return (
-    <Box>
+    <Box ref={editorRootRef} position="relative">
       <RichTextEditor.Root
         editor={editor}
         style={{
@@ -283,6 +407,17 @@ export default function ContentEditor({
         </EditorRerenderBoundary>
         <RichTextEditor.Content maxH="var(--content-max-height)" overflowY="auto" />
       </RichTextEditor.Root>
+      <Box position="absolute" left="16px" top="58px" zIndex="40">
+        <Box position="relative">
+          <MentionSuggestionLayer
+            open={isMentionOpen}
+            query={mentionQuery}
+            viewerAccountId={mentionViewerAccountId}
+            onSelect={insertMention}
+            floatingRect={isMobile ? mentionFloatingRect : null}
+          />
+        </Box>
+      </Box>
     </Box>
   );
 }

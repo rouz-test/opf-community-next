@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
+import FollowIcon from '@/app/user/components/icons/FollowIcon';
+import FollowingIcon from '@/app/user/components/icons/FollowingIcon';
 import { toaster } from '@/app/user/components/ui/toaster';
 
 const DEFAULT_REAL_PROFILE_IMAGE = '/images/profiles/real-large.png';
@@ -134,6 +136,10 @@ export function AuthorProfileCard({
       setResolvedFollowerCount(Number(data.followerCount ?? resolvedFollowerCount));
       setResolvedFollowingCount(Number(data.followingCount ?? resolvedFollowingCount));
       setIsFollowing(Boolean(data.isFollowing));
+      toaster.create({
+        title: data.isFollowing ? '팔로우했습니다.' : '팔로우를 취소했습니다.',
+        type: 'success',
+      });
     } catch (error) {
       toaster.create({
         title: error instanceof Error ? error.message : '팔로우를 처리하지 못했습니다.',
@@ -178,6 +184,7 @@ export function AuthorProfileCard({
               type="button"
               h="32px"
               px="12px"
+              gap="6px"
               borderRadius="10px"
               bg={isFollowing ? '#F3F4F6' : '#111827'}
               color={isFollowing ? '#4B5563' : '#FFFFFF'}
@@ -187,6 +194,7 @@ export function AuthorProfileCard({
               _hover={{ bg: isFollowing ? '#E5E7EB' : '#1F2937' }}
               onClick={handleToggleFollow}
             >
+              {isFollowing ? <FollowingIcon size={14} /> : <FollowIcon size={14} />}
               {resolvedFollowLabel}
             </Button>
           ) : null}
@@ -282,6 +290,7 @@ export function AuthorProfileCard({
           type="button"
           w="100%"
           h="42px"
+          gap="8px"
           borderRadius="12px"
           bg={isFollowing ? '#F3F4F6' : '#3F3F46'}
           color={isFollowing ? '#4B5563' : '#FFFFFF'}
@@ -291,6 +300,7 @@ export function AuthorProfileCard({
           _hover={{ bg: isFollowing ? '#E5E7EB' : '#27272A' }}
           onClick={handleToggleFollow}
         >
+          {isFollowing ? <FollowingIcon size={16} /> : <FollowIcon size={16} />}
           {resolvedFollowLabel}
         </Button>
       ) : null}

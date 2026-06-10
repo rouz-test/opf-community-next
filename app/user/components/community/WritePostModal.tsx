@@ -634,6 +634,7 @@ export function WritePostModal({
                     minHeight={editorHeight}
                     maxHeight={editorHeight}
                     placeholder="내용을 입력하세요."
+                    mentionViewerAccountId={currentUser.accountId}
                   />
                 </Box>
                 <Flex mt="2" minH="20px" justify="space-between">

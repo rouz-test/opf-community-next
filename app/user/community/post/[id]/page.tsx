@@ -238,10 +238,31 @@ function renderInlineContent(nodes?: CommunityContentBody[], keyPrefix = 'inline
       }
 
       if (typeof linkMark?.attrs?.href === 'string' && linkMark.attrs.href) {
+        const href = linkMark.attrs.href;
+        const isAuthorMentionLink = href.startsWith('/user/community/author/');
+
+        if (isAuthorMentionLink) {
+          return (
+            <ChakraLink
+              key={key}
+              asChild
+              px="2px"
+              borderRadius="4px"
+              bg="#E0F2FE"
+              color="#0284C7"
+              textDecoration="none"
+              _hover={{ color: '#0369A1', textDecoration: 'none' }}
+              style={textStyles}
+            >
+              <Link href={href}>{text}</Link>
+            </ChakraLink>
+          );
+        }
+
         return (
           <ChakraLink
             key={key}
-            href={linkMark.attrs.href}
+            href={href}
             color="#2563EB"
             textDecoration="underline"
             target="_blank"
@@ -1640,6 +1661,7 @@ export default function CommunityPostDetailPage() {
                     onChangeIdentity={setCommentIdentity}
                     displayName={COMMUNITY_CURRENT_USER.name}
                     profileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
+                    mentionViewerAccountId={COMMUNITY_CURRENT_USER.accountId}
                   />
                 )}
               </Box>
@@ -1666,6 +1688,7 @@ export default function CommunityPostDetailPage() {
                         currentUserRole="user"
                         currentUserDisplayName={COMMUNITY_CURRENT_USER.name}
                         currentUserProfileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
+                        mentionViewerAccountId={COMMUNITY_CURRENT_USER.accountId}
                         onReplyStart={(targetComment) => {
                           setReplyTargetId(targetComment.id);
                           setReplyTargetName(targetComment.author.displayName);
