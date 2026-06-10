@@ -273,9 +273,23 @@ function mapThreadComment(comment: CommunityComment): Comment {
   };
 }
 
-function buildHighlightedComment(contentId: string): HighlightedComment | undefined {
+type MapCommunityContentToPostOptions = {
+  highlightedCommentAuthorIds?: ReadonlySet<string>;
+};
+
+function buildHighlightedComment(
+  contentId: string,
+  options: MapCommunityContentToPostOptions = {},
+): HighlightedComment | undefined {
   const threads = buildCommunityCommentThreads(commentEntities, contentId);
-  const scoped = threads.flatMap((thread) => [thread, ...thread.replies]);
+  const scoped = threads
+    .flatMap((thread) => [thread, ...thread.replies])
+    .filter((comment) => {
+      if (!options.highlightedCommentAuthorIds) return true;
+      if (comment.author.visibility === 'anonymous') return false;
+
+      return options.highlightedCommentAuthorIds.has(comment.author.id);
+    });
 
   if (scoped.length === 0) {
     return undefined;
@@ -326,7 +340,11 @@ function isCommentedByCurrentUser(contentId: string) {
   );
 }
 
-export function mapCommunityContentToPost(content: CommunityContent): CommunityPost {
+export function mapCommunityContentToPost(
+  content: CommunityContent,
+  optionsOrIndex: MapCommunityContentToPostOptions | number = {},
+): CommunityPost {
+  const options = typeof optionsOrIndex === 'number' ? {} : optionsOrIndex;
   const resolvedTags = resolveTags(content.tagIds, tags).map((tag) => tag.name);
   const mappedType = content.flags.isNotice ? 'notice' : 'community';
   const author = mapContentAuthor(content.author);
@@ -354,7 +372,7 @@ export function mapCommunityContentToPost(content: CommunityContent): CommunityP
     isPromotion: content.flags.isPromoted,
     isRealName: author.mode === 'real',
     isHiddenByAuthor: Boolean(content.flags.isHiddenByAuthor),
-    highlightedComment: buildHighlightedComment(content.id),
+    highlightedComment: buildHighlightedComment(content.id, options),
   };
 }
 

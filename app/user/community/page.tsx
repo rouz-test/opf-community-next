@@ -35,6 +35,12 @@ const POSTS_PAGE_SIZE = 20;
 
 const communityTags = tagsData as CommunityTag[];
 
+type FollowListResponse = {
+  items?: Array<{
+    accountId: string;
+  }>;
+};
+
 const getAllTags = () =>
   communityTags
     .filter((tag) => tag.status === 'active' && !tag.isDefault)
@@ -89,6 +95,7 @@ export default function CommunityPage() {
   const [isHidingPost, setIsHidingPost] = useState(false);
   const [editingContent, setEditingContent] = useState<CommunityContent | null>(null);
   const [isPreferencesLoaded, setIsPreferencesLoaded] = useState(false);
+  const [followedAccountIds, setFollowedAccountIds] = useState<Set<string>>(() => new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
@@ -150,6 +157,14 @@ export default function CommunityPage() {
     setIsMobileTagFilterOpen((prev) => !prev);
   };
 
+  const mapContentToPostForFeed = useCallback(
+    (content: CommunityContent) =>
+      mapCommunityContentToPost(content, {
+        highlightedCommentAuthorIds: followedAccountIds,
+      }),
+    [followedAccountIds],
+  );
+
   const fetchCommunityPosts = useCallback(
     async (page: number, mode: 'replace' | 'append' = 'replace') => {
       if (mode === 'replace') {
@@ -190,7 +205,7 @@ export default function CommunityPage() {
           throw new Error((data as { message?: string } | null)?.message || '게시글 목록을 불러오지 못했습니다.');
         }
 
-        const nextPosts = data.items.map(mapCommunityContentToPost);
+        const nextPosts = data.items.map(mapContentToPostForFeed);
 
         setServerPosts((prev) => {
           if (mode === 'replace') return nextPosts;
@@ -222,7 +237,7 @@ export default function CommunityPage() {
         }
       }
     },
-    [debouncedSearchQuery, selectedTags, showFollowingOnly, sortBy],
+    [debouncedSearchQuery, mapContentToPostForFeed, selectedTags, showFollowingOnly, sortBy],
   );
 
   const fetchHighlightPosts = useCallback(async () => {
@@ -247,11 +262,52 @@ export default function CommunityPage() {
         throw new Error((data as { message?: string } | null)?.message || '캐러셀 게시글을 불러오지 못했습니다.');
       }
 
-      setHighlightServerPosts(data.items.map(mapCommunityContentToPost));
+      setHighlightServerPosts(data.items.map(mapContentToPostForFeed));
     } catch (error) {
       console.error('[CommunityPage] failed to load highlight posts:', error);
     }
-  }, []);
+  }, [mapContentToPostForFeed]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadFollowedAccounts = async () => {
+      if (!isLoggedIn) {
+        setFollowedAccountIds(new Set());
+        return;
+      }
+
+      try {
+        const searchParams = new URLSearchParams({
+          accountId: COMMUNITY_CURRENT_USER.accountId,
+          viewerAccountId: COMMUNITY_CURRENT_USER.accountId,
+          listType: 'following',
+        });
+        const response = await fetch(`/api/mock/community-follows?${searchParams.toString()}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json().catch(() => null)) as FollowListResponse | { message?: string } | null;
+
+        if (!response.ok || !data || !('items' in data)) {
+          throw new Error((data as { message?: string } | null)?.message || '팔로잉 목록을 불러오지 못했습니다.');
+        }
+
+        if (isCancelled) return;
+
+        setFollowedAccountIds(new Set((data.items ?? []).map((item) => item.accountId)));
+      } catch (error) {
+        if (isCancelled) return;
+        console.error('[CommunityPage] failed to load following accounts:', error);
+        setFollowedAccountIds(new Set());
+      }
+    };
+
+    void loadFollowedAccounts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -348,7 +404,7 @@ export default function CommunityPage() {
   };
 
   const handleUpdatedContent = (updatedContent: CommunityContent) => {
-    const nextPost = mapCommunityContentToPost(updatedContent);
+    const nextPost = mapContentToPostForFeed(updatedContent);
     setUpdatedPosts((prev) =>
       prev.some((post) => post.id === nextPost.id)
         ? prev.map((post) => (post.id === nextPost.id ? nextPost : post))
@@ -387,7 +443,7 @@ export default function CommunityPage() {
       }
 
       const nextPost = {
-        ...mapCommunityContentToPost(data.content),
+        ...mapContentToPostForFeed(data.content),
         isLikedByMe: Boolean(data.liked),
         isSavedByMe: post.isSavedByMe,
       };
@@ -425,7 +481,7 @@ export default function CommunityPage() {
       }
 
       const nextPost = {
-        ...mapCommunityContentToPost(data.content),
+        ...mapContentToPostForFeed(data.content),
         isLikedByMe: post.isLikedByMe,
         isSavedByMe: Boolean(data.saved),
       };

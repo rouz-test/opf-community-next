@@ -26,6 +26,7 @@ type CommentItemProps = {
   onArchiveToggle: (commentId: string, nextStatus: 'published' | 'archived') => Promise<void>;
   onDeleteComment: (comment: CommunityComment) => void;
   onToggleLike?: (comment: CommunityComment) => Promise<CommunityComment | void>;
+  onAuthorClick?: (authorId: string) => void;
 };
 
 function formatCommentDate(dateString: string) {
@@ -74,6 +75,7 @@ export default function CommentItem({
   onArchiveToggle,
   onDeleteComment,
   onToggleLike,
+  onAuthorClick,
 }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(comment.content);
@@ -91,6 +93,13 @@ export default function CommentItem({
 
   const isMine = currentUserId ? comment.author.id === currentUserId : comment.author.type === 'admin';
   const canManage = !isDeleted && (isMine || currentUserRole === 'admin');
+  const canNavigateAuthor =
+    comment.author.visibility !== 'anonymous' && comment.author.type !== 'admin' && Boolean(onAuthorClick);
+
+  const handleAuthorClick = () => {
+    if (!canNavigateAuthor) return;
+    onAuthorClick?.(comment.author.id);
+  };
 
   useEffect(() => {
     if (!isActionMenuOpen) return;
@@ -185,16 +194,23 @@ export default function CommentItem({
   return (
     <Box>
       <Flex align="flex-start" gap={depth === 0 ? '12px' : '10px'}>
-        <Image
-          src={comment.author.visibility === 'anonymous' ? ANONYMOUS_PROFILE_IMAGE : comment.author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
-          alt={comment.author.displayName}
-          w="34px"
-          h="34px"
+        <Box
+          as={canNavigateAuthor ? 'button' : 'div'}
           mt="2px"
-          borderRadius="9999px"
-          objectFit="cover"
           flexShrink={0}
-        />
+          cursor={canNavigateAuthor ? 'pointer' : 'default'}
+          onClick={handleAuthorClick}
+          aria-label={canNavigateAuthor ? `${comment.author.displayName} 작성자 페이지로 이동` : undefined}
+        >
+          <Image
+            src={comment.author.visibility === 'anonymous' ? ANONYMOUS_PROFILE_IMAGE : comment.author.avatar || DEFAULT_REAL_PROFILE_IMAGE}
+            alt={comment.author.displayName}
+            w="34px"
+            h="34px"
+            borderRadius="9999px"
+            objectFit="cover"
+          />
+        </Box>
 
         <Box flex="1" minW="0">
           <Box
@@ -205,7 +221,14 @@ export default function CommentItem({
             py="12px"
           >
             <Flex align="flex-start" justify="space-between" gap="10px">
-              <Box minW="0">
+              <Box
+                as={canNavigateAuthor ? 'button' : 'div'}
+                minW="0"
+                textAlign="left"
+                cursor={canNavigateAuthor ? 'pointer' : 'default'}
+                onClick={handleAuthorClick}
+                aria-label={canNavigateAuthor ? `${comment.author.displayName} 작성자 페이지로 이동` : undefined}
+              >
                 <Flex align="center" gap="8px" wrap="wrap">
                   <Text fontSize="13px" fontWeight="700" color="#111827">
                     {comment.author.displayName}
@@ -446,6 +469,7 @@ export default function CommentItem({
                   onArchiveToggle={onArchiveToggle}
                   onDeleteComment={onDeleteComment}
                   onToggleLike={onToggleLike}
+                  onAuthorClick={onAuthorClick}
                 />
               ))}
             </Flex>

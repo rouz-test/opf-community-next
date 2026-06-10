@@ -1212,6 +1212,9 @@ export default function CommunityPostDetailPage() {
 
   const isAnonymousContent = content?.author.visibility === 'anonymous';
   const isOwnContent = content?.author.id === COMMUNITY_CURRENT_USER.accountId;
+  const canNavigateContentAuthor = Boolean(
+    content && content.author.visibility !== 'anonymous' && content.author.type !== 'admin',
+  );
   const resolvedTags = useMemo(() => (content ? resolveTags(content.tagIds, tags) : []), [content]);
   const authorDisplay = content ? getAuthorDisplay(content) : '';
   const authorAvatar = content ? getAuthorAvatar(content) : DEFAULT_REAL_PROFILE_IMAGE;
@@ -1231,6 +1234,14 @@ export default function CommunityPostDetailPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3);
   }, [content]);
+
+  const navigateToAuthorPage = useCallback(
+    (authorId: string) => {
+      if (!authorId) return;
+      router.push(`/user/community/author/${authorId}`);
+    },
+    [router],
+  );
 
   if (isLoading) {
     return (
@@ -1443,7 +1454,19 @@ export default function CommunityPostDetailPage() {
               </Flex>
             ) : null}
 
-              <Flex align="center" gap="12px" pb="18px">
+              <Flex
+                as={canNavigateContentAuthor ? 'button' : 'div'}
+                align="center"
+                gap="12px"
+                pb="18px"
+                textAlign="left"
+                cursor={canNavigateContentAuthor ? 'pointer' : 'default'}
+                onClick={() => {
+                  if (!content || !canNavigateContentAuthor) return;
+                  navigateToAuthorPage(content.author.id);
+                }}
+                aria-label={canNavigateContentAuthor ? `${authorDisplay} 작성자 페이지로 이동` : undefined}
+              >
                 <Image
                   src={authorAvatar}
                   alt={authorDisplay}
@@ -1656,6 +1679,7 @@ export default function CommunityPostDetailPage() {
                         onArchiveToggle={handleArchiveComment}
                         onDeleteComment={handleRequestDeleteComment}
                         onToggleLike={handleToggleCommentLike}
+                        onAuthorClick={navigateToAuthorPage}
                       />
                     ))}
                   </Flex>
