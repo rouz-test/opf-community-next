@@ -2,7 +2,7 @@
 
 import { Box, Button, Flex, Grid, Image, Input, Text } from '@chakra-ui/react';
 import { ShieldCheck } from 'lucide-react';
-import { COMMUNITY_CURRENT_USER } from '@/app/user/lib/community-content-data';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
 
 function Field({
   label,
@@ -45,7 +45,7 @@ function Field({
 }
 
 export default function MyPageSettingsProfilePage() {
-  const realProfile = COMMUNITY_CURRENT_USER;
+  const { currentUser: realProfile } = useAuth();
 
   return (
     <Box mx="auto" w="100%" maxW="960px">

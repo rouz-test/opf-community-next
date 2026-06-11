@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import type { CommunityContent } from '@/types/community-content';
 import type { CommunityContentReaction } from '@/types/community-content-reaction';
@@ -13,22 +14,21 @@ type RouteContext = {
   }>;
 };
 
-function getAccountId(request: NextRequest, body?: unknown) {
+async function getAccountId(request: NextRequest, body?: unknown) {
   const queryAccountId = request.nextUrl.searchParams.get('accountId')?.trim();
-  if (queryAccountId) return queryAccountId;
+  const bodyAccountId =
+    body && typeof body === 'object' && 'accountId' in body && typeof body.accountId === 'string'
+      ? body.accountId.trim()
+      : '';
 
-  if (body && typeof body === 'object' && 'accountId' in body && typeof body.accountId === 'string') {
-    return body.accountId.trim();
-  }
-
-  return '';
+  return resolveMockAuthAccountId(request, queryAccountId || bodyAccountId);
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = (await request.json().catch(() => null)) as { accountId?: string } | null;
-    const accountId = getAccountId(request, body);
+    const accountId = await getAccountId(request, body);
 
     if (!accountId) {
       return NextResponse.json({ message: '계정 정보가 필요합니다.' }, { status: 400 });
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const accountId = getAccountId(request);
+    const accountId = await getAccountId(request);
 
     if (!accountId) {
       return NextResponse.json({ message: '계정 정보가 필요합니다.' }, { status: 400 });

@@ -17,6 +17,7 @@ import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import ShareIcon from '@/app/user/components/icons/ShareIcon';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
@@ -63,7 +64,8 @@ function HighlightPostCard({
   const authorMeta = isAnonymousPost
     ? formatCarouselDate(post.createdAt)
     : compactMeta([post.author.company, post.author.position, formatCarouselDate(post.createdAt)]);
-  const isOwnPost = post.author.accountId === 'account-user-1';
+  const { currentUser } = useAuth();
+  const isOwnPost = post.author.accountId === currentUser.accountId;
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);
   const [fallbackLikeCount, setFallbackLikeCount] = useState(post.likes);

@@ -25,6 +25,7 @@ import HeartIcon from '@/app/user/components/icons/HeartIcon';
 import MoreIcon from '@/app/user/components/icons/MoreIcon';
 import PenIcon from '@/app/user/components/icons/PenIcon';
 import ShareIcon from '@/app/user/components/icons/ShareIcon';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import { type CommunityPost } from '@/app/user/lib/community-content-data';
 import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
 import tagsData from '@/data/mock/tags.json';
@@ -114,7 +115,8 @@ export function FeedPostCard({
       : '익명'
     : '';
   const isHighlightedCommentRealName = post.highlightedComment?.author.mode === 'real';
-  const isOwnPost = post.author.accountId === 'account-user-1';
+  const { currentUser } = useAuth();
+  const isOwnPost = post.author.accountId === currentUser.accountId;
   const router = useRouter();
   const commentCount = post.commentCount ?? 0;
   const [fallbackIsSaved, setFallbackIsSaved] = useState(post.isSavedByMe);

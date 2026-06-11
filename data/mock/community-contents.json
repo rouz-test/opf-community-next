@@ -1,5 +1,161 @@
 [
   {
+    "id": "content-1781158259365",
+    "title": "제목 없음",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": null
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "@이서연"
+            }
+          ]
+        }
+      ]
+    },
+    "tagIds": [
+      "tag_1"
+    ],
+    "status": "draft",
+    "author": {
+      "type": "admin",
+      "id": "admin-1",
+      "visibility": "public",
+      "displayName": "관리자",
+      "identifierType": "email",
+      "identifierValue": "admin@comasoft.io"
+    },
+    "flags": {
+      "isPinned": false,
+      "isNotice": false,
+      "isPromoted": false,
+      "isHiddenByAuthor": false
+    },
+    "stats": {
+      "viewCount": 0,
+      "likeCount": 0,
+      "saveCount": 0,
+      "commentCount": 0,
+      "replyCount": 0
+    },
+    "createdAt": "2026-06-11T06:10:59.365Z",
+    "updatedAt": "2026-06-11T06:10:59.365Z",
+    "publishedAt": null
+  },
+  {
+    "id": "content-1781156768743",
+    "title": "작성자를 바꿔서 글을 작성해보겠습니다.",
+    "content": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "안녕하세요 "
+            },
+            {
+              "type": "text",
+              "text": "@박민수",
+              "marks": [
+                {
+                  "type": "link",
+                  "attrs": {
+                    "href": "/user/community/author/account-user-1",
+                    "target": null,
+                    "rel": null,
+                    "class": null,
+                    "title": null
+                  }
+                },
+                {
+                  "type": "highlight",
+                  "attrs": {
+                    "color": "#E0F2FE"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": " 님 "
+            },
+            {
+              "type": "text",
+              "text": "멘션 테스트",
+              "marks": [
+                {
+                  "type": "textStyle",
+                  "attrs": {
+                    "backgroundColor": null,
+                    "color": "#00DE06",
+                    "fontFamily": null,
+                    "fontSize": null,
+                    "lineHeight": null
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "를 해보려고 합니다."
+            }
+          ],
+          "attrs": {
+            "textAlign": null
+          }
+        },
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": null
+          }
+        },
+        {
+          "type": "paragraph",
+          "attrs": {
+            "textAlign": null
+          }
+        }
+      ]
+    },
+    "tagIds": [
+      "tag_1777275819911"
+    ],
+    "status": "published",
+    "author": {
+      "type": "user",
+      "id": "user-22",
+      "visibility": "public",
+      "displayName": "이서연",
+      "identifierType": "name",
+      "identifierValue": "이서연"
+    },
+    "flags": {
+      "isPinned": false,
+      "isNotice": false,
+      "isPromoted": true,
+      "isHiddenByAuthor": false
+    },
+    "stats": {
+      "viewCount": 0,
+      "likeCount": 0,
+      "saveCount": 0,
+      "commentCount": 2,
+      "replyCount": 0
+    },
+    "createdAt": "2026-06-11T05:46:08.743Z",
+    "updatedAt": "2026-06-11T05:46:08.743Z",
+    "publishedAt": "2026-06-11T05:46:08.743Z"
+  },
+  {
     "id": "content-1781080125454",
     "title": "최근 작성일 테스트입니다.",
     "content": {
@@ -166,7 +322,7 @@
       "viewCount": 0,
       "likeCount": 0,
       "saveCount": 0,
-      "commentCount": 1,
+      "commentCount": 2,
       "replyCount": 0
     },
     "createdAt": "2026-06-10T08:28:45.454Z",

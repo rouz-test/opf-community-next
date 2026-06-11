@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readCommunityFollows } from '@/lib/community-follows';
 import { readJsonFile } from '@/lib/mock-file';
 import type { UserAccount } from '@/types/user';
@@ -44,7 +45,10 @@ function mapUserToMentionItem(
 
 export async function GET(request: NextRequest) {
   try {
-    const viewerAccountId = request.nextUrl.searchParams.get('viewerAccountId')?.trim() ?? '';
+    const viewerAccountId = await resolveMockAuthAccountId(
+      request,
+      request.nextUrl.searchParams.get('viewerAccountId')?.trim() ?? '',
+    );
     const query = normalizeKeyword(request.nextUrl.searchParams.get('query'));
     const limit = Number(request.nextUrl.searchParams.get('limit') ?? 8);
 

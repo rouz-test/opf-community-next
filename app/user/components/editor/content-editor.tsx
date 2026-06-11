@@ -13,6 +13,7 @@ import Youtube from '@tiptap/extension-youtube';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import usersData from '@/data/mock/users.json';
 import {
   contentEditorCustomStyles,
   EditorAlignMenu,
@@ -37,6 +38,7 @@ import MentionSuggestionLayer, {
   type MentionSuggestionItem,
 } from '@/app/user/components/mention/MentionSuggestionLayer';
 import { Control, RichTextEditor } from '@/app/user/components/editor/rich-text-editor';
+import type { UserAccount } from '@/types/user';
 
 export type ContentEditorJsonValue = {
   type?: string;
@@ -53,6 +55,10 @@ const EMPTY_DOC: ContentEditorJsonValue = {
   type: 'doc',
   content: [{ type: 'paragraph' }],
 };
+
+const mentionUserByAccountId = new Map(
+  (usersData as UserAccount[]).map((user) => [user.accountId, user]),
+);
 
 type ContentEditorSharedProps = {
   format?: 'html';
@@ -90,6 +96,47 @@ function EditorRerenderBoundary({ editor, children }: EditorRerenderBoundaryProp
   });
 
   return <>{children}</>;
+}
+
+function getMentionAccountIdFromHref(href: unknown) {
+  if (typeof href !== 'string') return '';
+
+  const match = /^\/user\/community\/author\/([^/?#]+)/.exec(href);
+
+  return match?.[1] ?? '';
+}
+
+function cleanupBrokenMentionMarks(editor: Editor) {
+  const linkMarkType = editor.state.schema.marks.link;
+  const highlightMarkType = editor.state.schema.marks.highlight;
+
+  if (!linkMarkType || !highlightMarkType) return false;
+
+  const transaction = editor.state.tr;
+
+  editor.state.doc.descendants((node, position) => {
+    if (!node.isText || !node.text) return;
+
+    const linkMark = node.marks.find((mark) => mark.type === linkMarkType);
+    const accountId = getMentionAccountIdFromHref(linkMark?.attrs.href);
+
+    if (!accountId) return;
+
+    const expectedMentionText = `@${mentionUserByAccountId.get(accountId)?.verification.realName ?? ''}`;
+
+    if (node.text === expectedMentionText) return;
+
+    const from = position;
+    const to = position + node.nodeSize;
+
+    transaction.removeMark(from, to, linkMarkType);
+    transaction.removeMark(from, to, highlightMarkType);
+  });
+
+  if (!transaction.docChanged) return false;
+
+  editor.view.dispatch(transaction);
+  return true;
 }
 
 export default function ContentEditor({
@@ -135,9 +182,17 @@ export default function ContentEditor({
   const [mentionRange, setMentionRange] = useState<{ from: number; to: number } | null>(null);
   const [mentionFloatingRect, setMentionFloatingRect] = useState<DOMRect | null>(null);
   const editorRootRef = useRef<HTMLDivElement | null>(null);
+  const isCleaningMentionMarksRef = useRef(false);
 
-  const updateMentionFloatingRect = useCallback(() => {
-    setMentionFloatingRect(editorRootRef.current?.getBoundingClientRect() ?? null);
+  const getMentionFloatingRect = useCallback((activeEditor: Editor, position: number) => {
+    const coords = activeEditor.view.coordsAtPos(position);
+    const layerWidth = 320;
+    const safeLeft =
+      typeof window === 'undefined'
+        ? coords.left
+        : Math.min(Math.max(16, coords.left), Math.max(16, window.innerWidth - layerWidth - 16));
+
+    return new DOMRect(safeLeft, coords.top, layerWidth, Math.max(1, coords.bottom - coords.top));
   }, []);
 
   const updateEditorMentionState = useCallback((activeEditor: Editor) => {
@@ -159,11 +214,9 @@ export default function ContentEditor({
 
     setMentionQuery(query);
     setMentionRange({ from: triggerFrom, to: from });
-    if (isMobile) {
-      updateMentionFloatingRect();
-    }
+    setMentionFloatingRect(getMentionFloatingRect(activeEditor, from));
     setIsMentionOpen(query.length === 0 || query.length >= 1);
-  }, [isMobile, updateMentionFloatingRect]);
+  }, [getMentionFloatingRect]);
 
   const editorExtensions = useMemo(
     () => [
@@ -202,6 +255,14 @@ export default function ContentEditor({
     shouldRerenderOnTransaction: false,
     immediatelyRender: false,
     onUpdate({ editor }) {
+      if (!isCleaningMentionMarksRef.current) {
+        isCleaningMentionMarksRef.current = true;
+        const didCleanMentionMarks = cleanupBrokenMentionMarks(editor);
+        isCleaningMentionMarksRef.current = false;
+
+        if (didCleanMentionMarks) return;
+      }
+
       updateEditorMentionState(editor);
 
       if (format === 'json') {
@@ -214,14 +275,7 @@ export default function ContentEditor({
       attributes: {
         'data-placeholder': placeholder,
       },
-      handleTextInput(_view, _from, _to, text) {
-        if (text === '@') {
-          if (isMobile) {
-            updateMentionFloatingRect();
-          }
-          setIsMentionOpen(true);
-          setMentionQuery('');
-        }
+      handleTextInput() {
         return false;
       },
       handleKeyDown(_view, event) {
@@ -243,6 +297,15 @@ export default function ContentEditor({
       },
     },
   });
+
+  const updateMentionFloatingRect = useCallback(() => {
+    if (!editor || !mentionRange) {
+      setMentionFloatingRect(editorRootRef.current?.getBoundingClientRect() ?? null);
+      return;
+    }
+
+    setMentionFloatingRect(getMentionFloatingRect(editor, mentionRange.to));
+  }, [editor, getMentionFloatingRect, mentionRange]);
 
   const insertMention = (item: MentionSuggestionItem) => {
     if (!editor || !mentionRange) return;
@@ -407,17 +470,13 @@ export default function ContentEditor({
         </EditorRerenderBoundary>
         <RichTextEditor.Content maxH="var(--content-max-height)" overflowY="auto" />
       </RichTextEditor.Root>
-      <Box position="absolute" left="16px" top="58px" zIndex="40">
-        <Box position="relative">
-          <MentionSuggestionLayer
-            open={isMentionOpen}
-            query={mentionQuery}
-            viewerAccountId={mentionViewerAccountId}
-            onSelect={insertMention}
-            floatingRect={isMobile ? mentionFloatingRect : null}
-          />
-        </Box>
-      </Box>
+      <MentionSuggestionLayer
+        open={isMentionOpen}
+        query={mentionQuery}
+        viewerAccountId={mentionViewerAccountId}
+        onSelect={insertMention}
+        floatingRect={mentionFloatingRect}
+      />
     </Box>
   );
 }

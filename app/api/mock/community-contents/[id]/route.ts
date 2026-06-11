@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
@@ -37,8 +38,8 @@ function isHiddenByAuthor(content: CommunityContent) {
   return Boolean(content.flags.isHiddenByAuthor);
 }
 
-function getViewerAccountId(request: NextRequest) {
-  return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
+async function getViewerAccountId(request: NextRequest) {
+  return resolveMockAuthAccountId(request);
 }
 
 async function normalizeStoredContents(contents: CommunityContent[]) {
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const content = normalizedContents.find((item) => item.id === id);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
-    const viewerAccountId = getViewerAccountId(request);
+    const viewerAccountId = await getViewerAccountId(request);
 
     if (!content) {
       return NextResponse.json(

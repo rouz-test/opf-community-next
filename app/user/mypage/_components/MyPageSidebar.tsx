@@ -158,14 +158,15 @@ function SidebarLink({
 export default function MyPageSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { setIsLoggedIn } = useAuth();
+  const { logout } = useAuth();
   const [manuallyOpenSections, setManuallyOpenSections] = useState<Record<string, boolean>>({});
   const isMounted = useSyncExternalStore(subscribeToHydration, getHydratedSnapshot, getServerSnapshot);
   const activePathname = isMounted ? pathname : '';
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    router.push('/user/community');
+    void logout().finally(() => {
+      router.push('/user/community');
+    });
   };
 
   return (

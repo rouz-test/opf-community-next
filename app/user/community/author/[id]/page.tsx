@@ -14,7 +14,6 @@ import { CommunityToolbar } from '@/app/user/components/community/CommunityToolb
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import {
-  COMMUNITY_CURRENT_USER,
   type CommunityPost,
   type HighlightedComment,
   mapCommunityContentToPost,
@@ -114,7 +113,7 @@ function EmptyState({
 export default function CommunityAuthorPage() {
   const params = useParams<{ id: string }>();
   const authorId = typeof params?.id === 'string' ? params.id : '';
-  const { defaultCommunityIdentity, setDefaultCommunityIdentity } = useAuth();
+  const { currentUser, defaultCommunityIdentity, setDefaultCommunityIdentity } = useAuth();
 
   const [activityTab, setActivityTab] = useState<'posts' | 'comments'>('posts');
   const [viewMode, setViewMode] = useState<'feed' | 'board'>('feed');
@@ -135,13 +134,13 @@ export default function CommunityAuthorPage() {
       status: 'published',
       page: '1',
       pageSize: '200',
-      accountId: COMMUNITY_CURRENT_USER.accountId,
+      accountId: currentUser.accountId,
       sortKey: 'date',
       sortDirection: 'desc',
     });
     const commentSearchParams = new URLSearchParams({
       authorId,
-      accountId: COMMUNITY_CURRENT_USER.accountId,
+      accountId: currentUser.accountId,
     });
 
     const fetchAuthorSourcePosts = async () => {
@@ -186,7 +185,7 @@ export default function CommunityAuthorPage() {
     return () => {
       controller.abort();
     };
-  }, [authorId]);
+  }, [authorId, currentUser.accountId]);
 
   const resolvedCommunityPosts = useMemo(
     () => sourcePosts.map((post) => updatedPosts.find((updated) => updated.id === post.id) ?? post),
@@ -258,7 +257,7 @@ export default function CommunityAuthorPage() {
   const handleToggleLikePost = async (post: CommunityPost) => {
     try {
       const method = post.isLikedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -295,7 +294,7 @@ export default function CommunityAuthorPage() {
   const handleToggleSavePost = async (post: CommunityPost) => {
     try {
       const method = post.isSavedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -456,7 +455,7 @@ export default function CommunityAuthorPage() {
             author={author}
             displayMode="real"
             variant="mobile"
-            currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
+            currentUserAccountId={currentUser.accountId}
           />
         </Box>
 
@@ -466,7 +465,7 @@ export default function CommunityAuthorPage() {
               <CommunityProfileCard
                 profileMode={defaultCommunityIdentity}
                 onToggleProfileMode={toggleProfileMode}
-                currentUser={COMMUNITY_CURRENT_USER}
+                currentUser={currentUser}
               />
 
               <CommunityTagFilter
@@ -645,7 +644,7 @@ export default function CommunityAuthorPage() {
                 author={author}
                 displayMode="real"
                 variant="sidebar"
-                currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
+                currentUserAccountId={currentUser.accountId}
               />
             </Box>
           </Box>

@@ -92,11 +92,11 @@ export function BoardPostRow({
 }: Props) {
   const isAnonymousPost = !post.isRealName && post.type !== 'notice';
   const authorName = isAnonymousPost ? '익명' : post.author.name;
-  const isOwnPost = post.author.accountId === 'account-user-1';
+  const { isLoggedIn, currentUser } = useAuth();
+  const isOwnPost = post.author.accountId === currentUser.accountId;
   const router = useRouter();
   const likeCount = post.likes;
   const commentCount = post.commentCount ?? 0;
-  const { isLoggedIn } = useAuth();
   const [fallbackIsSaved, setFallbackIsSaved] = useState(post.isSavedByMe);
   const [isOwnPostMenuOpen, setIsOwnPostMenuOpen] = useState(false);
   const [fallbackIsLiked, setFallbackIsLiked] = useState(post.isLikedByMe);

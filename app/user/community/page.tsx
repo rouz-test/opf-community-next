@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Flex, Grid, Spinner, Text } from '@chakra-ui/react';
 import {
   type CommunityPost,
-  COMMUNITY_CURRENT_USER,
   mapCommunityContentToPost,
 } from '@/app/user/lib/community-content-data';
 import { orangePickArticles } from '@/data/orange-pick-articles';
@@ -99,6 +98,7 @@ export default function CommunityPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
     isLoggedIn,
+    currentUser,
     defaultCommunityIdentity,
     setDefaultCommunityIdentity,
   } = useAuth();
@@ -178,7 +178,7 @@ export default function CommunityPage() {
           status: 'published',
           page: String(page),
           pageSize: String(POSTS_PAGE_SIZE),
-          accountId: COMMUNITY_CURRENT_USER.accountId,
+          accountId: currentUser.accountId,
           sortKey: sortBy === 'recommended' ? 'like' : 'date',
           sortDirection: 'desc',
         });
@@ -237,7 +237,7 @@ export default function CommunityPage() {
         }
       }
     },
-    [debouncedSearchQuery, mapContentToPostForFeed, selectedTags, showFollowingOnly, sortBy],
+    [currentUser.accountId, debouncedSearchQuery, mapContentToPostForFeed, selectedTags, showFollowingOnly, sortBy],
   );
 
   const fetchHighlightPosts = useCallback(async () => {
@@ -246,7 +246,7 @@ export default function CommunityPage() {
         status: 'published',
         page: '1',
         pageSize: '20',
-        accountId: COMMUNITY_CURRENT_USER.accountId,
+        accountId: currentUser.accountId,
         sortKey: 'date',
         sortDirection: 'desc',
       });
@@ -266,7 +266,7 @@ export default function CommunityPage() {
     } catch (error) {
       console.error('[CommunityPage] failed to load highlight posts:', error);
     }
-  }, [mapContentToPostForFeed]);
+  }, [currentUser.accountId, mapContentToPostForFeed]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -279,8 +279,8 @@ export default function CommunityPage() {
 
       try {
         const searchParams = new URLSearchParams({
-          accountId: COMMUNITY_CURRENT_USER.accountId,
-          viewerAccountId: COMMUNITY_CURRENT_USER.accountId,
+          accountId: currentUser.accountId,
+          viewerAccountId: currentUser.accountId,
           listType: 'following',
         });
         const response = await fetch(`/api/mock/community-follows?${searchParams.toString()}`, {
@@ -307,7 +307,7 @@ export default function CommunityPage() {
     return () => {
       isCancelled = true;
     };
-  }, [isLoggedIn]);
+  }, [currentUser.accountId, isLoggedIn]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -332,7 +332,7 @@ export default function CommunityPage() {
 
     const loadPreferences = async () => {
       try {
-        const response = await fetch(`/api/mock/user-preferences?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        const response = await fetch(`/api/mock/user-preferences?accountId=${currentUser.accountId}`, {
           cache: 'no-store',
         });
         const data = (await response.json().catch(() => null)) as UserCommunityPreferences | { message?: string } | null;
@@ -362,21 +362,21 @@ export default function CommunityPage() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [currentUser.accountId]);
 
   useEffect(() => {
     if (!isPreferencesLoaded) return;
 
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
-      void fetch(`/api/mock/user-preferences?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      void fetch(`/api/mock/user-preferences?accountId=${currentUser.accountId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         signal: controller.signal,
         body: JSON.stringify({
-          accountId: COMMUNITY_CURRENT_USER.accountId,
+          accountId: currentUser.accountId,
           community: {
             viewMode,
             sortBy,
@@ -394,7 +394,7 @@ export default function CommunityPage() {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [isPreferencesLoaded, selectedTags, showFollowingOnly, sortBy, viewMode]);
+  }, [currentUser.accountId, isPreferencesLoaded, selectedTags, showFollowingOnly, sortBy, viewMode]);
 
   const handleCreatedContent = () => {
     setIsWriteModalOpen(false);
@@ -427,7 +427,7 @@ export default function CommunityPage() {
   const handleToggleLikePost = async (post: CommunityPost) => {
     try {
       const method = post.isLikedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -465,7 +465,7 @@ export default function CommunityPage() {
   const handleToggleSavePost = async (post: CommunityPost) => {
     try {
       const method = post.isSavedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -651,7 +651,7 @@ export default function CommunityPage() {
                     setIsWriteModalOpen(true);
                   }}
                   showWriteButton
-                  currentUser={COMMUNITY_CURRENT_USER}
+                  currentUser={currentUser}
                 />
               ) : null}
 
@@ -792,7 +792,7 @@ export default function CommunityPage() {
         onCreated={handleCreatedContent}
         onUpdated={handleUpdatedContent}
         editingContent={editingContent}
-        currentUser={COMMUNITY_CURRENT_USER}
+        currentUser={currentUser}
       />
 
       <ActionConfirmModal

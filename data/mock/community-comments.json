@@ -3377,5 +3377,77 @@
     "archivedBy": null,
     "deletedAt": null,
     "deletedBy": null
+  },
+  {
+    "id": "community-comment-1781156792261",
+    "contentId": "content-1781080125454",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-22",
+      "visibility": "public",
+      "displayName": "이서연",
+      "identifierType": "name",
+      "identifierValue": "이서연",
+      "avatar": "/images/profiles/real-medium.png"
+    },
+    "content": "@관리자 관리자님 안녕하세요!",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-11T05:46:32.261Z",
+    "updatedAt": "2026-06-11T05:46:32.261Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-comment-1781156815936",
+    "contentId": "content-1781156768743",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-22",
+      "visibility": "public",
+      "displayName": "이서연",
+      "identifierType": "name",
+      "identifierValue": "이서연",
+      "avatar": "/images/profiles/real-medium.png"
+    },
+    "content": "@박민수 님 안녕하세요!",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-11T05:46:55.936Z",
+    "updatedAt": "2026-06-11T05:46:55.936Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
+  },
+  {
+    "id": "community-comment-1781157120805",
+    "contentId": "content-1781156768743",
+    "parentId": null,
+    "author": {
+      "type": "user",
+      "id": "user-22",
+      "visibility": "public",
+      "displayName": "이서연",
+      "identifierType": "name",
+      "identifierValue": "이서연",
+      "avatar": "/images/profiles/real-medium.png"
+    },
+    "content": "@박민수 님 안녕하세요",
+    "status": "published",
+    "likeCount": 0,
+    "isLikedByMe": false,
+    "createdAt": "2026-06-11T05:52:00.805Z",
+    "updatedAt": "2026-06-11T05:52:00.805Z",
+    "archivedAt": null,
+    "archivedBy": null,
+    "deletedAt": null,
+    "deletedBy": null
   }
 ]

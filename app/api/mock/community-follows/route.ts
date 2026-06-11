@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import {
   getCommunityFollowState,
   readCommunityFollows,
@@ -67,10 +68,11 @@ function mapFollowListItems({
 
 export async function GET(request: NextRequest) {
   try {
-    const viewerAccountId =
+    const fallbackViewerAccountId =
       request.nextUrl.searchParams.get('viewerAccountId')?.trim() ??
       request.nextUrl.searchParams.get('followerAccountId')?.trim() ??
       '';
+    const viewerAccountId = await resolveMockAuthAccountId(request, fallbackViewerAccountId);
     const targetAccountId = request.nextUrl.searchParams.get('targetAccountId')?.trim() ?? '';
     const accountId = request.nextUrl.searchParams.get('accountId')?.trim() ?? targetAccountId;
     const listType = request.nextUrl.searchParams.get('listType')?.trim() ?? '';
@@ -120,7 +122,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as FollowRequestBody;
-    const followerAccountId = normalizeAccountId(body.followerAccountId);
+    const fallbackFollowerAccountId = normalizeAccountId(body.followerAccountId);
+    const followerAccountId = await resolveMockAuthAccountId(request, fallbackFollowerAccountId);
     const followingAccountId = normalizeAccountId(body.followingAccountId);
 
     if (!followerAccountId || !followingAccountId) {
@@ -169,7 +172,8 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const followerAccountId = request.nextUrl.searchParams.get('followerAccountId')?.trim() ?? '';
+    const fallbackFollowerAccountId = request.nextUrl.searchParams.get('followerAccountId')?.trim() ?? '';
+    const followerAccountId = await resolveMockAuthAccountId(request, fallbackFollowerAccountId);
     const followingAccountId = request.nextUrl.searchParams.get('followingAccountId')?.trim() ?? '';
 
     if (!followerAccountId || !followingAccountId) {

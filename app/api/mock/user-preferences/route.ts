@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import {
   DEFAULT_COMMUNITY_FILTER_PREFERENCES,
@@ -38,13 +39,16 @@ function createDefaultPreferences(accountId: string): UserPreferenceRecord {
   };
 }
 
-function getAccountId(request: NextRequest) {
-  return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
+async function getAccountId(request: NextRequest, fallbackAccountId = '') {
+  return resolveMockAuthAccountId(
+    request,
+    fallbackAccountId || request.nextUrl.searchParams.get('accountId')?.trim() || '',
+  );
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const accountId = getAccountId(request);
+    const accountId = await getAccountId(request);
 
     if (!accountId) {
       return NextResponse.json({ message: 'accountId가 필요합니다.' }, { status: 400 });
@@ -67,10 +71,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => null)) as PatchUserPreferencesRequestBody | null;
-    const accountId =
-      typeof body?.accountId === 'string' && body.accountId.trim()
-        ? body.accountId.trim()
-        : getAccountId(request);
+    const accountId = await getAccountId(
+      request,
+      typeof body?.accountId === 'string' ? body.accountId.trim() : '',
+    );
 
     if (!accountId) {
       return NextResponse.json({ message: 'accountId가 필요합니다.' }, { status: 400 });

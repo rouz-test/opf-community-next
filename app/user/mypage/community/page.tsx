@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoardPostRow } from '@/app/user/components/community/BoardPostRow';
 import { FeedPostCard } from '@/app/user/components/community/FeedPostCard';
 import { WritePostModal } from '@/app/user/components/community/WritePostModal';
+import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import CheckBadgeIcon from '@/app/user/components/icons/CheckBadgeIcon';
 import CheckIcon from '@/app/user/components/icons/CheckIcon';
 import CloseIcon from '@/app/user/components/icons/CloseIcon';
@@ -16,7 +17,6 @@ import { SegmentedControl } from '@/app/user/components/ui/segmented-control';
 import { UserSearchField } from '@/app/user/components/ui/search-field';
 import { toaster } from '@/app/user/components/ui/toaster';
 import {
-  COMMUNITY_CURRENT_USER,
   mockComments,
   type HighlightedComment,
   type CommunityPost,
@@ -187,6 +187,7 @@ function ProfileSummaryCard({
 
 export default function MyPageCommunityPage() {
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [communityViewMode, setCommunityViewMode] = useState<'feed' | 'board'>('feed');
   const [activeCommunityTab, setActiveCommunityTab] = useState<'posts' | 'comments' | 'liked' | 'saved' | 'hidden'>('posts');
   const [profileFilter, setProfileFilter] = useState<'all' | 'real' | 'anonymous'>('all');
@@ -249,8 +250,8 @@ export default function MyPageCommunityPage() {
 
     try {
       const params = new URLSearchParams({
-        accountId: COMMUNITY_CURRENT_USER.accountId,
-        viewerAccountId: COMMUNITY_CURRENT_USER.accountId,
+        accountId: currentUser.accountId,
+        viewerAccountId: currentUser.accountId,
         listType,
       });
       const response = await fetch(`/api/mock/community-follows?${params.toString()}`, {
@@ -275,7 +276,7 @@ export default function MyPageCommunityPage() {
     } finally {
       setIsFollowListLoading(false);
     }
-  }, []);
+  }, [currentUser.accountId]);
 
   useEffect(() => {
     void refreshFollowList('following');
@@ -294,10 +295,10 @@ export default function MyPageCommunityPage() {
     const loadMyCommunityPosts = async () => {
       try {
         const [publishedResponse, archivedResponse] = await Promise.all([
-          fetch(`/api/mock/community-contents?status=published&page=1&pageSize=200&accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+          fetch(`/api/mock/community-contents?status=published&page=1&pageSize=200&accountId=${currentUser.accountId}`, {
             cache: 'no-store',
           }),
-          fetch(`/api/mock/community-contents?includeHiddenByAuthor=true&hiddenByAuthorOnly=true&authorId=${COMMUNITY_CURRENT_USER.accountId}&accountId=${COMMUNITY_CURRENT_USER.accountId}&page=1&pageSize=200`, {
+          fetch(`/api/mock/community-contents?includeHiddenByAuthor=true&hiddenByAuthorOnly=true&authorId=${currentUser.accountId}&accountId=${currentUser.accountId}&page=1&pageSize=200`, {
             cache: 'no-store',
           }),
         ]);
@@ -321,7 +322,7 @@ export default function MyPageCommunityPage() {
 
         setAllPublishedPosts(nextPublishedPosts);
         setMypagePosts(
-          nextPublishedPosts.filter((post) => post.author.accountId === COMMUNITY_CURRENT_USER.accountId),
+          nextPublishedPosts.filter((post) => post.author.accountId === currentUser.accountId),
         );
         setHiddenPosts(archivedData.items.map((content) => mapCommunityContentToPost(content as CommunityContent)));
       } catch (error) {
@@ -335,11 +336,11 @@ export default function MyPageCommunityPage() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [currentUser.accountId]);
 
   const mypageCommentedPosts = useMemo<CommunityPost[]>(() => {
     const ownComments = mockComments
-      .filter((comment) => comment.author.accountId === COMMUNITY_CURRENT_USER.accountId)
+      .filter((comment) => comment.author.accountId === currentUser.accountId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const latestCommentByPostId = new Map<string, (typeof ownComments)[number]>();
@@ -373,7 +374,7 @@ export default function MyPageCommunityPage() {
       },
       [],
     );
-  }, [allPublishedPosts]);
+  }, [allPublishedPosts, currentUser.accountId]);
 
   const baseCommunityPosts =
     activeCommunityTab === 'posts'
@@ -406,7 +407,7 @@ export default function MyPageCommunityPage() {
     }).format(date);
   };
 
-  const realProfile = COMMUNITY_CURRENT_USER;
+  const realProfile = currentUser;
 
   const filteredFollowListItems = useMemo(() => {
     const keyword = followSearchQuery.trim().toLowerCase();
@@ -425,7 +426,7 @@ export default function MyPageCommunityPage() {
       const response = await fetch(
         method === 'DELETE'
           ? `/api/mock/community-follows?${new URLSearchParams({
-              followerAccountId: COMMUNITY_CURRENT_USER.accountId,
+              followerAccountId: currentUser.accountId,
               followingAccountId: profile.accountId,
             }).toString()}`
           : '/api/mock/community-follows',
@@ -437,7 +438,7 @@ export default function MyPageCommunityPage() {
           ...(method === 'POST'
             ? {
                 body: JSON.stringify({
-                  followerAccountId: COMMUNITY_CURRENT_USER.accountId,
+                  followerAccountId: currentUser.accountId,
                   followingAccountId: profile.accountId,
                 }),
               }
@@ -486,7 +487,7 @@ export default function MyPageCommunityPage() {
   const handleToggleLikePost = async (post: CommunityPost) => {
     try {
       const method = post.isLikedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/like?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -521,7 +522,7 @@ export default function MyPageCommunityPage() {
   const handleToggleSavePost = async (post: CommunityPost) => {
     try {
       const method = post.isSavedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${post.id}/save?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -706,7 +707,7 @@ export default function MyPageCommunityPage() {
         const next = [restoredPost, ...prev.filter((post) => post.id !== restoredPost.id)];
         return next;
       });
-      if (restoredPost.author.accountId === COMMUNITY_CURRENT_USER.accountId) {
+      if (restoredPost.author.accountId === currentUser.accountId) {
         setMypagePosts((prev) => [restoredPost, ...prev.filter((post) => post.id !== restoredPost.id)]);
       }
 
@@ -976,7 +977,7 @@ export default function MyPageCommunityPage() {
         }}
         onUpdated={handleUpdatedContent}
         editingContent={editingContent}
-        currentUser={COMMUNITY_CURRENT_USER}
+        currentUser={currentUser}
       />
 
       <ActionConfirmModal

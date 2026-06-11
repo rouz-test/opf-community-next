@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccount, resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import {
   isCommunityContentListSortDirection,
@@ -82,8 +83,8 @@ function getContentReferenceDate(content: CommunityContent) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function getViewerAccountId(request: NextRequest) {
-  return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
+async function getViewerAccountId(request: NextRequest) {
+  return resolveMockAuthAccountId(request);
 }
 
 async function normalizeStoredContents(contents: CommunityContent[]) {
@@ -131,7 +132,7 @@ export async function GET(request: NextRequest) {
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const hiddenByAuthorOnly = request.nextUrl.searchParams.get('hiddenByAuthorOnly') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
-    const viewerAccountId = getViewerAccountId(request);
+    const viewerAccountId = await getViewerAccountId(request);
     const followingOnly = request.nextUrl.searchParams.get('followingOnly') === 'true';
     const followingAuthorIds = new Set(
       follows
@@ -320,11 +321,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (
-      body.author.type === 'user' &&
-      typeof body.author.id === 'string' &&
-      (await isAccountCommunitySuspended(body.author.id))
-    ) {
+    const fallbackAuthorId = typeof body.author.id === 'string' ? body.author.id : '';
+    const sessionAuthor = body.author.type === 'user'
+      ? await resolveMockAuthAccount(request, fallbackAuthorId)
+      : null;
+    const authorAccountId = sessionAuthor?.accountId ?? fallbackAuthorId;
+
+    if (body.author.type === 'user' && authorAccountId && (await isAccountCommunitySuspended(authorAccountId))) {
       return NextResponse.json(
         { message: COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE },
         { status: 403 },
@@ -372,6 +375,21 @@ export async function POST(request: NextRequest) {
     const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const now = new Date().toISOString();
     const nextTagIds = normalizeTagIds(body.tagIds, tags);
+    const authorVisibility = body.author.visibility === 'anonymous' ? 'anonymous' : 'public';
+    const authorDisplayName =
+      sessionAuthor && authorVisibility === 'public'
+        ? sessionAuthor.verification.realName
+        : sessionAuthor && authorVisibility === 'anonymous'
+          ? '익명'
+          : typeof body.author.displayName === 'string' && body.author.displayName.trim()
+            ? body.author.displayName.trim()
+            : '익명';
+    const authorIdentifierValue =
+      sessionAuthor && authorVisibility === 'public'
+        ? sessionAuthor.verification.realName
+        : typeof body.author.identifierValue === 'string'
+          ? body.author.identifierValue.trim()
+          : '';
 
     const newContent: CommunityContent = {
       id: `content-${Date.now()}`,
@@ -381,17 +399,11 @@ export async function POST(request: NextRequest) {
       status: body.status,
       author: {
         type: body.author.type === 'admin' ? 'admin' : 'user',
-        id: typeof body.author.id === 'string' ? body.author.id : `author-${Date.now()}`,
-        visibility: body.author.visibility === 'anonymous' ? 'anonymous' : 'public',
-        displayName:
-          typeof body.author.displayName === 'string' && body.author.displayName.trim()
-            ? body.author.displayName.trim()
-            : '익명',
+        id: body.author.type === 'user' ? authorAccountId : typeof body.author.id === 'string' ? body.author.id : `author-${Date.now()}`,
+        visibility: authorVisibility,
+        displayName: authorDisplayName,
         identifierType: body.author.identifierType === 'name' ? 'name' : 'email',
-        identifierValue:
-          typeof body.author.identifierValue === 'string'
-            ? body.author.identifierValue.trim()
-            : '',
+        identifierValue: authorIdentifierValue,
       },
       flags: {
         isPinned: Boolean(body.flags.isPinned),

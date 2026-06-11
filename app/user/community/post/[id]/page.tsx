@@ -52,7 +52,6 @@ import { useAuth } from '@/app/user/components/providers/AuthProvider';
 import UserTagBadge from '@/app/user/components/ui/tag/tag-badge';
 import { toaster } from '@/app/user/components/ui/toaster';
 import {
-  COMMUNITY_CURRENT_USER,
   mockCommunityPosts,
 } from '@/app/user/lib/community-content-data';
 import { copyPostUrlToClipboard } from '@/app/user/lib/share-post-url';
@@ -614,6 +613,7 @@ export default function CommunityPostDetailPage() {
   const contentId = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const {
     isLoggedIn,
+    currentUser,
     defaultCommunityIdentity,
     setDefaultCommunityIdentity,
   } = useAuth();
@@ -681,7 +681,7 @@ export default function CommunityPostDetailPage() {
       setIsCommentsLoading(true);
       setCommentsError(null);
 
-      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}&accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-comments?contentId=${contentId}&accountId=${currentUser.accountId}`, {
         cache: 'no-store',
       });
       const data = (await response.json().catch(() => null)) as CommunityCommentListResponse | { message?: string } | null;
@@ -696,7 +696,7 @@ export default function CommunityPostDetailPage() {
     } finally {
       setIsCommentsLoading(false);
     }
-  }, [contentId]);
+  }, [contentId, currentUser.accountId]);
 
   const openBlockedWordModal = useCallback(
     (title: string, description: string, matchedKeywords: string[], sourceText: string) => {
@@ -724,7 +724,7 @@ export default function CommunityPostDetailPage() {
         setIsLoading(true);
         setLoadError(null);
 
-        const response = await fetch(`/api/mock/community-contents/${contentId}?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+        const response = await fetch(`/api/mock/community-contents/${contentId}?accountId=${currentUser.accountId}`, {
           cache: 'no-store',
         });
         const data = (await response.json().catch(() => null)) as CommunityContent | { message?: string } | null;
@@ -752,7 +752,7 @@ export default function CommunityPostDetailPage() {
     return () => {
       isCancelled = true;
     };
-  }, [contentId, loadComments]);
+  }, [contentId, currentUser.accountId, loadComments]);
 
   const toggleProfileMode = () => {
     setDefaultCommunityIdentity(defaultCommunityIdentity === 'real' ? 'anonymous' : 'real');
@@ -761,14 +761,14 @@ export default function CommunityPostDetailPage() {
   const buildCommentAuthorPayload = useCallback(
     (identity: 'real' | 'anonymous') => ({
       type: 'user' as const,
-      id: COMMUNITY_CURRENT_USER.accountId,
+      id: currentUser.accountId,
       visibility: identity === 'anonymous' ? 'anonymous' as const : 'public' as const,
-      displayName: identity === 'anonymous' ? '익명' : COMMUNITY_CURRENT_USER.name,
+      displayName: identity === 'anonymous' ? '익명' : currentUser.name,
       identifierType: 'name' as const,
-      identifierValue: COMMUNITY_CURRENT_USER.name,
-      avatar: identity === 'anonymous' ? '/images/profiles/anonymous-medium.png' : COMMUNITY_CURRENT_USER.avatar,
+      identifierValue: currentUser.name,
+      avatar: identity === 'anonymous' ? '/images/profiles/anonymous-medium.png' : currentUser.avatar,
     }),
-    [],
+    [currentUser.accountId, currentUser.avatar, currentUser.name],
   );
 
   const refreshComments = useCallback(async () => {
@@ -798,7 +798,7 @@ export default function CommunityPostDetailPage() {
       setIsLikeSubmitting(true);
 
       const isLikedByMe = Boolean(content.viewerState?.isLikedByMe);
-      const response = await fetch(`/api/mock/community-contents/${contentId}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${contentId}/like?accountId=${currentUser.accountId}`, {
         method: isLikedByMe ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -830,7 +830,7 @@ export default function CommunityPostDetailPage() {
     } finally {
       setIsLikeSubmitting(false);
     }
-  }, [content, contentId, isLikeSubmitting]);
+  }, [content, contentId, currentUser.accountId, isLikeSubmitting]);
 
   const handleTogglePostSave = useCallback(async () => {
     if (!contentId || !content || isSaveSubmitting) return;
@@ -839,7 +839,7 @@ export default function CommunityPostDetailPage() {
       setIsSaveSubmitting(true);
 
       const isSavedByMe = Boolean(content.viewerState?.isSavedByMe);
-      const response = await fetch(`/api/mock/community-contents/${contentId}/save?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-contents/${contentId}/save?accountId=${currentUser.accountId}`, {
         method: isSavedByMe ? 'DELETE' : 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -871,12 +871,12 @@ export default function CommunityPostDetailPage() {
     } finally {
       setIsSaveSubmitting(false);
     }
-  }, [content, contentId, isSaveSubmitting]);
+  }, [content, contentId, currentUser.accountId, isSaveSubmitting]);
 
   const handleToggleCommentLike = useCallback(async (comment: CommunityComment) => {
     try {
       const method = comment.isLikedByMe ? 'DELETE' : 'POST';
-      const response = await fetch(`/api/mock/community-comments/${comment.id}/like?accountId=${COMMUNITY_CURRENT_USER.accountId}`, {
+      const response = await fetch(`/api/mock/community-comments/${comment.id}/like?accountId=${currentUser.accountId}`, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -903,7 +903,7 @@ export default function CommunityPostDetailPage() {
       });
       throw error;
     }
-  }, [refreshComments]);
+  }, [currentUser.accountId, refreshComments]);
 
   const handleRequestEditContent = async () => {
     if (!contentId) return;
@@ -1018,7 +1018,7 @@ export default function CommunityPostDetailPage() {
     try {
       setIsCommentSubmitting(true);
 
-      if (await fetchCommunitySuspensionStatus(COMMUNITY_CURRENT_USER.accountId)) {
+      if (await fetchCommunitySuspensionStatus(currentUser.accountId)) {
         setIsActivitySuspendedModalOpen(true);
         return;
       }
@@ -1080,7 +1080,7 @@ export default function CommunityPostDetailPage() {
     try {
       setIsReplySubmitting(true);
 
-      if (await fetchCommunitySuspensionStatus(COMMUNITY_CURRENT_USER.accountId)) {
+      if (await fetchCommunitySuspensionStatus(currentUser.accountId)) {
         setIsActivitySuspendedModalOpen(true);
         return;
       }
@@ -1232,7 +1232,7 @@ export default function CommunityPostDetailPage() {
   };
 
   const isAnonymousContent = content?.author.visibility === 'anonymous';
-  const isOwnContent = content?.author.id === COMMUNITY_CURRENT_USER.accountId;
+  const isOwnContent = content?.author.id === currentUser.accountId;
   const canNavigateContentAuthor = Boolean(
     content && content.author.visibility !== 'anonymous' && content.author.type !== 'admin',
   );
@@ -1242,10 +1242,10 @@ export default function CommunityPostDetailPage() {
   const authorMetaDisplay = content ? getAuthorMetaDisplay(content) : '-';
   const hasCommentedByMe = useMemo(() => {
     const hasOwnComment = (comment: CommunityComment): boolean =>
-      comment.author.id === COMMUNITY_CURRENT_USER.accountId || comment.replies.some(hasOwnComment);
+      comment.author.id === currentUser.accountId || comment.replies.some(hasOwnComment);
 
     return comments.some(hasOwnComment);
-  }, [comments]);
+  }, [comments, currentUser.accountId]);
 
   const authorOtherPosts = useMemo(() => {
     if (!content || content.author.visibility === 'anonymous') return [];
@@ -1309,7 +1309,7 @@ export default function CommunityPostDetailPage() {
             <CommunityProfileCard
               profileMode={defaultCommunityIdentity}
               onToggleProfileMode={toggleProfileMode}
-              currentUser={COMMUNITY_CURRENT_USER}
+              currentUser={currentUser}
             />
           </Box>
 
@@ -1659,9 +1659,9 @@ export default function CommunityPostDetailPage() {
                     placeholder={replyTargetId ? '답글을 입력하세요.' : '댓글을 입력하세요.'}
                     identity={commentIdentity}
                     onChangeIdentity={setCommentIdentity}
-                    displayName={COMMUNITY_CURRENT_USER.name}
-                    profileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
-                    mentionViewerAccountId={COMMUNITY_CURRENT_USER.accountId}
+                    displayName={currentUser.name}
+                    profileImageUrl={commentIdentity === 'real' ? currentUser.avatar : undefined}
+                    mentionViewerAccountId={currentUser.accountId}
                   />
                 )}
               </Box>
@@ -1684,11 +1684,11 @@ export default function CommunityPostDetailPage() {
                       <CommentItem
                         key={comment.id}
                         comment={comment}
-                        currentUserId={COMMUNITY_CURRENT_USER.accountId}
+                        currentUserId={currentUser.accountId}
                         currentUserRole="user"
-                        currentUserDisplayName={COMMUNITY_CURRENT_USER.name}
-                        currentUserProfileImageUrl={commentIdentity === 'real' ? COMMUNITY_CURRENT_USER.avatar : undefined}
-                        mentionViewerAccountId={COMMUNITY_CURRENT_USER.accountId}
+                        currentUserDisplayName={currentUser.name}
+                        currentUserProfileImageUrl={commentIdentity === 'real' ? currentUser.avatar : undefined}
+                        mentionViewerAccountId={currentUser.accountId}
                         onReplyStart={(targetComment) => {
                           setReplyTargetId(targetComment.id);
                           setReplyTargetName(targetComment.author.displayName);
@@ -1724,10 +1724,10 @@ export default function CommunityPostDetailPage() {
                   id: content.author.id,
                   name: content.author.displayName,
                   nickname: content.author.displayName,
-                  avatar: COMMUNITY_CURRENT_USER.avatar,
+                  avatar: currentUser.avatar,
                 }}
                 displayMode="real"
-                currentUserAccountId={COMMUNITY_CURRENT_USER.accountId}
+                currentUserAccountId={currentUser.accountId}
               />
             ) : null}
 
@@ -1799,7 +1799,7 @@ export default function CommunityPostDetailPage() {
         }}
         onUpdated={handleUpdatedContent}
         editingContent={editingContent}
-        currentUser={COMMUNITY_CURRENT_USER}
+        currentUser={currentUser}
       />
 
       <ActionConfirmModal

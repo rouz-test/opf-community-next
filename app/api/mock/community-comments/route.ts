@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccount, resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE, isAccountCommunitySuspended } from '@/lib/community-suspension';
@@ -29,7 +30,10 @@ export async function GET(request: NextRequest) {
   try {
     const contentId = request.nextUrl.searchParams.get('contentId')?.trim();
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
-    const accountId = request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
+    const accountId = await resolveMockAuthAccountId(
+      request,
+      request.nextUrl.searchParams.get('accountId')?.trim() ?? '',
+    );
     if (!contentId && !authorId) {
       return NextResponse.json({ message: '콘텐츠 ID는 필수입니다.' }, { status: 400 });
     }
@@ -137,30 +141,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const requestedAuthorId =
+      body.author && isObject(body.author) && typeof body.author.id === 'string'
+        ? body.author.id.trim()
+        : '';
+    const sessionAuthor =
+      body.author && isObject(body.author) && body.author.type === 'user'
+        ? await resolveMockAuthAccount(request, requestedAuthorId)
+        : null;
+    const authorVisibility =
+      body.author && isObject(body.author) && body.author.visibility === 'anonymous'
+        ? 'anonymous'
+        : 'public';
+    const authorDisplayName =
+      sessionAuthor && authorVisibility === 'public'
+        ? sessionAuthor.verification.realName
+        : sessionAuthor && authorVisibility === 'anonymous'
+          ? '익명'
+          : body.author && isObject(body.author) && typeof body.author.displayName === 'string' && body.author.displayName.trim()
+            ? body.author.displayName.trim()
+            : DEFAULT_ADMIN_COMMENT_AUTHOR.displayName;
+    const authorIdentifierValue =
+      sessionAuthor && authorVisibility === 'public'
+        ? sessionAuthor.verification.realName
+        : body.author && isObject(body.author) && typeof body.author.identifierValue === 'string' && body.author.identifierValue.trim()
+          ? body.author.identifierValue.trim()
+          : DEFAULT_ADMIN_COMMENT_AUTHOR.identifierValue;
+    const authorId = sessionAuthor?.accountId ?? (requestedAuthorId || DEFAULT_ADMIN_COMMENT_AUTHOR.id);
     const author: CommunityCommentAuthor =
       body.author && isObject(body.author)
         ? {
             type: body.author.type === 'user' ? 'user' : 'admin',
-            id:
-              typeof body.author.id === 'string' && body.author.id.trim()
-                ? body.author.id.trim()
-                : DEFAULT_ADMIN_COMMENT_AUTHOR.id,
-            visibility: body.author.visibility === 'anonymous' ? 'anonymous' : 'public',
-            displayName:
-              typeof body.author.displayName === 'string' && body.author.displayName.trim()
-                ? body.author.displayName.trim()
-                : DEFAULT_ADMIN_COMMENT_AUTHOR.displayName,
+            id: authorId,
+            visibility: authorVisibility,
+            displayName: authorDisplayName,
             identifierType: body.author.identifierType === 'name' ? 'name' : 'email',
-            identifierValue:
-              typeof body.author.identifierValue === 'string' && body.author.identifierValue.trim()
-                ? body.author.identifierValue.trim()
-                : DEFAULT_ADMIN_COMMENT_AUTHOR.identifierValue,
+            identifierValue: authorIdentifierValue,
             avatar:
-              body.author.visibility === 'anonymous'
+              authorVisibility === 'anonymous'
                 ? '/images/profiles/anonymous-medium.png'
-                : typeof body.author.avatar === 'string'
-                  ? body.author.avatar
-                  : '',
+                : sessionAuthor?.profile.avatar || (typeof body.author.avatar === 'string' ? body.author.avatar : ''),
           }
         : DEFAULT_ADMIN_COMMENT_AUTHOR;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Flex, Text, Textarea } from '@chakra-ui/react';
-import { useEffect, useMemo, useRef, useState, type Ref } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref, type ReactNode } from 'react';
 
 import MentionSuggestionLayer, {
   type MentionSuggestionItem,
@@ -52,11 +52,15 @@ export default function CommentEditor({
   const [mentionRange, setMentionRange] = useState<{ start: number; end: number } | null>(null);
   const [mentionFloatingRect, setMentionFloatingRect] = useState<DOMRect | null>(null);
   const mentionAnchorRef = useRef<HTMLDivElement | null>(null);
+  const textareaElementRef = useRef<HTMLTextAreaElement | null>(null);
+  const highlightLayerRef = useRef<HTMLDivElement | null>(null);
   const selectedIdentity = onChangeIdentity ? identity : internalIdentity;
 
   useEffect(() => {
     setInternalIdentity(identity);
   }, [identity]);
+
+  useImperativeHandle(textareaRef, () => textareaElementRef.current as HTMLTextAreaElement);
 
   useEffect(() => {
     if (!isMentionOpen) return;
@@ -115,6 +119,34 @@ export default function CommentEditor({
     setMentionFloatingRect(null);
   };
 
+  const renderHighlightedValue = () => {
+    if (!value) return null;
+
+    const mentionPattern = /@([가-힣A-Za-z0-9_]+)/g;
+    const fragments: ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = mentionPattern.exec(value)) !== null) {
+      if (match.index > lastIndex) {
+        fragments.push(value.slice(lastIndex, match.index));
+      }
+
+      fragments.push(
+        <Text as="span" key={`${match[0]}-${match.index}`} color="#11B3E9" fontWeight="700">
+          {match[0]}
+        </Text>,
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < value.length) {
+      fragments.push(value.slice(lastIndex));
+    }
+
+    return fragments;
+  };
+
   const helperText = useMemo(() => {
     if (isTooLong) {
       return `댓글은 ${MAX_COMMENT_LENGTH}자 이하로 입력해주세요.`;
@@ -126,12 +158,36 @@ export default function CommentEditor({
   return (
     <Box>
       <Box ref={mentionAnchorRef} position="relative">
+        <Box
+          ref={highlightLayerRef}
+          position="absolute"
+          inset="1px"
+          zIndex="0"
+          overflow="hidden"
+          pointerEvents="none"
+          borderRadius="9px"
+          bg="#FFFFFF"
+          p="12px"
+          fontSize="13px"
+          lineHeight="1.5"
+          color="#111827"
+          whiteSpace="pre-wrap"
+          wordBreak="break-word"
+        >
+          {renderHighlightedValue()}
+        </Box>
         <Textarea
-          ref={textareaRef}
+          ref={textareaElementRef}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
             updateMentionState(event.target.value, event.target.selectionStart);
+          }}
+          onScroll={(event) => {
+            if (!highlightLayerRef.current) return;
+
+            highlightLayerRef.current.scrollTop = event.currentTarget.scrollTop;
+            highlightLayerRef.current.scrollLeft = event.currentTarget.scrollLeft;
           }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
@@ -149,12 +205,20 @@ export default function CommentEditor({
           resize="vertical"
           placeholder={placeholder}
           autoFocus={autoFocus}
+          position="relative"
+          zIndex="1"
           borderRadius="10px"
           borderColor="#E5E7EB"
-          bg="#FFFFFF"
+          bg="transparent"
+          p="12px"
+          lineHeight="1.5"
           fontSize="13px"
-          color="#111827"
+          color={value ? 'transparent' : '#111827'}
+          caretColor="#111827"
           _placeholder={{ color: '#9CA3AF' }}
+          css={{
+            WebkitTextFillColor: value ? 'transparent' : '#111827',
+          }}
           _focus={{
             outline: 'none',
             borderColor: '#F59E42',

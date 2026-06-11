@@ -8,7 +8,7 @@ import { useProfileMenu } from '@/app/user/components/providers/ProfileMenuProvi
 
 export default function ProfileMenuLayer() {
   const router = useRouter();
-  const { setIsLoggedIn } = useAuth();
+  const { logout } = useAuth();
   const { isOpen, anchor, closeProfileMenu, showCommunitySwitch, onToggleProfileMode } =
     useProfileMenu();
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -119,8 +119,9 @@ export default function ProfileMenuLayer() {
             hoverColor="red.600"
             onClick={() => {
               closeProfileMenu();
-              setIsLoggedIn(false);
-              router.push('/user/community');
+              void logout().finally(() => {
+                router.push('/user/community');
+              });
             }}
           >
             로그아웃
