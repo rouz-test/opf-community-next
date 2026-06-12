@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  appendCommunityNotifications,
+  createUserNotificationActor,
+} from '@/app/api/mock/_utils/community-notifications';
 import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import {
   getCommunityFollowState,
@@ -145,6 +149,22 @@ export async function POST(request: NextRequest) {
       const nextRelations = [...relations, { followerAccountId, followingAccountId }];
 
       await writeCommunityFollows(nextRelations);
+      const users = await readUsers();
+      const followerAccount = users.find((user) => user.accountId === followerAccountId);
+
+      if (followerAccount) {
+        await appendCommunityNotifications([
+          {
+            receiverAccountId: followingAccountId,
+            type: 'follow',
+            actor: createUserNotificationActor(followerAccount),
+            title: `${followerAccount.verification.realName}님이 회원님을 팔로우했습니다.`,
+            summary: '새로운 팔로워가 생겼습니다.',
+            target: null,
+            dedupeKey: `community-notification-follow-${followerAccountId}-${followingAccountId}`,
+          },
+        ]);
+      }
 
       return NextResponse.json(
         getCommunityFollowState({

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { resolveMockAuthAccount, resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
+import {
+  appendCommunityNotifications,
+  createNotificationActor,
+  getMentionedAccountIdsFromText,
+  getNotificationTarget,
+  readNotificationUsers,
+  type CreateNotificationInput,
+} from '@/app/api/mock/_utils/community-notifications';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { findMatchedBlockedWords } from '@/lib/blocked-word-validator';
 import { COMMUNITY_ACTIVITY_SUSPENDED_MESSAGE, isAccountCommunitySuspended } from '@/lib/community-suspension';
@@ -130,8 +138,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: '대상 콘텐츠를 찾을 수 없습니다.' }, { status: 404 });
     }
 
+    const parentComment = parentId ? comments.find((comment) => comment.id === parentId) : null;
+
     if (parentId) {
-      const parentComment = comments.find((comment) => comment.id === parentId);
       if (!parentComment || parentComment.contentId !== contentId) {
         return NextResponse.json({ message: '답글 대상 댓글을 찾을 수 없습니다.' }, { status: 404 });
       }
@@ -212,6 +221,53 @@ export async function POST(request: NextRequest) {
     const nextComments = [...comments, nextComment];
     await writeCommunityComments(nextComments);
     const syncResult = await syncCommunityContentCommentStats(contentId, nextComments);
+    const notificationUsers = await readNotificationUsers();
+    const validUserIds = new Set(notificationUsers.map((user) => user.accountId));
+    const actor = createNotificationActor(author);
+    const notificationInputs: CreateNotificationInput[] = [];
+
+    if (author.type === 'user') {
+      if (!parentId && targetContent.author.type === 'user' && validUserIds.has(targetContent.author.id)) {
+        notificationInputs.push({
+          receiverAccountId: targetContent.author.id,
+          type: 'comment' as const,
+          actor,
+          title: `${actor.name}님이 회원님의 게시글에 댓글을 남겼습니다.`,
+          summary: content,
+          target: getNotificationTarget(contentId, nextComment.id),
+          createdAt: now,
+          dedupeKey: `community-notification-comment-${nextComment.id}-${targetContent.author.id}`,
+        });
+      }
+
+      if (parentId && parentComment?.author.type === 'user' && validUserIds.has(parentComment.author.id)) {
+        notificationInputs.push({
+          receiverAccountId: parentComment.author.id,
+          type: 'reply' as const,
+          actor,
+          title: `${actor.name}님이 회원님의 댓글에 답글을 남겼습니다.`,
+          summary: content,
+          target: getNotificationTarget(contentId, nextComment.id),
+          createdAt: now,
+          dedupeKey: `community-notification-reply-${nextComment.id}-${parentComment.author.id}`,
+        });
+      }
+
+      getMentionedAccountIdsFromText(content, notificationUsers).forEach((receiverAccountId) => {
+        notificationInputs.push({
+          receiverAccountId,
+          type: 'mention' as const,
+          actor,
+          title: `${actor.name}님이 댓글에서 회원님을 멘션했습니다.`,
+          summary: content,
+          target: getNotificationTarget(contentId, nextComment.id),
+          createdAt: now,
+          dedupeKey: `community-notification-mention-${nextComment.id}-${receiverAccountId}`,
+        });
+      });
+    }
+
+    await appendCommunityNotifications(notificationInputs);
 
     return NextResponse.json(
       {

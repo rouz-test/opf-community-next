@@ -16,14 +16,14 @@
     "id": "tag_1776216676340",
     "name": "문제 정의",
     "slug": "문제-정의",
-    "status": "inactive",
+    "status": "active",
     "isDefault": false,
     "sortOrder": 6,
     "style": {
       "color": "#DEDE00"
     },
     "createdAt": "2026-04-15T01:31:16.339Z",
-    "updatedAt": "2026-04-30T04:50:29.594Z"
+    "updatedAt": "2026-06-12T02:44:19.870Z"
   },
   {
     "id": "tag_1776227414022",

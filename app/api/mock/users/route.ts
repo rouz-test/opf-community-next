@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readCommunityFollows, type CommunityFollowRelation } from '@/lib/community-follows';
-import { readJsonFile } from '@/lib/mock-file';
+import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
 import type {
   UserAccount,
   UserAdminNote,
@@ -34,6 +35,15 @@ async function readMockList<T>(path: string) {
 function getAccountId(request: NextRequest) {
   return request.nextUrl.searchParams.get('accountId')?.trim() ?? '';
 }
+
+type UpdateUserProfileRequestBody = {
+  accountId?: unknown;
+  profile?: {
+    avatar?: unknown;
+    company?: unknown;
+    position?: unknown;
+  };
+};
 
 function canIncludeAdminNotes(request: NextRequest) {
   return (
@@ -207,5 +217,61 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[GET /api/mock/users] failed:', error);
     return NextResponse.json({ message: '회원 정보를 불러오지 못했습니다.' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = (await request.json().catch(() => null)) as UpdateUserProfileRequestBody | null;
+    const requestedAccountId =
+      typeof body?.accountId === 'string' && body.accountId.trim()
+        ? body.accountId.trim()
+        : getAccountId(request);
+    const accountId = await resolveMockAuthAccountId(request, requestedAccountId);
+
+    if (!accountId) {
+      return NextResponse.json({ message: '회원 정보가 필요합니다.' }, { status: 400 });
+    }
+
+    const accounts = await readMockList<UserAccount>(USERS_PATH);
+    const targetIndex = accounts.findIndex((account) => account.accountId === accountId);
+
+    if (targetIndex < 0) {
+      return NextResponse.json({ message: '회원을 찾을 수 없습니다.' }, { status: 404 });
+    }
+
+    const currentAccount = accounts[targetIndex];
+    const nextAvatar =
+      typeof body?.profile?.avatar === 'string'
+        ? body.profile.avatar.trim()
+        : currentAccount.profile.avatar;
+    const nextCompany =
+      typeof body?.profile?.company === 'string'
+        ? body.profile.company.trim()
+        : currentAccount.profile.company;
+    const nextPosition =
+      typeof body?.profile?.position === 'string'
+        ? body.profile.position.trim()
+        : currentAccount.profile.position;
+
+    const nextAccount: UserAccount = {
+      ...currentAccount,
+      profile: {
+        ...currentAccount.profile,
+        avatar: nextAvatar,
+        company: nextCompany,
+        position: nextPosition,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    const nextAccounts = [...accounts];
+    nextAccounts[targetIndex] = nextAccount;
+
+    await writeJsonFile<UserAccount[]>(USERS_PATH, nextAccounts);
+
+    return NextResponse.json(nextAccount, { status: 200 });
+  } catch (error) {
+    console.error('[PATCH /api/mock/users] failed:', error);
+    return NextResponse.json({ message: '회원 정보를 저장하지 못했습니다.' }, { status: 500 });
   }
 }

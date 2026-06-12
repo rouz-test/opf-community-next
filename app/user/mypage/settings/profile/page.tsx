@@ -1,20 +1,24 @@
 'use client';
 
-import { Box, Button, Flex, Grid, Image, Input, Text } from '@chakra-ui/react';
-import { ShieldCheck } from 'lucide-react';
+import { Box, Flex, Grid, Image, Input, Text } from '@chakra-ui/react';
+import { useEffect, useRef, useState } from 'react';
+
 import { useAuth } from '@/app/user/components/providers/AuthProvider';
+import { Button } from '@/app/user/components/ui/button';
+import { toaster } from '@/app/user/components/ui/toaster';
+import type { UserAccount, UserProfileBundle } from '@/types/user';
 
 function Field({
   label,
   placeholder,
-  defaultValue,
   value,
+  onChange,
   readOnly = false,
 }: {
   label: string;
   placeholder?: string;
-  defaultValue?: string;
   value?: string;
+  onChange?: (value: string) => void;
   readOnly?: boolean;
 }) {
   return (
@@ -31,7 +35,7 @@ function Field({
         fontSize="14px"
         color={readOnly ? '#9CA3AF' : '#111827'}
         value={value}
-        defaultValue={defaultValue}
+        onChange={(event) => onChange?.(event.target.value)}
         readOnly={readOnly}
         placeholder={placeholder}
         _placeholder={{ color: '#9CA3AF' }}
@@ -45,7 +49,126 @@ function Field({
 }
 
 export default function MyPageSettingsProfilePage() {
-  const { currentUser: realProfile } = useAuth();
+  const { currentUser, setCurrentUserByAccountId } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [account, setAccount] = useState<UserAccount | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [company, setCompany] = useState('');
+  const [position, setPosition] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/mock/users?accountId=${currentUser.accountId}`, {
+          cache: 'no-store',
+        });
+        const data = (await response.json().catch(() => null)) as UserProfileBundle | { message?: string } | null;
+
+        if (!response.ok || !data || !('account' in data)) {
+          throw new Error((data as { message?: string } | null)?.message || '프로필 정보를 불러오지 못했습니다.');
+        }
+
+        if (!isMounted) return;
+
+        setAccount(data.account);
+        setAvatarPreview(data.account.profile.avatar || '/images/profiles/real-large.png');
+        setCompany(data.account.profile.company ?? '');
+        setPosition(data.account.profile.position ?? '');
+      } catch (error) {
+        if (!isMounted) return;
+
+        toaster.create({
+          type: 'error',
+          description: error instanceof Error ? error.message : '프로필 정보를 불러오지 못했습니다.',
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser.accountId]);
+
+  const handleSelectImage = (file: File | undefined) => {
+    if (!file) return;
+
+    if (!/^image\/(png|jpe?g|svg\+xml|webp)$/.test(file.type)) {
+      toaster.create({
+        type: 'error',
+        description: 'PNG, JPG, SVG, WEBP 이미지만 업로드할 수 있습니다.',
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toaster.create({
+        type: 'error',
+        description: '10MB 이하 이미지만 업로드할 수 있습니다.',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarPreview(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    if (!account || isSaving) return;
+
+    try {
+      setIsSaving(true);
+      const response = await fetch('/api/mock/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountId: account.accountId,
+          profile: {
+            avatar: avatarPreview,
+            company,
+            position,
+          },
+        }),
+      });
+      const data = (await response.json().catch(() => null)) as UserAccount | { message?: string } | null;
+
+      if (!response.ok || !data || !('accountId' in data)) {
+        throw new Error((data as { message?: string } | null)?.message || '프로필 정보를 저장하지 못했습니다.');
+      }
+
+      setAccount(data);
+      await setCurrentUserByAccountId(data.accountId);
+      toaster.create({
+        type: 'success',
+        description: '프로필 정보가 저장되었습니다.',
+      });
+    } catch (error) {
+      toaster.create({
+        type: 'error',
+        description: error instanceof Error ? error.message : '프로필 정보를 저장하지 못했습니다.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <Box mx="auto" w="100%" maxW="960px">
@@ -68,21 +191,22 @@ export default function MyPageSettingsProfilePage() {
         py={{ base: '24px', sm: '36px' }}
         boxShadow="0 8px 24px rgba(15, 23, 42, 0.04)"
       >
-        <Box pb="16px" borderBottom="1px solid" borderColor="#E5E7EB">
-          <Text fontSize="14px" fontWeight="700" color="#111827">
-            실명 프로필
-          </Text>
-          <Text mt="4px" fontSize="12px" color="#6B7280">
-            커뮤니티의 팔로우와 프로필 정보는 실명 프로필 기준으로 관리됩니다.
-          </Text>
-        </Box>
-
-        <Flex direction="column" gap="32px" mt="32px">
+        <Flex direction="column" gap="32px">
           <Box as="section">
             <Text fontSize="14px" fontWeight="700" color="#111827">
               프로필 사진
             </Text>
             <Flex direction="column" align="flex-start" gap="16px" mt="20px">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                hidden
+                onChange={(event) => {
+                  handleSelectImage(event.target.files?.[0]);
+                  event.target.value = '';
+                }}
+              />
               <Box
                 h="64px"
                 w="64px"
@@ -92,8 +216,8 @@ export default function MyPageSettingsProfilePage() {
                 borderColor="#E5E7EB"
               >
                 <Image
-                  src={realProfile.avatar || '/images/profiles/real-large.png'}
-                  alt={realProfile.name}
+                  src={avatarPreview || '/images/profiles/real-large.png'}
+                  alt={account?.verification.realName ?? currentUser.name}
                   h="100%"
                   w="100%"
                   objectFit="cover"
@@ -101,14 +225,10 @@ export default function MyPageSettingsProfilePage() {
               </Box>
               <Button
                 type="button"
-                h="36px"
-                px="16px"
-                borderRadius="10px"
-                bg="#F97316"
-                color="#FFFFFF"
-                fontSize="12px"
-                fontWeight="700"
-                _hover={{ bg: '#EA580C' }}
+                variant="primary"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || isSaving}
               >
                 사진 업로드
               </Button>
@@ -119,62 +239,17 @@ export default function MyPageSettingsProfilePage() {
           </Box>
 
           <Box as="section">
-            <Text fontSize="14px" fontWeight="700" color="#111827">
-              본인 인증 정보
-            </Text>
-            <Flex
-              direction={{ base: 'column', sm: 'row' }}
-              align={{ base: 'stretch', sm: 'center' }}
-              justify="space-between"
-              gap="16px"
-              mt="16px"
-              borderWidth="1px"
-              borderColor="#E5E7EB"
-              borderRadius="16px"
-              bg="#F9FAFB"
-              px="20px"
-              py="16px"
-            >
-              <Box>
-                <Text fontSize="14px" fontWeight="700" color="#111827">
-                  본인인증이 필요합니다
-                </Text>
-                <Text mt="4px" fontSize="12px" color="#9CA3AF">
-                  원활한 서비스 이용을 위해 본인인증을 완료해 주세요.
-                </Text>
-              </Box>
-              <Button
-                type="button"
-                h="40px"
-                px="16px"
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="#E5E7EB"
-                bg="#FFFFFF"
-                color="#374151"
-                fontSize="12px"
-                fontWeight="700"
-                _hover={{ bg: '#F3F4F6' }}
-              >
-                <ShieldCheck size={16} />
-                휴대폰 본인인증
-              </Button>
-            </Flex>
-          </Box>
-
-          <Box as="section">
-            <Field label="연결된 이메일" value="user@example.com" readOnly />
+            <Grid gap="24px" templateColumns={{ base: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }}>
+              <Field label="이름" value={account?.verification.realName ?? currentUser.name} readOnly />
+              <Field label="연결된 이메일" value={account?.auth.socialEmail ?? ''} readOnly />
+            </Grid>
 
             <Grid gap="24px" mt="24px" templateColumns={{ base: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }}>
-              <Field
-                label="이름"
-                defaultValue={realProfile.name}
-                placeholder="이름을 입력해 주세요."
-              />
-              <Field label="소속" placeholder="소속명을 입력해 주세요." />
+              <Field label="소속" value={company} onChange={setCompany} placeholder="소속명을 입력해 주세요." />
               <Field
                 label="직책"
-                defaultValue={realProfile.position ?? ''}
+                value={position}
+                onChange={setPosition}
                 placeholder="직책을 입력해 주세요."
               />
             </Grid>
@@ -183,17 +258,11 @@ export default function MyPageSettingsProfilePage() {
           <Flex justify="flex-end">
             <Button
               type="button"
-              minW="92px"
-              h="42px"
-              px="20px"
-              borderRadius="12px"
-              borderWidth="1px"
-              borderColor="#FDBA74"
-              bg="#FFF7ED"
-              color="#F97316"
-              fontSize="14px"
-              fontWeight="700"
-              _hover={{ bg: '#FFEDD5' }}
+              variant="primary"
+              size="md"
+              loading={isSaving}
+              disabled={isLoading || !account}
+              onClick={handleSave}
             >
               저장
             </Button>

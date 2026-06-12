@@ -7,7 +7,7 @@
       "showFollowingOnly": false,
       "selectedTags": []
     },
-    "updatedAt": "2026-06-10T09:01:40.723Z"
+    "updatedAt": "2026-06-12T05:31:16.351Z"
   },
   {
     "accountId": "user-22",
@@ -17,7 +17,7 @@
       "showFollowingOnly": false,
       "selectedTags": []
     },
-    "updatedAt": "2026-06-11T05:58:13.303Z"
+    "updatedAt": "2026-06-12T04:54:10.843Z"
   },
   {
     "accountId": "user-101",
@@ -27,6 +27,36 @@
       "showFollowingOnly": false,
       "selectedTags": []
     },
-    "updatedAt": "2026-06-11T05:58:45.887Z"
+    "updatedAt": "2026-06-12T03:09:15.061Z"
+  },
+  {
+    "accountId": "user-999",
+    "community": {
+      "viewMode": "feed",
+      "sortBy": "recommended",
+      "showFollowingOnly": false,
+      "selectedTags": []
+    },
+    "updatedAt": "2026-06-12T05:30:10.614Z"
+  },
+  {
+    "accountId": "user-33",
+    "community": {
+      "viewMode": "feed",
+      "sortBy": "recommended",
+      "showFollowingOnly": false,
+      "selectedTags": []
+    },
+    "updatedAt": "2026-06-12T05:19:23.295Z"
+  },
+  {
+    "accountId": "user-11",
+    "community": {
+      "viewMode": "feed",
+      "sortBy": "recommended",
+      "showFollowingOnly": false,
+      "selectedTags": []
+    },
+    "updatedAt": "2026-06-12T05:31:11.797Z"
   }
 ]

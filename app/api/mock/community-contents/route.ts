@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  appendCommunityNotifications,
+  createContentNotificationActor,
+  getMentionedAccountIdsFromContent,
+  getNotificationTarget,
+  readNotificationUsers,
+  type CreateNotificationInput,
+} from '@/app/api/mock/_utils/community-notifications';
 import { resolveMockAuthAccount, resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import {
@@ -47,6 +55,12 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isHiddenByAuthor(content: CommunityContent) {
   return Boolean(content.flags.isHiddenByAuthor);
+}
+
+function hasInactiveTag(content: CommunityContent, tags: Tag[]) {
+  const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
+
+  return content.tagIds.some((tagId) => tagMap.get(tagId)?.status === 'inactive');
 }
 
 function createDefaultContent() {
@@ -148,6 +162,10 @@ export async function GET(request: NextRequest) {
       const hiddenByAuthor = isHiddenByAuthor(content);
       const referenceDate = getContentReferenceDate(content);
       const resolvedTags = resolveTags(content.tagIds, tags);
+
+      if (hasInactiveTag(content, tags)) {
+        return false;
+      }
 
       if (followingOnly) {
         if (!viewerAccountId) return false;
@@ -419,6 +437,48 @@ export async function POST(request: NextRequest) {
 
     const nextContents = [newContent, ...normalizedContents];
     await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
+    const notificationUsers = await readNotificationUsers();
+    const notificationActor = createContentNotificationActor(newContent.author, notificationUsers);
+    const notificationInputs: CreateNotificationInput[] = [];
+
+    if (newContent.status === 'published') {
+      getMentionedAccountIdsFromContent(newContent.content, notificationUsers).forEach((receiverAccountId) => {
+        notificationInputs.push({
+          receiverAccountId,
+          type: 'mention',
+          actor: notificationActor,
+          title: `${notificationActor.name}님이 게시글에서 회원님을 멘션했습니다.`,
+          summary: newContent.title,
+          target: getNotificationTarget(newContent.id),
+          createdAt: now,
+          dedupeKey: `community-notification-content-mention-${newContent.id}-${receiverAccountId}`,
+        });
+      });
+
+      if (newContent.flags.isNotice) {
+        notificationUsers
+          .filter((user) => user.status === 'active')
+          .forEach((receiver) => {
+            notificationInputs.push({
+              receiverAccountId: receiver.accountId,
+              type: 'notice',
+              actor: {
+                accountId: newContent.author.id || null,
+                name: '오렌지파크',
+                profileType: 'system',
+                avatar: '/images/profiles/real-medium.png',
+              },
+              title: '오렌지파크의 공지입니다.',
+              summary: newContent.title,
+              target: getNotificationTarget(newContent.id),
+              createdAt: now,
+              dedupeKey: `community-notification-notice-${newContent.id}-${receiver.accountId}`,
+            });
+          });
+      }
+    }
+
+    await appendCommunityNotifications(notificationInputs);
 
     return NextResponse.json(newContent, { status: 201 });
   } catch (error) {

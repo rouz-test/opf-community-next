@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  appendCommunityNotifications,
+  createContentNotificationActor,
+  getMentionedAccountIdsFromContent,
+  getNotificationTarget,
+  readNotificationUsers,
+  type CreateNotificationInput,
+} from '@/app/api/mock/_utils/community-notifications';
 import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readBlockedWordsFromStore } from '@/lib/blocked-word-store';
 import { extractTextFromContentBody, findMatchedBlockedWords } from '@/lib/blocked-word-validator';
@@ -36,6 +44,12 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isHiddenByAuthor(content: CommunityContent) {
   return Boolean(content.flags.isHiddenByAuthor);
+}
+
+function hasInactiveTag(content: CommunityContent, tags: Tag[]) {
+  const tagMap = new Map(tags.map((tag) => [tag.id, tag]));
+
+  return content.tagIds.some((tagId) => tagMap.get(tagId)?.status === 'inactive');
 }
 
 async function getViewerAccountId(request: NextRequest) {
@@ -84,13 +98,20 @@ export async function GET(request: NextRequest, context: RouteContext) {
       readJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH),
       readJsonFile<CommunityContentReaction[]>(COMMUNITY_CONTENT_REACTIONS_PATH),
     ]);
-    const { normalizedContents } = await normalizeStoredContents(contents);
+    const { normalizedContents, tags } = await normalizeStoredContents(contents);
     const content = normalizedContents.find((item) => item.id === id);
     const includeHiddenByAuthor = request.nextUrl.searchParams.get('includeHiddenByAuthor') === 'true';
     const authorId = request.nextUrl.searchParams.get('authorId')?.trim() ?? '';
     const viewerAccountId = await getViewerAccountId(request);
 
     if (!content) {
+      return NextResponse.json(
+        { message: '콘텐츠를 찾을 수 없습니다.' },
+        { status: 404 },
+      );
+    }
+
+    if (hasInactiveTag(content, tags)) {
       return NextResponse.json(
         { message: '콘텐츠를 찾을 수 없습니다.' },
         { status: 404 },
@@ -281,6 +302,52 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     nextContents[targetIndex] = nextContent;
 
     await writeJsonFile<CommunityContent[]>(COMMUNITY_CONTENTS_PATH, nextContents);
+    const wasPublished = currentContent.status === 'published' || currentContent.status === 'archived';
+    const isPublished = nextContent.status === 'published';
+    const shouldCreatePublishNotifications = !wasPublished && isPublished;
+
+    if (shouldCreatePublishNotifications) {
+      const notificationUsers = await readNotificationUsers();
+      const notificationActor = createContentNotificationActor(nextContent.author, notificationUsers);
+      const notificationInputs: CreateNotificationInput[] = [];
+
+      getMentionedAccountIdsFromContent(nextContent.content, notificationUsers).forEach((receiverAccountId) => {
+        notificationInputs.push({
+          receiverAccountId,
+          type: 'mention',
+          actor: notificationActor,
+          title: `${notificationActor.name}님이 게시글에서 회원님을 멘션했습니다.`,
+          summary: nextContent.title,
+          target: getNotificationTarget(nextContent.id),
+          createdAt: now,
+          dedupeKey: `community-notification-content-mention-${nextContent.id}-${receiverAccountId}`,
+        });
+      });
+
+      if (nextContent.flags.isNotice) {
+        notificationUsers
+          .filter((user) => user.status === 'active')
+          .forEach((receiver) => {
+            notificationInputs.push({
+              receiverAccountId: receiver.accountId,
+              type: 'notice',
+              actor: {
+                accountId: nextContent.author.id || null,
+                name: '오렌지파크',
+                profileType: 'system',
+                avatar: '/images/profiles/real-medium.png',
+              },
+              title: '오렌지파크의 공지입니다.',
+              summary: nextContent.title,
+              target: getNotificationTarget(nextContent.id),
+              createdAt: now,
+              dedupeKey: `community-notification-notice-${nextContent.id}-${receiver.accountId}`,
+            });
+          });
+      }
+
+      await appendCommunityNotifications(notificationInputs);
+    }
 
     return NextResponse.json(nextContent, { status: 200 });
   } catch (error) {
