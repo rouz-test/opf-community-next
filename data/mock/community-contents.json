@@ -146,13 +146,13 @@
     },
     "stats": {
       "viewCount": 0,
-      "likeCount": 0,
+      "likeCount": 1,
       "saveCount": 0,
       "commentCount": 2,
       "replyCount": 0
     },
     "createdAt": "2026-06-11T05:46:08.743Z",
-    "updatedAt": "2026-06-11T05:46:08.743Z",
+    "updatedAt": "2026-06-12T07:36:51.778Z",
     "publishedAt": "2026-06-11T05:46:08.743Z"
   },
   {
@@ -367,7 +367,7 @@
       "isPinned": false,
       "isNotice": false,
       "isPromoted": true,
-      "isHiddenByAuthor": true
+      "isHiddenByAuthor": false
     },
     "stats": {
       "viewCount": 0,
@@ -377,7 +377,7 @@
       "replyCount": 0
     },
     "createdAt": "2026-05-29T08:14:37.769Z",
-    "updatedAt": "2026-06-05T02:45:08.649Z",
+    "updatedAt": "2026-06-12T08:25:19.677Z",
     "publishedAt": "2026-05-29T08:14:37.769Z"
   },
   {

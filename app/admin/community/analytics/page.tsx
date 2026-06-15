@@ -116,7 +116,7 @@ export default function CommunityAnalyticsPage() {
       {activeTab === 'default' ? (
         <AnalyticsOverviewTab dateRange={dateRange} />
       ) : activeTab === 'profile' ? (
-        <AnalyticsProfileRankingTab />
+        <AnalyticsProfileRankingTab dateRange={dateRange} />
       ) : (
         <AnalyticsContentRankingTab dateRange={dateRange} />
       )}

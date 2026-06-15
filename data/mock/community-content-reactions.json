@@ -33,5 +33,12 @@
     "accountId": "account-user-1",
     "type": "like",
     "createdAt": "2026-06-12T05:30:43.148Z"
+  },
+  {
+    "id": "content-like-1781249811778",
+    "contentId": "content-1781156768743",
+    "accountId": "account-user-1",
+    "type": "like",
+    "createdAt": "2026-06-12T07:36:51.778Z"
   }
 ]

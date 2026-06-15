@@ -1724,7 +1724,8 @@ export default function CommunityPostDetailPage() {
                   id: content.author.id,
                   name: content.author.displayName,
                   nickname: content.author.displayName,
-                  avatar: currentUser.avatar,
+                  avatar: authorAvatar,
+                  position: findAuthorAccount(content.author.id)?.profile.position,
                 }}
                 displayMode="real"
                 currentUserAccountId={currentUser.accountId}

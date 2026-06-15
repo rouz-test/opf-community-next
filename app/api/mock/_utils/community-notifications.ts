@@ -1,4 +1,5 @@
 import { readJsonFile, writeJsonFile } from '@/lib/mock-file';
+import { getCompactAvatar } from '@/lib/avatar';
 import type { CommunityContent, CommunityContentAuthor } from '@/types/community-content';
 import type { CommunityCommentAuthor } from '@/types/community-comment';
 import type { UserAccount } from '@/types/user';
@@ -153,7 +154,7 @@ export function createNotificationActor(author: CommunityCommentAuthor): Communi
     accountId: author.id || null,
     name: author.displayName,
     profileType: author.type === 'admin' ? 'system' : 'real',
-    avatar: author.avatar || DEFAULT_REAL_AVATAR,
+    avatar: getCompactAvatar(author.avatar, DEFAULT_REAL_AVATAR),
   };
 }
 
@@ -162,7 +163,7 @@ export function createUserNotificationActor(account: UserAccount): CommunityNoti
     accountId: account.accountId,
     name: account.verification.realName,
     profileType: 'real',
-    avatar: account.profile.avatar || DEFAULT_REAL_AVATAR,
+    avatar: getCompactAvatar(account.profile.avatar, DEFAULT_REAL_AVATAR),
   };
 }
 
@@ -194,7 +195,7 @@ export function createContentNotificationActor(
     accountId: author.id || null,
     name: account?.verification.realName ?? author.displayName,
     profileType: 'real',
-    avatar: account?.profile.avatar || DEFAULT_REAL_AVATAR,
+    avatar: getCompactAvatar(account?.profile.avatar, DEFAULT_REAL_AVATAR),
   };
 }
 

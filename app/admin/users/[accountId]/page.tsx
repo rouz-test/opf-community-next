@@ -20,10 +20,15 @@ import {
   AdminCommunityFeedPostCard,
   type AdminCommunityPostCardData,
 } from '@/app/admin/components/community/admin-community-post-cards';
+import {
+  buildCommunityProfileDashboardMetrics,
+  type CommunityProfileDashboardMetric,
+} from '@/app/admin/community/analytics/profile-metrics';
 import CheckIcon from '@/app/admin/components/icons/CheckIcon';
 import PageContainer from '@/app/admin/components/page/page-container';
 import PageHeader from '@/app/admin/components/page/page-header';
 import AdminCard from '@/app/admin/components/ui/card';
+import { AdminSegmentedControl } from '@/app/admin/components/ui/segmented-control';
 import AdminSwitch from '@/app/admin/components/ui/switch';
 import { toaster } from '@/app/admin/components/ui/toaster';
 import communityCommentsData from '@/data/mock/community-comments.json';
@@ -41,13 +46,6 @@ const communityActivityTabs = [
 ] as const;
 type CommunityActivityTab = (typeof communityActivityTabs)[number]['key'];
 const communityComments = communityCommentsData as CommunityCommentEntity[];
-
-type CommunityDashboardMetric = {
-  title: string;
-  total: number;
-  real: number;
-  anonymous: number;
-};
 
 function formatDate(dateString?: string) {
   if (!dateString) return '';
@@ -270,7 +268,7 @@ function PlaceholderContent({ tab }: { tab: Exclude<DetailTab, '프로필'> }) {
   );
 }
 
-function CommunityDashboardCard({ metric }: { metric: CommunityDashboardMetric }) {
+function CommunityDashboardCard({ metric }: { metric: CommunityProfileDashboardMetric }) {
   const total = metric.total || metric.real + metric.anonymous || 1;
   const realRatio = Math.max(0, Math.min(100, (metric.real / total) * 100));
   const anonymousRatio = Math.max(0, Math.min(100, (metric.anonymous / total) * 100));
@@ -313,54 +311,6 @@ function CommunityDashboardCard({ metric }: { metric: CommunityDashboardMetric }
       </Box>
     </AdminCard>
   );
-}
-
-function buildCommunityDashboardMetrics({
-  accountId,
-  visibleContents,
-}: {
-  accountId: string;
-  visibleContents: CommunityContent[];
-}): CommunityDashboardMetric[] {
-  const authoredContents = visibleContents.filter((content) => content.author.id === accountId);
-  const visibleContentIds = new Set(visibleContents.map((content) => content.id));
-  const authoredComments = communityComments.filter(
-    (comment) =>
-      comment.author.id === accountId &&
-      comment.status === 'published' &&
-      visibleContentIds.has(comment.contentId),
-  );
-
-  const countByVisibility = <T extends { author: { visibility: string } }>(items: T[]) => {
-    const anonymous = items.filter((item) => item.author.visibility === 'anonymous').length;
-    const real = items.length - anonymous;
-
-    return {
-      total: items.length,
-      real,
-      anonymous,
-    };
-  };
-
-  const postCounts = countByVisibility(authoredContents);
-  const commentCounts = countByVisibility(authoredComments);
-
-  return [
-    {
-      title: '게시글 수',
-      ...postCounts,
-    },
-    {
-      title: '댓글 수',
-      ...commentCounts,
-    },
-    {
-      title: '멘션 받은 수',
-      total: 0,
-      real: 0,
-      anonymous: 0,
-    },
-  ];
 }
 
 function CommunityFollowCard({ user }: { user: UserProfileBundle }) {
@@ -542,8 +492,13 @@ function CommunityContent({ user }: { user: UserProfileBundle }) {
   );
 
   const dashboardMetrics = useMemo(
-    () => buildCommunityDashboardMetrics({ accountId, visibleContents }),
-    [accountId, visibleContents],
+    () => buildCommunityProfileDashboardMetrics({
+      accountId,
+      displayName: user.account.verification.realName,
+      contents: visibleContents,
+      comments: communityComments,
+    }),
+    [accountId, user.account.verification.realName, visibleContents],
   );
 
   const filteredVisibleContents = useMemo(
@@ -733,44 +688,25 @@ function CommunityContent({ user }: { user: UserProfileBundle }) {
           ) : null}
         </Box>
 
-        <Flex overflow="hidden" borderWidth="1px" borderColor="#E5E7EB" borderRadius="14px" bg="#FFFFFF">
-          <Button
-            type="button"
-            onClick={() => setViewMode('feed')}
-            h="40px"
-            px="16px"
-            borderRadius="0"
-            borderRight="1px solid"
-            borderColor="#E5E7EB"
-            bg={viewMode === 'feed' ? '#FFF7ED' : '#FFFFFF'}
-            color={viewMode === 'feed' ? '#C2410C' : '#4B5563'}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: viewMode === 'feed' ? '#FFF7ED' : '#F9FAFB' }}
-          >
-            <Flex align="center" gap="8px">
-              <LayoutGrid size={16} />
-              <Text as="span">피드뷰</Text>
-            </Flex>
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setViewMode('board')}
-            h="40px"
-            px="16px"
-            borderRadius="0"
-            bg={viewMode === 'board' ? '#FFF7ED' : '#FFFFFF'}
-            color={viewMode === 'board' ? '#C2410C' : '#4B5563'}
-            fontSize="14px"
-            fontWeight="600"
-            _hover={{ bg: viewMode === 'board' ? '#FFF7ED' : '#F9FAFB' }}
-          >
-            <Flex align="center" gap="8px">
-              <List size={16} />
-              <Text as="span">게시판뷰</Text>
-            </Flex>
-          </Button>
-        </Flex>
+        <Box w={{ base: '100%', sm: '280px' }}>
+          <AdminSegmentedControl
+            value={viewMode}
+            onValueChange={setViewMode}
+            aria-label="커뮤니티 활동 보기 방식"
+            options={[
+              {
+                value: 'feed',
+                label: '피드뷰',
+                icon: <LayoutGrid size={16} />,
+              },
+              {
+                value: 'board',
+                label: '게시판뷰',
+                icon: <List size={16} />,
+              },
+            ]}
+          />
+        </Box>
       </Flex>
 
       <Box mt="16px">

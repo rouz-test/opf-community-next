@@ -11,6 +11,7 @@ import {
   writeCommunityFollows,
   type CommunityFollowRelation,
 } from '@/lib/community-follows';
+import { getCompactAvatar } from '@/lib/avatar';
 import { readJsonFile } from '@/lib/mock-file';
 import type { UserAccount } from '@/types/user';
 
@@ -57,7 +58,7 @@ function mapFollowListItems({
       {
         accountId: user.accountId,
         name: user.verification.realName,
-        avatar: user.profile.avatar || DEFAULT_PROFILE_AVATAR,
+        avatar: getCompactAvatar(user.profile.avatar, DEFAULT_PROFILE_AVATAR),
         company: user.profile.company,
         position: user.profile.position,
         isFollowing: relations.some(

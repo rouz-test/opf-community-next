@@ -1,10 +1,15 @@
 import communityCommentsData from '@/data/mock/community-comments.json';
 import communityContentsData from '@/data/mock/community-contents.json';
+import communityFollowsData from '@/data/mock/community-follows.json';
 import tagsData from '@/data/mock/tags.json';
+import usersData from '@/data/mock/users.json';
 import { resolveTags } from '@/lib/tags';
+import { buildCommunityProfileMetricMaps } from './profile-metrics';
 import type { CommunityContent } from '@/types/community-content';
 import type { CommunityCommentEntity } from '@/types/community-comment';
 import type { Tag } from '@/types/tag';
+import type { CommunityFollowRelation } from '@/lib/community-follows';
+import type { UserAccount } from '@/types/user';
 
 export type AnalyticsDateRangeKey = 'today' | '7days' | '30days' | '90days' | 'all';
 
@@ -46,7 +51,9 @@ export type AnalyticsRankingSection = {
 
 const contents = communityContentsData as CommunityContent[];
 const comments = communityCommentsData as CommunityCommentEntity[];
+const follows = communityFollowsData as CommunityFollowRelation[];
 const tags = tagsData as Tag[];
+const users = usersData as UserAccount[];
 
 const NOW = new Date('2026-04-30T23:59:59+09:00');
 
@@ -329,6 +336,97 @@ function createRankingItems(
       value: formatValue(metric(content), unit),
       badge: includeBadge ? (isAnonymous(content.author.visibility) ? '익명' : '실명') : undefined,
     }));
+}
+
+function createProfileRankingItems({
+  metricMap,
+  unit,
+}: {
+  metricMap: Map<string, number>;
+  unit: '개' | '회' | '명';
+}): AnalyticsRankingItem[] {
+  return users
+    .filter((user) => user.status === 'active')
+    .map((user) => ({
+      accountId: user.accountId,
+      label: user.verification.realName,
+      value: metricMap.get(user.accountId) ?? 0,
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, 'ko-KR'))
+    .slice(0, 10)
+    .map((item, index) => ({
+      rank: index + 1,
+      label: item.label,
+      value: formatValue(item.value, unit),
+    }));
+}
+
+export function buildProfileRankingSections(
+  dateRange: AnalyticsDateRangeKey,
+): AnalyticsRankingSection[] {
+  const filteredContents = getFilteredContents(dateRange);
+  const filteredComments = getFilteredComments(dateRange);
+  const validCommentContentIds = contents
+    .filter(isAnalyticsTargetContent)
+    .map((content) => content.id);
+  const userNameMap = new Map(users.map((user) => [user.accountId, user.verification.realName]));
+  const {
+    postMetricMap,
+    commentMetricMap,
+    followerMetricMap,
+    followingMetricMap,
+    mentionMetricMap,
+  } = buildCommunityProfileMetricMaps({
+    accountNameMap: userNameMap,
+    contents: filteredContents,
+    comments: filteredComments,
+    commentContentIds: validCommentContentIds,
+    follows,
+  });
+
+  const createCards = (metricMap: Map<string, number>, unit: '개' | '회' | '명') => [
+    {
+      title: '프로필',
+      items: createProfileRankingItems({ metricMap, unit }),
+    },
+  ];
+
+  return [
+    {
+      title: '최다 글 작성 프로필',
+      description: '게시글 작성 수 기준 상위 프로필입니다.',
+      cards: createCards(postMetricMap, '개'),
+    },
+    {
+      title: '최다 댓글 · 대댓글 작성 프로필',
+      description: '댓글 및 대댓글 작성 수 기준 상위 프로필입니다.',
+      cards: createCards(commentMetricMap, '개'),
+    },
+    {
+      title: '최다 팔로워 보유 프로필',
+      description: '팔로워 수 기준 상위 프로필입니다.',
+      cards: createCards(followerMetricMap, '명'),
+    },
+    {
+      title: '최다 팔로잉 프로필',
+      description: '팔로잉 수 기준 상위 프로필입니다.',
+      cards: createCards(followingMetricMap, '명'),
+    },
+    {
+      title: '최다 멘션 피지명 프로필',
+      description: '다른 사용자에게 가장 많이 멘션된 프로필입니다.',
+      cards: [
+        {
+          title: '프로필',
+          items: createProfileRankingItems({
+            metricMap: mentionMetricMap,
+            unit: '회',
+          }),
+        },
+      ],
+    },
+  ];
 }
 
 export function buildContentRankingSections(

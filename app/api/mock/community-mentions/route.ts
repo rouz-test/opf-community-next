@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { resolveMockAuthAccountId } from '@/app/api/mock/_utils/mock-auth-session';
 import { readCommunityFollows } from '@/lib/community-follows';
+import { getCompactAvatar } from '@/lib/avatar';
 import { readJsonFile } from '@/lib/mock-file';
 import type { UserAccount } from '@/types/user';
 
@@ -36,7 +37,7 @@ function mapUserToMentionItem(
   return {
     accountId: user.accountId,
     name: user.verification.realName,
-    avatar: user.profile.avatar || DEFAULT_PROFILE_AVATAR,
+    avatar: getCompactAvatar(user.profile.avatar, DEFAULT_PROFILE_AVATAR),
     company: user.profile.company,
     position: user.profile.position,
     relation,
